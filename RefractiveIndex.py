@@ -8,8 +8,10 @@ class RefractiveIndex():
 
         PPKTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato']]
         KTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato']]
-        self.AvailableIndices = ['PPKTP', PPKTPIndices,
-                                 'KTP', KTPIndices]
+        self.AvailableIndices = []
+        self.AvailableIndices.append(['PPKTP', PPKTPIndices])
+        self.AvailableIndices.append(['KTP', KTPIndices])
+
 
     def setMaterial(self,material):
         if material in self.materialList:
@@ -24,8 +26,17 @@ class RefractiveIndex():
         return self.materialList
 
     def getAvailableRefractiveIndices(self,material):
-        item = self.AvailableIndices.index(material)
-        return self.AvailableIndices[item]
+        success=False
+        for i in range(0,len(self.AvailableIndices)):
+            if (self.AvailableIndices[i][0]==material):
+                index=i
+                success=True
+                break
+        if success==True:
+            return self.AvailableIndices[index][1]
+        else:
+            print('ERROR: Material unknown.')
+            return -1
 
     def getIDX(self,crystaltype,IDXtype):
         global ridz, ridy, ridx

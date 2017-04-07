@@ -6,13 +6,17 @@ from PyQt5.QtWidgets import (QPushButton, QSpinBox, QLabel, QDoubleSpinBox, QGro
 from PyQt5.QtWidgets import (QGridLayout, QVBoxLayout, QHBoxLayout)
 from PyQt5.QtGui import QFont
 from RefractiveIndex import RefractiveIndex
+#from Multiphoton import MultiPhotonAnalysis
+from Settings import Settings
 
 class GUI(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, config, parent=None):
         super(GUI, self).__init__(parent)
 
         self.mainWidget = QWidget(self)
         self.setCentralWidget(self.mainWidget)
+
+        self.config=config
 
         self.initUI()
 
@@ -27,13 +31,14 @@ class GUI(QMainWindow):
         self.getProperties()
 
         self.ui_layoutCrystal = self.initLayoutCrystal()
-        #self.ui_layoutTest = self.initLayoutTest()
         self.ui_layoutPump = self.initLayoutPump()
         self.ui_layoutTemperature = self.initLayoutTemperature()
 
+        #Group: set crystal properties
         self.ui_layout.addLayout(self.ui_layoutCrystal,     1, 1)
-        #self.ui_layout.addLayout(self.ui_layoutTest,        1, 2)
+        #Group: set pump properties
         self.ui_layout.addLayout(self.ui_layoutPump,        2, 1)
+        #Group: set temperature
         self.ui_layout.addLayout(self.ui_layoutTemperature, 3, 1)
 
         self.centralWidget().setLayout(self.ui_layout)
@@ -178,6 +183,9 @@ class GUI(QMainWindow):
         for refidx in self.CurrentAvailableRefractiveIndices[2]:
             self.ui_CrystalNZComboBox.addItem(refidx)
 
+        #TODO: Set selected item
+        #self.ui_CrystalNXComboBox.setCurrentText()
+
         self.ui_CrystalGroupBox.setLayout(self.ui_layoutCrystalGroupBox)
 
         self.ui_layoutCrystal.addWidget(self.ui_CrystalGroupBox)
@@ -204,7 +212,19 @@ class GUI(QMainWindow):
 
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
-        self.CurrentAvailableRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices(self.CrystalMaterials[0])
+        self.currentCrystalMaterial = self.CrystalMaterials[0]#fallback
+        lastMaterial = self.config.get('Crystal Material')
+        if lastMaterial in self.CrystalMaterials:
+            #print('Found Material')
+            self.currentCrystalMaterial == lastMaterial
+
+        self.CurrentAvailableRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices(self.currentCrystalMaterial)
+
+        lastRefractiveIndexX = self.config.get('Crystal Refractive Index X')
+        lastRefractiveIndexY = self.config.get('Crystal Refractive Index Y')
+        lastRefractiveIndexZ = self.config.get('Crystal Refractive Index Z')
+
+        print (self.CurrentAvailableRefractiveIndices)
         #self.findChild()
         #self.CrystalRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices()
 

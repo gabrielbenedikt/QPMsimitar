@@ -1,19 +1,35 @@
 #!/usr/bin/python3
 from GUI import GUI
 from RefractiveIndex import RefractiveIndex
+from Settings import Settings
 from PyQt5.QtWidgets import QApplication
 import sys
 
 class MultiPhotonAnalysis():
     def __init__(self):
-        self.gui=GUI()
+        self.config = Settings()
+        self.config.standardSettings()
+        self.config.loadSettings()
+        cpp = self.config.get("Crystal Poling Period")
+        self.config.set("Crystal Poling Period", cpp + 1)
+        self.gui=GUI(self.config)
 
     def showGUI(self):
         self.gui.showWindow()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    MPA=MultiPhotonAnalysis()
+    MPA = MultiPhotonAnalysis()
+    app.exec_()
+    MPA.config.saveSettings()
+    #app = QApplication(sys.argv)
+    #MPA=MultiPhotonAnalysis()
+
+    #config = Settings()
+    #config.standardSettings()
+    #config.loadSettings()
+    #cpp=config.get("Crystal Poling Period")[1]
+    #config.set("Crystal Poling Period", cpp+1)
 
     #refIDX = RefractiveIndex()
     #[nx, ny, nz] = refIDX.getIDX('PPKTP',['kato', 'könig', 'fradkin'])
@@ -21,4 +37,6 @@ if __name__ == '__main__':
     #MP = MultiPhotonAnalysis()
     #MP.showGUI()
 
-    app.exec_()
+    #app.exec_()
+
+    #config.saveSettings()

@@ -33,13 +33,16 @@ class GUI(QMainWindow):
         self.ui_layoutCrystal = self.initLayoutCrystal()
         self.ui_layoutPump = self.initLayoutPump()
         self.ui_layoutTemperature = self.initLayoutTemperature()
+        self.ui_layoutPlotRefractiveIndex = self.initLayoutPlotRefractiveIndex()
 
         #Group: set crystal properties
-        self.ui_layout.addLayout(self.ui_layoutCrystal,     1, 1)
+        self.ui_layout.addLayout(self.ui_layoutCrystal,             1, 1)
         #Group: set pump properties
-        self.ui_layout.addLayout(self.ui_layoutPump,        2, 1)
+        self.ui_layout.addLayout(self.ui_layoutPump,                2, 1)
         #Group: set temperature
-        self.ui_layout.addLayout(self.ui_layoutTemperature, 3, 1)
+        self.ui_layout.addLayout(self.ui_layoutTemperature,         3, 1)
+        #Group: plot refractive indices
+        self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -237,6 +240,28 @@ class GUI(QMainWindow):
 
         return self.ui_layoutTest
 
+    def initLayoutPlotRefractiveIndex(self):
+        self.ui_layoutPlotRefractiveIndex = QGridLayout()
+        self.ui_layoutPlotRefractiveIndexGroupBox = QGroupBox()
+        self.ui_layoutPlotRefractiveIndexGroupBoxLayout = QGridLayout()
+
+        self.ui_layoutPlotRefractiveIndexGroupBox.setTitle('Plot refractive indices')
+
+        #TODO
+        #vertical scroll area
+        #containing checkboxes with all available refractive indices
+
+        self.ui_PlotRefractiveIndex_Btn_Plot = QPushButton()
+        self.ui_PlotRefractiveIndex_Btn_Plot.setText('Plot')
+
+        self.ui_layoutPlotRefractiveIndexGroupBoxLayout.addWidget(self.ui_PlotRefractiveIndex_Btn_Plot,   1, 1)
+
+        self.ui_layoutPlotRefractiveIndexGroupBox.setLayout(self.ui_layoutPlotRefractiveIndexGroupBoxLayout)
+
+        self.ui_layoutPlotRefractiveIndex.addWidget(self.ui_layoutPlotRefractiveIndexGroupBox)
+
+        return self.ui_layoutPlotRefractiveIndex
+
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
         self.CrystalMaterial = self.CrystalMaterials[0]#fallback
@@ -297,7 +322,6 @@ class GUI(QMainWindow):
         self.ui_TsingleSB.setValue(self.TempSingle)
         self.ui_TtoSB.setValue(self.TempTo)
 
-
     def initConnections(self):
         self.ui_CrystalPolingPeriodSpinBox.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalMaterialComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
@@ -355,7 +379,6 @@ class GUI(QMainWindow):
         self.config.set("Temperature from", self.TempFrom)
         self.config.set("Temperature single", self.TempSingle)
         self.config.set("Temperature to", self.TempTo)
-
 
     def showWindow(self):
         g = GUI()

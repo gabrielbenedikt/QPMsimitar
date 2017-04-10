@@ -9,7 +9,7 @@
 - [Pump pulsewidth from, 1.0]
 - [Pump pulsewidth single, 2.0]
 - [Pump pulsewidth to, 5.0]
-- [Pump pulse shape, Gaussian]
+- [Pump pulse shape, Sech^2]
 - [Pump pulsewidth apply deconvolution factor, true]
 - [Temperature from, 18.0]
 - [Temperature single, 24.0]

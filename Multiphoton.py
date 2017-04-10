@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from GUI import GUI
 from RefractiveIndex import RefractiveIndex
+from Constants import Constants
 from Settings import Settings
 from PyQt5.QtWidgets import QApplication
 import sys
@@ -10,8 +11,8 @@ class MultiPhotonAnalysis():
         self.config = Settings()
         self.config.standardSettings()
         self.config.loadSettings()
-        #cpp = self.config.get("Crystal Poling Period")
-        #self.config.set("Crystal Poling Period", cpp + 1)
+        constants=Constants()
+        print(constants.pi)
         self.gui=GUI(self.config)
 
     def showGUI(self):

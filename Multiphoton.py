@@ -10,8 +10,8 @@ class MultiPhotonAnalysis():
         self.config = Settings()
         self.config.standardSettings()
         self.config.loadSettings()
-        cpp = self.config.get("Crystal Poling Period")
-        self.config.set("Crystal Poling Period", cpp + 1)
+        #cpp = self.config.get("Crystal Poling Period")
+        #self.config.set("Crystal Poling Period", cpp + 1)
         self.gui=GUI(self.config)
 
     def showGUI(self):

@@ -42,6 +42,11 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutTemperature, 3, 1)
 
         self.centralWidget().setLayout(self.ui_layout)
+
+        self.setProperties()
+
+        self.initConnections()
+
         self.resize(self.sizeHint())
 
         self.show()
@@ -63,6 +68,11 @@ class GUI(QMainWindow):
         self.ui_TtoSB = QDoubleSpinBox()
         self.ui_TLabel = QLabel()
         self.ui_TLabel.setText('Temperature [°C]')
+
+        #set limits
+        self.ui_TsingleSB.setRange(-273.15, 1000)
+        self.ui_TfromSB.setRange(-273.15, 1000)
+        self.ui_TtoSB.setRange(-273.15, 1000)
 
         self.ui_layoutTempGroupBox.addWidget(self.ui_fromLabel,     1, 2)
         self.ui_layoutTempGroupBox.addWidget(self.ui_singleLabel,   1, 3)
@@ -97,11 +107,19 @@ class GUI(QMainWindow):
         self.ui_pumpwlLabel = QLabel()
         self.ui_pumpwlLabel.setText('Wavelength [nm]')
 
+        self.ui_pumpwlsingleSB.setRange(0, 10000)
+        self.ui_pumpwlfromSB.setRange(0, 10000)
+        self.ui_pumpwltoSB.setRange(0, 10000)
+
         self.ui_pulsewidthsingleSB = QDoubleSpinBox()
         self.ui_pulsewidthfromSB = QDoubleSpinBox()
         self.ui_pulsewidthtoSB = QDoubleSpinBox()
         self.ui_pulsewidthLabel = QLabel()
         self.ui_pulsewidthLabel.setText('Pulsewidth [ps]')
+
+        self.ui_pulsewidthsingleSB.setRange(0, 1000)
+        self.ui_pulsewidthfromSB.setRange(0, 1000)
+        self.ui_pulsewidthtoSB.setRange(0, 1000)
 
         self.ui_pumpShapeCB = QComboBox()
         self.ui_pumpShapeCB.addItem('Gaussian')
@@ -177,14 +195,23 @@ class GUI(QMainWindow):
             self.ui_CrystalMaterialComboBox.addItem(material)
 
         for refidx in self.CurrentAvailableRefractiveIndices[0]:
-            self.ui_CrystalNXComboBox.addItem(refidx)
+            self.ui_CrystalNXComboBox.addItem(refidx,refidx)
         for refidx in self.CurrentAvailableRefractiveIndices[1]:
-            self.ui_CrystalNYComboBox.addItem(refidx)
+            self.ui_CrystalNYComboBox.addItem(refidx,refidx)
         for refidx in self.CurrentAvailableRefractiveIndices[2]:
-            self.ui_CrystalNZComboBox.addItem(refidx)
+            self.ui_CrystalNZComboBox.addItem(refidx,refidx)
 
         #TODO: Set selected item
         #self.ui_CrystalNXComboBox.setCurrentText()
+        idx = self.ui_CrystalNXComboBox.findData(self.lastRefractiveIndex[0])
+        if (idx != -1):
+            self.ui_CrystalNXComboBox.setCurrentIndex(idx)
+        idx = self.ui_CrystalNYComboBox.findData(self.lastRefractiveIndex[1])
+        if (idx != -1):
+            self.ui_CrystalNYComboBox.setCurrentIndex(idx)
+        idx = self.ui_CrystalNZComboBox.findData(self.lastRefractiveIndex[2])
+        if (idx != -1):
+            self.ui_CrystalNZComboBox.setCurrentIndex(idx)
 
         self.ui_CrystalGroupBox.setLayout(self.ui_layoutCrystalGroupBox)
 
@@ -212,21 +239,123 @@ class GUI(QMainWindow):
 
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
-        self.currentCrystalMaterial = self.CrystalMaterials[0]#fallback
+        self.CrystalMaterial = self.CrystalMaterials[0]#fallback
+
         lastMaterial = self.config.get('Crystal Material')
         if lastMaterial in self.CrystalMaterials:
-            #print('Found Material')
-            self.currentCrystalMaterial == lastMaterial
+            self.CrystalMaterial == lastMaterial
+        self.CurrentAvailableRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices(self.CrystalMaterial)
 
-        self.CurrentAvailableRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices(self.currentCrystalMaterial)
 
-        lastRefractiveIndexX = self.config.get('Crystal Refractive Index X')
-        lastRefractiveIndexY = self.config.get('Crystal Refractive Index Y')
-        lastRefractiveIndexZ = self.config.get('Crystal Refractive Index Z')
+        self.CrystalPolingPeriod=self.config.get("Crystal Poling Period")
 
-        print (self.CurrentAvailableRefractiveIndices)
-        #self.findChild()
-        #self.CrystalRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices()
+
+        lastNX = self.config.get("Crystal Refractive Index X")
+        if lastNX in self.CurrentAvailableRefractiveIndices[0]:
+            self.CrystalNX = lastNX
+        else:
+            self.CrystalNX = self.CurrentAvailableRefractiveIndices[0]
+        lastNY = self.config.get("Crystal Refractive Index Y")
+        if lastNY in self.CurrentAvailableRefractiveIndices[1]:
+            self.CrystalNY = lastNY
+        else:
+            self.CrystalNY = self.CurrentAvailableRefractiveIndices[1]
+        lastNZ = self.config.get("Crystal Refractive Index Z")
+        if lastNZ in self.CurrentAvailableRefractiveIndices[2]:
+            self.CrystalNZ = lastNZ
+        else:
+            self.CrystalNZ = self.CurrentAvailableRefractiveIndices[2]
+
+        self.lastRefractiveIndex = [self.CrystalNX,
+                                    self.CrystalNY,
+                                    self.CrystalNZ]
+        self.PumpWlFrom=self.config.get("Pump wavelength from")
+        self.PumpWlSingle=self.config.get("Pump wavelength single")
+        self.PumpWlTo=self.config.get("Pump wavelength to")
+        self.PulsewidthFrom=self.config.get("Pump pulsewidth from")
+        self.PulsewidthSingle=self.config.get("Pump pulsewidth single")
+        self.PulsewidthTo=self.config.get("Pump pulsewidth to")
+        self.PumpShape=self.config.get("Pump pulse shape")
+        self.PumpShapeApplyDeconvolutionFactor=self.config.get("Pump pulsewidth apply deconvolution factor")
+        self.TempFrom=self.config.get("Temperature from")
+        self.TempSingle=self.config.get("Temperature single")
+        self.TempTo=self.config.get("Temperature to")
+
+    def setProperties(self):
+        self.ui_CrystalPolingPeriodSpinBox.setValue(self.CrystalPolingPeriod)
+        self.ui_pumpwlfromSB.setValue(self.PumpWlFrom)
+        self.ui_pumpwlsingleSB.setValue(self.PumpWlSingle)
+        self.ui_pumpwltoSB.setValue(self.PumpWlTo)
+        self.ui_pulsewidthfromSB.setValue(self.PulsewidthFrom)
+        self.ui_pulsewidthsingleSB.setValue(self.PulsewidthSingle)
+        self.ui_pulsewidthtoSB.setValue(self.PulsewidthTo)
+        idx=0#Fallback
+        idx=self.ui_pumpShapeCB.findText(self.PumpShape)
+        self.ui_pumpShapeCB.setCurrentIndex(idx)
+        self.ui_pumpShapeCorrectionFactorCheckBox.setChecked(self.PumpShapeApplyDeconvolutionFactor)
+        self.ui_TfromSB.setValue(self.TempFrom)
+        self.ui_TsingleSB.setValue(self.TempSingle)
+        self.ui_TtoSB.setValue(self.TempTo)
+
+
+    def initConnections(self):
+        self.ui_CrystalPolingPeriodSpinBox.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalMaterialComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalNXComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalNYComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalNZComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpwlsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpwlfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpwltoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pulsewidthsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pulsewidthfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pulsewidthtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpShapeCB.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpShapeCorrectionFactorCheckBox.stateChanged.connect(self.getVarsFromGUI)
+        self.ui_TsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_TfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_TtoSB.valueChanged.connect(self.getVarsFromGUI)
+
+    def getVarsFromGUI(self):
+        self.CrystalPolingPeriod = self.ui_CrystalPolingPeriodSpinBox.value()
+        self.CrystalMaterial = self.ui_CrystalMaterialComboBox.currentText()
+        self.CrystalNX = self.ui_CrystalNXComboBox.currentText()
+        self.CrystalNY = self.ui_CrystalNYComboBox.currentText()
+        self.CrystalNZ = self.ui_CrystalNZComboBox.currentText()
+        self.PumpWlSingle = self.ui_pumpwlsingleSB.value()
+        self.PumpWlFrom = self.ui_pumpwlfromSB.value()
+        self.PumpWlTo = self.ui_pumpwltoSB.value()
+        self.PulsewidthSingle = self.ui_pulsewidthsingleSB.value()
+        self.PulsewidthFrom = self.ui_pulsewidthfromSB.value()
+        self.PulsewidthTo = self.ui_pulsewidthtoSB.value()
+        self.PumpShape = self.ui_pumpShapeCB.currentText()
+        self.PumpShapeApplyDeconvolutionFactor = self.ui_pumpShapeCorrectionFactorCheckBox.isChecked()
+        self.TempSingle = self.ui_TsingleSB.value()
+        self.TempFrom = self.ui_TfromSB.value()
+        self.TempTo = self.ui_TtoSB.value()
+
+        self.SaveSettings()
+
+    def SaveSettings(self):
+        self.config.set("Crystal Material", self.CrystalMaterial)
+        self.config.set("Crystal Poling Period", self.CrystalPolingPeriod)
+        self.config.set("Crystal Refractive Index X", self.CrystalNX)
+        self.config.set("Crystal Refractive Index Y", self.CrystalNY)
+        self.config.set("Crystal Refractive Index Z", self.CrystalNZ)
+
+        self.config.set("Pump wavelength from", self.PumpWlFrom)
+        self.config.set("Pump wavelength single", self.PumpWlSingle)
+        self.config.set("Pump wavelength to", self.PumpWlTo)
+        self.config.set("Pump pulsewidth from", self.PulsewidthFrom)
+        self.config.set("Pump pulsewidth single", self.PulsewidthSingle)
+        self.config.set("Pump pulsewidth to", self.PulsewidthTo)
+        self.config.set("Pump pulse shape", self.PumpShape)
+        self.config.set("Pump pulsewidth apply deconvolution factor", self.PumpShapeApplyDeconvolutionFactor)
+
+        self.config.set("Temperature from", self.TempFrom)
+        self.config.set("Temperature single", self.TempSingle)
+        self.config.set("Temperature to", self.TempTo)
+
 
     def showWindow(self):
         g = GUI()

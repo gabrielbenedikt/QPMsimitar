@@ -22,8 +22,8 @@ class Settings():
         self.config.append(["Crystal Material", "PPKTP"])
         self.config.append(["Crystal Poling Period", 46.2])
         self.config.append(["Crystal Refractive Index X", 'kato'])
-        self.config.append(["Crystal Refractive Index Y", 'koenig'])
-        self.config.append(["Crystal Refractive Index Z", 'fradkin'])
+        self.config.append(["Crystal Refractive Index Y", 'kato'])
+        self.config.append(["Crystal Refractive Index Z", 'kato'])
 
         self.config.append(["Pump wavelength from", 1540])
         self.config.append(["Pump wavelength single", 1550])

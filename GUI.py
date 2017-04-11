@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip)
 from PyQt5.QtWidgets import (QPushButton, QSpinBox, QLabel, QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow)
 from PyQt5.QtWidgets import (QGridLayout, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy)
 from PyQt5.QtGui import QFont
+from PyQt5 import QtCore, QtGui
 import PyQt5.QtCore
 from RefractiveIndex import RefractiveIndex
 import matplotlib.pyplot as plt
@@ -403,7 +404,6 @@ class GUI(QMainWindow):
                     polList.append(pol)
                     paperList.append(paper)
                     RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
-                    print(RefIdxList)
 
         #NOTE: Let num (1000 here) be set in GUI
         plotrange=numpy.linspace(Tmin,Tmax,1000)
@@ -435,7 +435,6 @@ class GUI(QMainWindow):
                     polList.append(pol)
                     paperList.append(paper)
                     RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
-                    print(RefIdxList)
 
         # NOTE: Let num (1000 here) be set in GUI
         plotrange = numpy.linspace(wlmin, wlmax, 1000)
@@ -495,6 +494,16 @@ class GUI(QMainWindow):
     def showWindow(self):
         g = GUI()
         sys.exit(app.exec_())
+
+class PlotWindow(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.layout = QGridLayout()
+        self.setLayout()
+
+    def open(self):
+
+        s
 
 
 if __name__ == '__main__':

@@ -79,6 +79,37 @@ class RefractiveIndex():
             print('Error: Crystal type unknown')
             return -1
 
+    def getSingleIDX(self,material,pol,paper):
+        if (material == 'PPKTP' or material == 'KTP'):
+            if (pol == 'X'):
+                if (paper == 'kato'):
+                    return self.PPKTP_nx_kato
+                else:
+                    print('Error: Paper unknown')
+                    return -1
+            elif (pol == 'Y'):
+                if (paper == 'kato'):
+                    return self.PPKTP_ny_kato
+                elif (paper == 'koenig'):
+                    return self.PPKTP_ny_koenig
+                else:
+                    print('Error: Paper unknown')
+                    return -1
+            elif (pol == 'Z'):
+                if (paper == 'kato'):
+                    return self.PPKTP_nz_kato
+                elif (paper == 'fradkin'):
+                    return self.PPKTP_nz_fradkin
+                else:
+                    print('Error: Paper unknown')
+                    return -1
+            else:
+                print('Error: Polarizaion unknown')
+                return -1
+        else:
+            print('Error: Material unknown')
+            return -1
+
     def initConstants(self):
         # speed of light in µm/s
         c = 299792458000000
@@ -108,7 +139,9 @@ class RefractiveIndex():
         self.TXrefT = 25
 
     # refractive indices
-    def PPKTP_ny_koenig(self, l, t):
+    def PPKTP_ny_koenig(self, lin, t):
+        # input in meter, equations for µm
+        l = lin * 10 ** 6
         # könig, wong 2002
         # emanueli 2003
         f1 = self.a1y[0] + (1 / l) * (self.a1y[1] + (1 / l) * (self.a1y[2] + (self.a1y[3] / l)))
@@ -117,7 +150,9 @@ class RefractiveIndex():
         return (t - 25) * ( f1 +  (t - 25) * f2 )  + f3
 
     # refractive indices
-    def PPKTP_nz_fradkin(self, l, t):
+    def PPKTP_nz_fradkin(self, lin, t):
+        # input in meter, equations for µm
+        l = lin * 10 ** 6
         # fradkin, arie, skilar, rosenman 1999
         # emanueli 2003
         f1 = self.a1z[0] + (1 / l) * (self.a1z[1] + (1 / l) * (self.a1z[2] + (self.a1z[3] / l)))
@@ -127,7 +162,9 @@ class RefractiveIndex():
         return (t - 25) * (f1 + (t - 25)  * f2 ) + f3
 
     # refractive indices
-    def PPKTP_nx_kato(self, l, t):
+    def PPKTP_nx_kato(self, lin, t):
+        # input in meter, equations for µm
+        l = lin * 10 ** 6
         # kato & takaoka 2002
         # note that this is at 20°C
         nx = numpy.sqrt(self.fnx[0] + self.fnx[1] / (l * l + self.fnx[2]) + self.fnx[3] / (l * l + self.fnx[4]))
@@ -136,7 +173,9 @@ class RefractiveIndex():
         dT = t - 20
         return (nx + dT * dnxdT)
 
-    def PPKTP_ny_kato(self, l, t):
+    def PPKTP_ny_kato(self, lin, t):
+        # input in meter, equations for µm
+        l = lin * 10 ** 6
         # kato & takaoka 2002
         # note that this is at 20°C
         ny = numpy.sqrt(self.fny[0] + self.fny[1] / (l * l + self.fny[2]) + self.fny[3] / (l * l + self.fny[4]))
@@ -145,7 +184,9 @@ class RefractiveIndex():
         dT = t - 20
         return (ny + dT * dnydT)
 
-    def PPKTP_nz_kato(self, l, t):
+    def PPKTP_nz_kato(self, lin, t):
+        #input in meter, equations for µm
+        l=lin*10**6
         # kato & takaoka 2002
         # note that this is at 20°C
         nz = numpy.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))

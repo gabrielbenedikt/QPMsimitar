@@ -3,9 +3,14 @@ import sys
 from PyQt5.QtCore import QObject, QVariant
 from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip)
 from PyQt5.QtWidgets import (QPushButton, QSpinBox, QLabel, QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow)
-from PyQt5.QtWidgets import (QGridLayout, QVBoxLayout, QHBoxLayout)
+from PyQt5.QtWidgets import (QGridLayout, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy)
 from PyQt5.QtGui import QFont
+import PyQt5.QtCore
 from RefractiveIndex import RefractiveIndex
+import matplotlib.pyplot as plt
+import numpy
+import scipy
+
 #from Multiphoton import MultiPhotonAnalysis
 from Settings import Settings
 
@@ -241,9 +246,21 @@ class GUI(QMainWindow):
         return self.ui_layoutTest
 
     def initLayoutPlotRefractiveIndex(self):
+
+        # |Grid Layout
+        # |->GroupBox
+        # ||->Grid Layout
+        # |||->Scroll Area(layout?)
+        # ||||->QWidget
+        # |||||->Grid layout
+        # ||||||->Checkboxes
+        # |||->Button
         self.ui_layoutPlotRefractiveIndex = QGridLayout()
         self.ui_layoutPlotRefractiveIndexGroupBox = QGroupBox()
         self.ui_layoutPlotRefractiveIndexGroupBoxLayout = QGridLayout()
+        self.ui_layoutPlotRefractiveIndexScrollArea = QScrollArea()
+        self.ui_layoutPlotRefractiveIndexScrollAreaWidget = QWidget()
+        self.ui_layoutPlotRefractiveIndexScrollAreaGrid = QGridLayout()
 
         self.ui_layoutPlotRefractiveIndexGroupBox.setTitle('Plot refractive indices')
 
@@ -251,14 +268,42 @@ class GUI(QMainWindow):
         #vertical scroll area
         #containing checkboxes with all available refractive indices
 
-        self.ui_PlotRefractiveIndex_Btn_Plot = QPushButton()
-        self.ui_PlotRefractiveIndex_Btn_Plot.setText('Plot')
+        self.ui_PlotRefractiveIndex_Btn_Plot_T = QPushButton()
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.setText('Plot vs T')
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl = QPushButton()
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.setText(r'Plot vs λ')
+        #self.ui_PlotRefractiveIndex_Btn_Plot_wl.setText(r'Plot vs '+QChar(0xbb, 0x03))
 
-        self.ui_layoutPlotRefractiveIndexGroupBoxLayout.addWidget(self.ui_PlotRefractiveIndex_Btn_Plot,   1, 1)
+        self.ui_layoutPlotRefractiveIndexScrollArea.setWidget(self.ui_layoutPlotRefractiveIndexScrollAreaWidget)
+        self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setLayout(self.ui_layoutPlotRefractiveIndexScrollAreaGrid)
+        self.ui_layoutPlotRefractiveIndexScrollArea.setWidgetResizable(True)
+
+        self.ui_layoutPlotRefractiveIndexGroupBoxLayout.addWidget(self.ui_layoutPlotRefractiveIndexScrollArea,  1, 1, 1, 2)
+        self.ui_layoutPlotRefractiveIndexGroupBoxLayout.addWidget(self.ui_PlotRefractiveIndex_Btn_Plot_wl,      2, 1)
+        self.ui_layoutPlotRefractiveIndexGroupBoxLayout.addWidget(self.ui_PlotRefractiveIndex_Btn_Plot_T,       2, 2)
 
         self.ui_layoutPlotRefractiveIndexGroupBox.setLayout(self.ui_layoutPlotRefractiveIndexGroupBoxLayout)
 
         self.ui_layoutPlotRefractiveIndex.addWidget(self.ui_layoutPlotRefractiveIndexGroupBox)
+
+        #fill widget with checkboxes containing all available refractive indices
+        i=0
+        for material in self.CrystalMaterials:
+            indices = RefractiveIndex().getAvailableRefractiveIndices(material)
+            print(material, indices)
+            for index in indices[0]:
+                CBstring = '{0}:X:{1}'.format(material, index)
+                self.ui_layoutPlotRefractiveIndexScrollAreaGrid.addWidget(QCheckBox(CBstring), i, 1)
+                i=i+1
+            for index in indices[1]:
+                CBstring = '{0}:Y:{1}'.format(material, index)
+                self.ui_layoutPlotRefractiveIndexScrollAreaGrid.addWidget(QCheckBox(CBstring), i, 1)
+                i=i+1
+            for index in indices[2]:
+                CBstring = '{0}:Z:{1}'.format(material, index)
+                self.ui_layoutPlotRefractiveIndexScrollAreaGrid.addWidget(QCheckBox(CBstring), i, 1)
+                i=i+1
+            self.ui_layoutPlotRefractiveIndexScrollArea.sizeHint()
 
         return self.ui_layoutPlotRefractiveIndex
 
@@ -339,6 +384,73 @@ class GUI(QMainWindow):
         self.ui_TsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_TfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_TtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
+
+    def plot_RefIdx_vs_T(self):
+        Tmin = self.ui_TfromSB.value()
+        Tmax = self.ui_TtoSB.value()
+        wl = self.ui_pumpwlsingleSB.value()*10**(-9)
+        RefIdxList=[]
+        materialList=[]
+        polList=[]
+        paperList=[]
+        for cb in self.ui_layoutPlotRefractiveIndexScrollAreaWidget.children():
+            if isinstance(cb, QCheckBox):
+                if cb.isChecked():
+                    [material, pol, paper]=cb.text().replace('&','').split(':')
+                    materialList.append(material)
+                    polList.append(pol)
+                    paperList.append(paper)
+                    RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
+                    print(RefIdxList)
+
+        #NOTE: Let num (1000 here) be set in GUI
+        plotrange=numpy.linspace(Tmin,Tmax,1000)
+
+        for i in range(0,len(RefIdxList)):
+            plt.plot(plotrange, RefIdxList[i](wl, plotrange),label='{0}, {1}, {2}'.format(materialList[i],polList[i],paperList[i]))
+
+        plt.xlabel('Temperature [°C]')
+        plt.ylabel('Refractive index')
+        plt.title('Refractive indices vs Temperature')
+        plt.annotate('Wavelength: {0:.2f}nm'.format(wl*10**9), xy=(0.55, 0.01), xycoords='axes fraction')
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+    def plot_RefIdx_vs_wl(self):
+        wlmin = self.ui_pumpwlfromSB.value()*10**(-9)
+        wlmax = self.ui_pumpwltoSB.value()*10**(-9)
+        T = self.ui_TsingleSB.value()
+        RefIdxList = []
+        materialList = []
+        polList = []
+        paperList = []
+        for cb in self.ui_layoutPlotRefractiveIndexScrollAreaWidget.children():
+            if isinstance(cb, QCheckBox):
+                if cb.isChecked():
+                    [material, pol, paper] = cb.text().replace('&', '').split(':')
+                    materialList.append(material)
+                    polList.append(pol)
+                    paperList.append(paper)
+                    RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
+                    print(RefIdxList)
+
+        # NOTE: Let num (1000 here) be set in GUI
+        plotrange = numpy.linspace(wlmin, wlmax, 1000)
+
+        for i in range(0, len(RefIdxList)):
+            plt.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
+                     label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
+
+        plt.xlabel('Temperature [nm]')
+        plt.ylabel('Refractive index')
+        plt.title('Refractive indices vs Wavelength')
+        plt.annotate('Temperature: {0:.1f}°C'.format(T), xy=(0.55, 0.01), xycoords='axes fraction')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
     def getVarsFromGUI(self):
         self.CrystalPolingPeriod = self.ui_CrystalPolingPeriodSpinBox.value()

@@ -6,8 +6,8 @@ class RefractiveIndex():
         self.materialList = ['PPKTP','KTP']
         self.material = 'PPKTP'
 
-        PPKTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato']]
-        KTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato']]
+        PPKTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato', 'kato2']]
+        KTPIndices = [['kato'], ['koenig', 'kato'], ['fradkin', 'kato', 'kato2']]
         self.AvailableIndices = []
         self.AvailableIndices.append(['PPKTP', PPKTPIndices])
         self.AvailableIndices.append(['KTP', KTPIndices])
@@ -63,8 +63,11 @@ class RefractiveIndex():
             if (IDXtype[2]=='fradkin'):
                 ridz = self.PPKTP_nz_fradkin
                 success = success + 1
-            elif (IDXtype[2]=='kato'):
-                ridz=self.PPKTP_nz_kato
+            elif (IDXtype[2] == 'kato'):
+                ridz = self.PPKTP_nz_kato
+                success = success + 1
+            elif (IDXtype[2]=='kato2'):
+                ridz=self.PPKTP_nz2_kato
                 success = success + 1
             else:
                 print('Error: no refractive index type ' , IDXtype[2] , 'known')
@@ -98,6 +101,8 @@ class RefractiveIndex():
             elif (pol == 'Z'):
                 if (paper == 'kato'):
                     return self.PPKTP_nz_kato
+                if (paper == 'kato2'):
+                    return self.PPKTP_nz2_kato
                 elif (paper == 'fradkin'):
                     return self.PPKTP_nz_fradkin
                 else:
@@ -127,6 +132,7 @@ class RefractiveIndex():
         self.ax = [0.1627, 0.8416, -0.5353, 0.1717]
         self.ay = [0.5425, 0.5154, -0.4063, 0.1997]
         self.az = [-0.1897, 3.6677, -2.9220, 0.9221]
+        self.az2= [-0.5523, 3.3920, -1.7101, 0.3424]
         # sellmeier
         self.fnx = [3.2910, 0.04140, -0.03978, 9.35522, -31.45571]
         self.fny = [3.45018, 0.04341, -0.04597, 16.98825, -39.43799]
@@ -192,6 +198,17 @@ class RefractiveIndex():
         nz = numpy.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
         # change of nx per °C
         dnzdT = (self.az[0] + self.az[1] / l + self.az[2] / (l * l) + self.az[3] / (l * l * l)) * 10 ** (-5)
+        dT = t - 20
+        return (nz + dT * dnzdT)
+
+    def PPKTP_nz2_kato(self, lin, t):
+        #input in meter, equations for µm
+        l=lin*10**6
+        # kato & takaoka 2002
+        # note that this is at 20°C
+        nz = numpy.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
+        # change of nx per °C
+        dnzdT = (self.az2[0]/l + self.az2[1] + self.az2[2] * l + self.az2[3] * l * l) * 10 ** (-5)
         dT = t - 20
         return (nz + dT * dnzdT)
 

@@ -8,6 +8,7 @@ from PyQt5.QtGui import QFont
 from PyQt5 import QtCore, QtGui
 import PyQt5.QtCore
 from RefractiveIndex import RefractiveIndex
+from PMC import PMC
 import matplotlib.pyplot as plt
 import numpy
 import scipy
@@ -454,7 +455,6 @@ class GUI(QMainWindow):
         pltwnd.ax.set_title('Refractive indices vs Temperature')
         pltwnd.ax.annotate('Wavelength: {0:.2f}nm'.format(wl*10**9), xy=(0.55, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
-        pltwnd.ax.grid()
         pltwnd.canvas.draw()
 
     def plot_RefIdx_vs_wl(self):
@@ -482,9 +482,6 @@ class GUI(QMainWindow):
         plotrange = numpy.linspace(wlmin, wlmax, 1000)
 
         for i in range(0, len(RefIdxList)):
-            #plt.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
-                     #label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
-            print('plotting')
             pltwnd.ax.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
                      label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
 
@@ -493,7 +490,6 @@ class GUI(QMainWindow):
         pltwnd.ax.set_title('Refractive indices vs Wavelength')
         pltwnd.ax.annotate('Temperature: {0:.1f}°C'.format(T), xy=(0.55, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
-        pltwnd.ax.grid()
         pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_T(self):
@@ -501,9 +497,12 @@ class GUI(QMainWindow):
         self.open_new_plot_window()
         pltwnd=self.pltwindowlist[pltwndidx]
 
+        plotrange = linspace(self.ui_TfromSB.value(), self.ui_TtoSB.value(), 1000)
         #tmp
-        x = linspace(0, 4 * pi, 1000)
-        pltwnd.ax.plot(x,sin(2*pi*rand()*2*x),lw=2)
+        pmc=PMC()
+        #TODO: get refractive indices functions and give them to pmc.getSI_wl
+        [siwl,idwl,Tcp]=pmc.getSI_wl(self.ui_pumpwlsingleSB.value(),self.ui_CrystalPolingPeriodSpinBox.value(),plotrange)#[nx,ny,nz])
+        pltwnd.ax.plot(ploptrange,sin(2*pi*rand()*2*ploptrange),lw=2)
         pltwnd.canvas.draw()
 
 
@@ -564,8 +563,9 @@ class PlotWindow(QWidget):
         #self.layout = QGridLayout()
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-        self.fig = figure(facecolor="white")
+        self.fig = figure(facecolor="white",figsize=(8.75*1.2, 5*1.2))
         self.ax = self.fig.add_subplot(111)
+        self.ax.grid()
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)
         self.toolbar = NavigationToolbar(self.canvas, self)

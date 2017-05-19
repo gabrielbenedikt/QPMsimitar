@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from GUI import GUI
 from RefractiveIndex import RefractiveIndex
+from PMC import PMC
 from Constants import Constants
 from Settings import Settings
 from PyQt5.QtWidgets import QApplication

@@ -12,7 +12,6 @@ class RefractiveIndex():
         self.AvailableIndices.append(['PPKTP', PPKTPIndices])
         self.AvailableIndices.append(['KTP', KTPIndices])
 
-
     def setMaterial(self,material):
         if material in self.materialList:
             self.material = material

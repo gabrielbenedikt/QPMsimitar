@@ -11,6 +11,8 @@ from RefractiveIndex import RefractiveIndex
 import matplotlib.pyplot as plt
 import numpy
 import scipy
+from pylab import *
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 
 #from Multiphoton import MultiPhotonAnalysis
 from Settings import Settings
@@ -18,6 +20,9 @@ from Settings import Settings
 class GUI(QMainWindow):
     def __init__(self, config, parent=None):
         super(GUI, self).__init__(parent)
+
+        self.plotwindowcount=0
+        self.pltwindowlist=[]
 
         self.mainWidget = QWidget(self)
         self.setCentralWidget(self.mainWidget)
@@ -40,6 +45,7 @@ class GUI(QMainWindow):
         self.ui_layoutPump = self.initLayoutPump()
         self.ui_layoutTemperature = self.initLayoutTemperature()
         self.ui_layoutPlotRefractiveIndex = self.initLayoutPlotRefractiveIndex()
+        self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
 
         #Group: set crystal properties
         self.ui_layout.addLayout(self.ui_layoutCrystal,             1, 1)
@@ -49,6 +55,8 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutTemperature,         3, 1)
         #Group: plot refractive indices
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
+        #Group: plot phase matching curve
+        self.ui_layout.addLayout(self.ui_layoutPlotPMC,             2, 2)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -308,6 +316,31 @@ class GUI(QMainWindow):
 
         return self.ui_layoutPlotRefractiveIndex
 
+    def initLayoutPlotPMC(self):
+        self.ui_layoutPlotPMC = QGridLayout()
+        self.ui_PlotPMCGroupBox= QGroupBox()
+        self.ui_layoutPlotPMCGroupBox = QGridLayout()
+
+        self.ui_PlotPMClabelTest = QLabel()
+        self.ui_PlotPMClabelTest.setText('test label')
+
+        self.ui_PlotPMCSBtest = QDoubleSpinBox()
+
+        self.ui_PlotPMC_Btn = QPushButton()
+        self.ui_PlotPMC_Btn.setText('test button')
+
+        # set limits
+        self.ui_PlotPMCSBtest.setRange(1, 10000)
+
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMClabelTest, 1, 1)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMCSBtest, 1, 2)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMC_Btn, 2, 1, 1, 2)
+
+        self.ui_PlotPMCGroupBox.setLayout(self.ui_layoutPlotPMCGroupBox)
+        self.ui_layoutPlotPMC.addWidget(self.ui_PlotPMCGroupBox)
+
+        return self.ui_layoutPlotPMC
+
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
         self.CrystalMaterial = self.CrystalMaterials[0]#fallback
@@ -387,6 +420,7 @@ class GUI(QMainWindow):
         self.ui_TtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
         self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
+        self.ui_PlotPMC_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
 
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_TfromSB.value()
@@ -451,6 +485,16 @@ class GUI(QMainWindow):
         plt.grid()
         plt.show()
 
+    def plot_pmc_wl_vs_T(self):
+        pltwndidx=self.plotwindowcount
+        self.open_new_plot_window()
+
+        x = linspace(0, 4 * pi, 1000)
+        self.pltwindowlist[pltwndidx].ax.plot(x,sin(2*pi*rand()*2*x),lw=2)
+        self.pltwindowlist[pltwndidx].canvas.draw()
+        self.pltwindowlist[pltwndidx].resize(self.pltwindowlist[pltwndidx].sizeHint())
+
+
     def getVarsFromGUI(self):
         self.CrystalPolingPeriod = self.ui_CrystalPolingPeriodSpinBox.value()
         self.CrystalMaterial = self.ui_CrystalMaterialComboBox.currentText()
@@ -495,15 +539,31 @@ class GUI(QMainWindow):
         g = GUI()
         sys.exit(app.exec_())
 
+    def open_new_plot_window(self):
+        print(self.plotwindowcount)
+        self.pltwindowlist.append(PlotWindow())
+        self.pltwindowlist[self.plotwindowcount].show()
+        self.plotwindowcount = self.plotwindowcount+1
+
+
 class PlotWindow(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        self.layout = QGridLayout()
-        self.setLayout()
+        #self.layout = QGridLayout()
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.fig = figure(facecolor="white")
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.setParent(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        #self.addToolBar(self.toolbar)
+        self.layout.addWidget(self.canvas)
+        self.layout.addWidget(self.toolbar)
 
     def open(self):
 
-        s
+        self.show(self)
 
 
 if __name__ == '__main__':

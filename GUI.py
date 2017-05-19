@@ -423,6 +423,10 @@ class GUI(QMainWindow):
         self.ui_PlotPMC_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
 
     def plot_RefIdx_vs_T(self):
+        pltwndidx=self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd=self.pltwindowlist[pltwndidx]
+        
         Tmin = self.ui_TfromSB.value()
         Tmax = self.ui_TtoSB.value()
         wl = self.ui_pumpwlsingleSB.value()*10**(-9)
@@ -443,17 +447,21 @@ class GUI(QMainWindow):
         plotrange=numpy.linspace(Tmin,Tmax,1000)
 
         for i in range(0,len(RefIdxList)):
-            plt.plot(plotrange, RefIdxList[i](wl, plotrange),label='{0}, {1}, {2}'.format(materialList[i],polList[i],paperList[i]))
+            pltwnd.ax.plot(plotrange, RefIdxList[i](wl, plotrange),label='{0}, {1}, {2}'.format(materialList[i],polList[i],paperList[i]))
 
-        plt.xlabel('Temperature [°C]')
-        plt.ylabel('Refractive index')
-        plt.title('Refractive indices vs Temperature')
-        plt.annotate('Wavelength: {0:.2f}nm'.format(wl*10**9), xy=(0.55, 0.01), xycoords='axes fraction')
-        plt.legend()
-        plt.grid()
-        plt.show()
+        pltwnd.ax.set_xlabel('Temperature [°C]')
+        pltwnd.ax.set_ylabel('Refractive index')
+        pltwnd.ax.set_title('Refractive indices vs Temperature')
+        pltwnd.ax.annotate('Wavelength: {0:.2f}nm'.format(wl*10**9), xy=(0.55, 0.01), xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.ax.grid()
+        pltwnd.canvas.draw()
 
     def plot_RefIdx_vs_wl(self):
+        pltwndidx=self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd=self.pltwindowlist[pltwndidx]
+        
         wlmin = self.ui_pumpwlfromSB.value()*10**(-9)
         wlmax = self.ui_pumpwltoSB.value()*10**(-9)
         T = self.ui_TsingleSB.value()
@@ -474,25 +482,29 @@ class GUI(QMainWindow):
         plotrange = numpy.linspace(wlmin, wlmax, 1000)
 
         for i in range(0, len(RefIdxList)):
-            plt.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
+            #plt.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
+                     #label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
+            print('plotting')
+            pltwnd.ax.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
                      label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
 
-        plt.xlabel('Temperature [nm]')
-        plt.ylabel('Refractive index')
-        plt.title('Refractive indices vs Wavelength')
-        plt.annotate('Temperature: {0:.1f}°C'.format(T), xy=(0.55, 0.01), xycoords='axes fraction')
-        plt.legend()
-        plt.grid()
-        plt.show()
+        pltwnd.ax.set_xlabel('Temperature [nm]')
+        pltwnd.ax.set_ylabel('Refractive index')
+        pltwnd.ax.set_title('Refractive indices vs Wavelength')
+        pltwnd.ax.annotate('Temperature: {0:.1f}°C'.format(T), xy=(0.55, 0.01), xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.ax.grid()
+        pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_T(self):
         pltwndidx=self.plotwindowcount
         self.open_new_plot_window()
+        pltwnd=self.pltwindowlist[pltwndidx]
 
+        #tmp
         x = linspace(0, 4 * pi, 1000)
-        self.pltwindowlist[pltwndidx].ax.plot(x,sin(2*pi*rand()*2*x),lw=2)
-        self.pltwindowlist[pltwndidx].canvas.draw()
-        self.pltwindowlist[pltwndidx].resize(self.pltwindowlist[pltwndidx].sizeHint())
+        pltwnd.ax.plot(x,sin(2*pi*rand()*2*x),lw=2)
+        pltwnd.canvas.draw()
 
 
     def getVarsFromGUI(self):

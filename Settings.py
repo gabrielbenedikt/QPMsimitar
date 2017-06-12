@@ -25,9 +25,14 @@ class Settings():
         self.config.append(["Crystal Refractive Index Y", 'kato'])
         self.config.append(["Crystal Refractive Index Z", 'kato'])
 
-        self.config.append(["Pump wavelength from", 1540])
-        self.config.append(["Pump wavelength single", 1550])
-        self.config.append(["Pump wavelength to", 1560])
+        self.config.append(["Pump wavelength from", 760])
+        self.config.append(["Pump wavelength single", 775])
+        self.config.append(["Pump wavelength to", 790])
+
+        self.config.append(["SI wavelength from", 1500])
+        self.config.append(["SI wavelength single", 1550])
+        self.config.append(["SI wavelength to", 1600])
+
         self.config.append(["Pump pulsewidth from", 1])
         self.config.append(["Pump pulsewidth single", 2.9])
         self.config.append(["Pump pulsewidth to", 5])

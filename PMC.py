@@ -39,7 +39,7 @@ class PMC():
                 #x[0]: lambda_pump
                 #x[1]: Temperature
                 #x[2]: Poling period
-                return scipy.optimize.newton_krylov(epconvonlywl(x[1],x[2]),[2*lp,2*lp],f_tol=1e-9)
+                return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*lp,2*lp],f_tol=1e-9)
 
         #returns a function that only depends on the poling period
         def wlgaponlyT(self,PP,lp):

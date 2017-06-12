@@ -1,0 +1,25 @@
+QupZilla: 2 extensions loaded
+[28739:28784:0612/190905.694325:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[28739:28784:0612/190905.694479:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[28739:28784:0612/190905.694578:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+[28739:28784:0612/190905.701064:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[28739:28784:0612/190905.701166:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[28739:28784:0612/190905.701246:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+QupZilla: 2 extensions loaded
+js: Uncaught SecurityError: Blocked a frame with origin "null" from accessing a frame with origin "https://stackoverflow.com".  The frame requesting access has a protocol of "data", the frame being accessed has a protocol of "https". Protocols must match.
+
+[4909:4925:0612/192527.588140:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192527.588209:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192527.588252:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+[4909:4925:0612/192527.590790:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192527.590834:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192527.590865:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+[4909:4925:0612/192530.512527:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192530.512600:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192530.512638:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+[4909:4925:0612/192530.518750:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192530.518811:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: ocsp.digicert.com
+[4909:4925:0612/192530.518848:ERROR:nss_ocsp.cc(591)] No URLRequestContext for NSS HTTP handler. host: crl4.digicert.com
+js: Mixed Content: The page at 'https://www.univie.ac.at/ZID/webmail/?message=NGZlOWM4M2U5ZmY0YTU0NjNlZjAxMmI4ZWNlOGZjMGM1ZDY3MjljYzhiYzJmYzJlMjY5ZDRkM2ZmM2M5MDc5Zg%3D%3D%3Ac18543a86c169cbb14b9381d835bb5c4df45da5a27e6be4010c8594103d0706f51d74032920984622145e08d8ba79f3d523c6d40e3e057c19e95f63baec3aec1' was loaded over a secure connection, but contains a form which targets an insecure endpoint 'http://zid.univie.ac.at/suche/?no_cache=1'. This endpoint should be made available over a secure connection.
+js: Mixed Content: The page at 'https://www.univie.ac.at/ZID/webmail/?message=M2YyZjViYjNlNWU0ZDhjNmVmOWFlYzQ1YWQzOTlhYjIxNDIyODdlYWI4NjllYTNlOWI3MmI0ZmIzOTA2N2I5OA%3D%3D%3A0c05eca180cd500f3b6d1c0aec0b2551854a910a27bec908068eb288198d1673b1ce2d03976fd748a50059d4107921156dcbf24e9fd9b6a5ce93a0e3a3f20e542e8892c7546febbb1f2c5e8e9411d1ff' was loaded over a secure connection, but contains a form which targets an insecure endpoint 'http://zid.univie.ac.at/suche/?no_cache=1'. This endpoint should be made available over a secure connection.
+js: Mixed Content: The page at 'https://www.univie.ac.at/ZID/webmail/' was loaded over a secure connection, but contains a form which targets an insecure endpoint 'http://zid.univie.ac.at/suche/?no_cache=1'. This endpoint should be made available over a secure connection.

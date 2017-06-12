@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtCore import QObject, QVariant
 from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip)
 from PyQt5.QtWidgets import (QPushButton, QSpinBox, QLabel, QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow)
+from PyQt5.QtWidgets import (QRadioButton)
 from PyQt5.QtWidgets import (QGridLayout, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy)
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore, QtGui
@@ -47,17 +48,23 @@ class GUI(QMainWindow):
         self.ui_layoutTemperature = self.initLayoutTemperature()
         self.ui_layoutPlotRefractiveIndex = self.initLayoutPlotRefractiveIndex()
         self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
+        self.ui_layoutPlotJSI = self.initLayoutPlotJSI()
+        self.ui_layoutPurity = self.initLayoutPurity()
 
         #Group: set crystal properties
         self.ui_layout.addLayout(self.ui_layoutCrystal,             1, 1)
         #Group: set pump properties
         self.ui_layout.addLayout(self.ui_layoutPump,                2, 1)
         #Group: set temperature
-        self.ui_layout.addLayout(self.ui_layoutTemperature,         3, 1)
+        self.ui_layout.addLayout(self.ui_layoutTemperature,         3, 1)#To be moved into 1,1
         #Group: plot refractive indices
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
         #Group: plot phase matching curve
         self.ui_layout.addLayout(self.ui_layoutPlotPMC,             2, 2)
+        #Group: plot JSI
+        self.ui_layout.addLayout(self.ui_layoutPlotJSI,             1, 3)
+        #Group: Purity
+        self.ui_layout.addLayout(self.ui_layoutPurity,              2, 3)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -111,6 +118,8 @@ class GUI(QMainWindow):
         self.ui_layoutPumpGroupBox = QVBoxLayout()
         self.ui_layoutUpper = QGridLayout()
         self.ui_layoutLower = QGridLayout()
+
+        self.ui_PumpGroupBox.setTitle('Pump parameters')
 
         self.ui_fromLabel = QLabel()
         self.ui_toLabel = QLabel()
@@ -336,25 +345,79 @@ class GUI(QMainWindow):
         self.ui_PlotPMCGroupBox= QGroupBox()
         self.ui_layoutPlotPMCGroupBox = QGridLayout()
 
+        self.ui_PlotPMCGroupBox.setTitle('Plot PMC')
+
         self.ui_PlotPMClabelQPMorder = QLabel()
         self.ui_PlotPMClabelQPMorder.setText('QPM order')
 
         self.ui_PlotPMCSBQPMorder = QSpinBox()
 
-        self.ui_PlotPMC_Btn = QPushButton()
-        self.ui_PlotPMC_Btn.setText('Plot vs. T')
+        self.ui_PlotPMCvsT_Btn = QPushButton()
+        self.ui_PlotPMCvsT_Btn.setText('Plot vs T')
+
+        self.ui_PlotPMCvsPP_Btn = QPushButton()
+        self.ui_PlotPMCvsPP_Btn.setText('TODO: Plot vs PP')
 
         # set limits
         self.ui_PlotPMCSBQPMorder.setRange(-10000, 10000)
 
-        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMClabelQPMorder, 1, 1)
-        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMCSBQPMorder, 1, 2)
-        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMC_Btn, 2, 1, 1, 2)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMClabelQPMorder,   1, 1)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMCSBQPMorder,      1, 2)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMCvsT_Btn,         2, 1, 1, 2)
+        self.ui_layoutPlotPMCGroupBox.addWidget(self.ui_PlotPMCvsPP_Btn,        3, 1, 1, 2)
 
         self.ui_PlotPMCGroupBox.setLayout(self.ui_layoutPlotPMCGroupBox)
         self.ui_layoutPlotPMC.addWidget(self.ui_PlotPMCGroupBox)
 
         return self.ui_layoutPlotPMC
+
+    def initLayoutPlotJSI(self):
+        self.ui_layoutPlotJSI = QGridLayout()
+        self.ui_PlotJSIGroupBox = QGroupBox()
+        self.ui_layoutPlotJSIGroupBox = QGridLayout()
+
+        self.ui_PlotJSIGroupBox.setTitle('TODO: Plot JSI/JSA')
+
+        self.ui_PlotJSIorJSALayout = QGridLayout()
+        self.ui_PlotJSI_plotJSIRadioButton = QRadioButton('Plot JSI')
+        self.ui_PlotJSI_plotJSARadioButton = QRadioButton('Plot JSA')
+        self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSIRadioButton, 1, 1)
+        self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 1, 2)
+        self.ui_PlotJSI_plotJSIRadioButton.setChecked(True)
+
+        self.ui_PlotJSI_plotBtn = QPushButton('TODO: Plot')
+
+        ## Add controls
+        self.ui_layoutPlotJSIGroupBox.addLayout(self.ui_PlotJSIorJSALayout,     1, 1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_plotBtn,        2, 1)
+
+        self.ui_PlotJSIGroupBox.setLayout(self.ui_layoutPlotJSIGroupBox)
+        self.ui_layoutPlotJSI.addWidget(self.ui_PlotJSIGroupBox)
+
+        return self.ui_layoutPlotJSI
+
+    def initLayoutPurity(self):
+        self.ui_layoutPurity = QGridLayout()
+        self.ui_PurityGroupBox = QGroupBox()
+        self.ui_layoutPurityGroupBox = QGridLayout()
+
+        self.ui_PurityGroupBox.setTitle('TODO: Purity')
+
+        self.ui_Purity_plotvsTau_Btn = QPushButton('TODO: Plot vs τ')
+        self.ui_Purity_plotvspwl_Btn = QPushButton('TODO: Plot vs λp')
+        self.ui_Purity_plotvsL_Btn = QPushButton('TODO: Plot vs L')
+        self.ui_Purity_plotvsTauandL_Btn = QPushButton('TODO: Plot vs L and τ')
+
+        ## Add controls
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTau_Btn,        1, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvspwl_Btn,        2, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsL_Btn,          3, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTauandL_Btn,    4, 1, 1, 2)
+
+        self.ui_PurityGroupBox.setLayout(self.ui_layoutPurityGroupBox)
+        self.ui_layoutPurity.addWidget(self.ui_PurityGroupBox)
+
+        return self.ui_layoutPurity
 
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
@@ -444,10 +507,16 @@ class GUI(QMainWindow):
         self.ui_TsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_TfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_TtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotPMCSBQPMorder.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
         self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
-        self.ui_PlotPMC_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
-        self.ui_PlotPMCSBQPMorder.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotPMCvsT_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
+        self.ui_PlotPMCvsPP_Btn.pressed.connect(self.plot_pmc_wl_vs_PP)
+        self.ui_Purity_plotvsTau_Btn.pressed.connect(self.plot_purity_vs_tau)
+        self.ui_Purity_plotvspwl_Btn.pressed.connect(self.plot_purity_vs_pwl)
+        self.ui_PlotJSI_plotBtn.pressed.connect(self.plot_jsi)
+        self.ui_Purity_plotvsTauandL_Btn.pressed.connect(self.plot_purity_vs_Tau_and_L)
+        self.ui_Purity_plotvsL_Btn.pressed.connect(self.plot_purity_vs_L)
 
     def plot_RefIdx_vs_T(self):
         pltwndidx=self.plotwindowcount
@@ -553,6 +622,57 @@ class GUI(QMainWindow):
         pltwnd.ax.annotate('Crossing point temperature: {0:.1f}°C'.format(Tcp),xy=(0.55, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
+
+    def plot_pmc_wl_vs_PP(self):
+        #init plot window
+        pltwndidx=self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd=self.pltwindowlist[pltwndidx]
+
+        #get variables from GUI
+        lp = self.PumpWlSingle
+        PP = self.CrystalPolingPeriod
+        m = self.QPMOrder
+
+        # get Ref indices
+        nxfunc=RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc=RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc=RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc=[nxfunc,nyfunc,nzfunc]
+
+        #prepare plotting
+        plotrange = numpy.arange(self.ui_TfromSB.value(), self.ui_TtoSB.value(), 0.1)
+
+        #get PMC from PMC class
+        pmc=PMC()
+
+        #TODO: get refractive indices functions and give them to pmc.getSI_wl
+        [siwl,idwl,Tcp]=pmc.getSI_wl(lp,PP,plotrange,refidxfunc,m)
+
+        #plot
+        pltwnd.ax.plot(plotrange, siwl*10**9, lw=2, label='signal')
+        pltwnd.ax.plot(plotrange, idwl*10**9, lw=2, label='idler')
+        pltwnd.ax.set_xlabel('Temperature [°C]')
+        pltwnd.ax.set_ylabel('S/I Wavelength [nm]')
+        pltwnd.ax.set_title('Quasi Phase Matching Temperature Tuning Curve')
+        pltwnd.ax.annotate('Crossing point temperature: {0:.1f}°C'.format(Tcp),xy=(0.55, 0.01), xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.canvas.draw()
+
+    def plot_purity_vs_tau(self):
+        pass
+
+    def plot_purity_vs_pwl(self):
+        pass
+
+    def plot_purity_vs_L(self):
+        pass
+
+    def plot_purity_vs_Tau_and_L(self):
+        pass
+
+    def plot_jsi(self):
+        pass
 
     def getVarsFromGUI(self):
         self.CrystalPolingPeriod = self.ui_CrystalPolingPeriodSpinBox.value()*10**(-6)

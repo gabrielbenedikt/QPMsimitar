@@ -1,5 +1,9 @@
+x)Thermal expansion of crystal: make it property of crystal and use this implementation (in PMC / JSI / ...)
+x)Move temperature controls into crystal layout
+x)Add crystal PP "from" and "to" values (to plot PMC vs PP)
+
 PMC
---vs T
+**vs T
 --vs PP
 JSA/JSI
 --with filters

@@ -5,7 +5,7 @@ import scipy
 import scipy.optimize
 
 class PMC():
-        def __init__(self): 
+        def __init__(self):
             # Thermal expansion coefficients of KTP
             # (Emanueli 2003)
             self.TXCa = 6.7 * 10 ** (-6)
@@ -20,7 +20,7 @@ class PMC():
         # thermal expansion factor
         def thermexpfactor(self, T):
             return (1 + self.TXCa * (T - self.TXrefT) + self.TXCb * (T - self.TXrefT) * (T - self.TXrefT))
-        
+
         #phasematching conditions
         def econv(self,ls, li):
                 return 1/self.lp - 1/ls - 1/li
@@ -44,7 +44,8 @@ class PMC():
                 #x[0]: lambda_pump
                 #x[1]: Temperature
                 #x[2]: Poling period
-                return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*self.lp,2*self.lp],f_tol=1e-6)
+                #return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*x[0],2*x[0]],f_tol=1e-6) #slower!
+                return scipy.optimize.fsolve(self.epconvonlywl(x[1], x[2]), [2 * x[0], 2 * x[0]], xtol=1e-6)
 
         #returns a function that only depends on the poling period
         def wlgaponlyT(self,PP,lp):
@@ -52,7 +53,7 @@ class PMC():
                         swl,iwl=self.SIwls([lp,T,PP])
                         return swl-iwl
                 return wlgap2
-        
+
         #calculate signal and idler wavelengths
         def getSI_wl(self,pumpwl,polingp,Trange,refidxfunc,qpmorder):
 

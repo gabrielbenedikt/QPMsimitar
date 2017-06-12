@@ -12,18 +12,23 @@ class PMC():
             self.TXCb = 11 * 10 ** (-9)
             self.TXrefT = 25
 
+            #default values
+            self.lp=775 * 10 ** (-9)
+            self.PP=46.2 * 10 ** (-6)
+            self.m=1
+
         # thermal expansion factor
         def thermexpfactor(self, T):
             return (1 + self.TXCa * (T - self.TXrefT) + self.TXCb * (T - self.TXrefT) * (T - self.TXrefT))
         
         #phasematching conditions
         def econv(self,ls, li):
-                return 1/lp - 1/ls - 1/li
+                return 1/self.lp - 1/ls - 1/li
         def pconv(self,ls, li, T, PP):
-                pp=ny(lp,T)/lp
-                ps=ny(ls,T)/ls
-                pi=nz(li,T)/li
-                pc=m/PP
+                pp=self.ny(self.lp,T)/self.lp
+                ps=self.ny(ls,T)/ls
+                pi=self.nz(li,T)/li
+                pc=self.m/PP
                 return pp-ps-pi-pc
 
         #this wrapper returns a list of functions(phasematching conditions) that only takes signal- and idler-wavelength as arguments
@@ -39,7 +44,7 @@ class PMC():
                 #x[0]: lambda_pump
                 #x[1]: Temperature
                 #x[2]: Poling period
-                return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*lp,2*lp],f_tol=1e-9)
+                return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*self.lp,2*self.lp],f_tol=1e-6)
 
         #returns a function that only depends on the poling period
         def wlgaponlyT(self,PP,lp):
@@ -49,21 +54,27 @@ class PMC():
                 return wlgap2
         
         #calculate signal and idler wavelengths
-        def getSI_wl(self,pumpwl,PP,Trange):
+        def getSI_wl(self,pumpwl,polingp,Trange,refidxfunc,qpmorder):
+
+                self.m=qpmorder
+                self.lp=pumpwl
+                self.PP = polingp
+
+                self.nx = refidxfunc[0]
+                self.ny = refidxfunc[1]
+                self.nz = refidxfunc[2]
+
                 sigwl=numpy.zeros(len(Trange))
                 idwl=numpy.zeros(len(Trange))
-                sigwltherm=numpy.zeros(len(Trange))
-                idwltherm=numpy.zeros(len(Trange))
-                txf=1
+                txf = self.thermexpfactor(Trange)
                 for i in range(0,len(Trange)):
-                    txf = self.thermexpfactor(Trange[i])
-                    [sigwl[i],idwl[i]]=self.SIwls([pumpwl,Trange[i],PP*txf])
+                        [sigwl[i],idwl[i]]=self.SIwls([pumpwl,Trange[i],polingp*txf[i]])
 
                 #calculate the crossing point temperature
                 Tcp=0
                 Tcpguess=50
-                Tcp=scipy.optimize.fsolve(wlgaponlyT(PP,lp),Tcguess)
-                
+                Tcp=scipy.optimize.fsolve(self.wlgaponlyT(polingp,pumpwl),Tcpguess)
+
                 #return:
                 #signal wavelength, idler wavelength, crossing point temperature
                 return [sigwl,idwl,Tcp[0]]

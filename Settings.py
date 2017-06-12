@@ -25,6 +25,8 @@ class Settings():
         self.config.append(["Crystal Refractive Index Y", 'kato'])
         self.config.append(["Crystal Refractive Index Z", 'kato'])
 
+        self.config.append(["QPM Order", -1])
+
         self.config.append(["Pump wavelength from", 760])
         self.config.append(["Pump wavelength single", 775])
         self.config.append(["Pump wavelength to", 790])

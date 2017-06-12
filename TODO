@@ -20,3 +20,6 @@ HOM dips
 SPDC parameters
 --p
 --higher order emission
+More Setup details
+--Coupling (needs L, n(x,y,z), pump focusing, collection optics ? ) see "High efficiency coupling of photon pairs in practice"
+----Spectral-Spatial Correlation function (Same paper)

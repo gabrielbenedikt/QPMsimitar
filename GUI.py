@@ -485,7 +485,7 @@ class GUI(QMainWindow):
             pltwnd.ax.plot(plotrange*10**9, RefIdxList[i](plotrange, T),
                      label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
 
-        pltwnd.ax.set_xlabel('Temperature [nm]')
+        pltwnd.ax.set_xlabel('Wavelength [nm]')
         pltwnd.ax.set_ylabel('Refractive index')
         pltwnd.ax.set_title('Refractive indices vs Wavelength')
         pltwnd.ax.annotate('Temperature: {0:.1f}°C'.format(T), xy=(0.55, 0.01), xycoords='axes fraction')

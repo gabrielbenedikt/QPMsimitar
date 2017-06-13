@@ -45,7 +45,6 @@ class GUI(QMainWindow):
 
         self.ui_layoutCrystal = self.initLayoutCrystal()
         self.ui_layoutPump = self.initLayoutPump()
-        self.ui_layoutTemperature = self.initLayoutTemperature()
         self.ui_layoutPlotRefractiveIndex = self.initLayoutPlotRefractiveIndex()
         self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
         self.ui_layoutPlotJSI = self.initLayoutPlotJSI()
@@ -55,8 +54,6 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutCrystal,             1, 1)
         #Group: set pump properties
         self.ui_layout.addLayout(self.ui_layoutPump,                2, 1)
-        #Group: set temperature
-        self.ui_layout.addLayout(self.ui_layoutTemperature,         3, 1)#To be moved into 1,1
         #Group: plot refractive indices
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
         #Group: plot phase matching curve
@@ -75,42 +72,6 @@ class GUI(QMainWindow):
         self.resize(self.sizeHint())
 
         self.show()
-
-    def initLayoutTemperature(self):
-        self.ui_layoutTemp = QGridLayout()
-        self.ui_TempGroupBox = QGroupBox()
-        self.ui_layoutTempGroupBox = QGridLayout()
-
-        self.ui_fromLabel = QLabel()
-        self.ui_toLabel = QLabel()
-        self.ui_singleLabel = QLabel()
-        self.ui_fromLabel.setText('from')
-        self.ui_toLabel.setText('to')
-        self.ui_singleLabel.setText('single')
-
-        self.ui_TsingleSB = QDoubleSpinBox()
-        self.ui_TfromSB = QDoubleSpinBox()
-        self.ui_TtoSB = QDoubleSpinBox()
-        self.ui_TLabel = QLabel()
-        self.ui_TLabel.setText('Temperature [°C]')
-
-        #set limits
-        self.ui_TsingleSB.setRange(-273.15, 1000)
-        self.ui_TfromSB.setRange(-273.15, 1000)
-        self.ui_TtoSB.setRange(-273.15, 1000)
-
-        self.ui_layoutTempGroupBox.addWidget(self.ui_fromLabel,     1, 2)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_singleLabel,   1, 3)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_toLabel,       1, 4)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_TLabel,        2, 1)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_TfromSB,       2, 2)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_TsingleSB,     2, 3)
-        self.ui_layoutTempGroupBox.addWidget(self.ui_TtoSB,         2, 4)
-
-        self.ui_TempGroupBox.setLayout(self.ui_layoutTempGroupBox)
-        self.ui_layoutTemp.addWidget(self.ui_TempGroupBox)
-
-        return self.ui_layoutTemp
 
     def initLayoutPump(self):
         self.ui_layoutPump = QGridLayout()
@@ -202,9 +163,8 @@ class GUI(QMainWindow):
         self.ui_layoutCrystal = QGridLayout()
         self.ui_CrystalGroupBox = QGroupBox()
         self.ui_layoutCrystalGroupBox = QGridLayout()
+        self.ui_sublayoutCrystal = QGridLayout()
 
-        self.ui_CrystalPolingPeriodSpinBox = QDoubleSpinBox()
-        self.ui_CrystalPolingPeriodLabel = QLabel()
         self.ui_CrystalMaterialComboBox = QComboBox()
         self.ui_CrystalMaterialLabel = QLabel()
         self.ui_CrystalNXComboBox = QComboBox()
@@ -214,15 +174,51 @@ class GUI(QMainWindow):
         self.ui_CrystalNYLabel = QLabel()
         self.ui_CrystalNZLabel = QLabel()
 
-        self.ui_CrystalPolingPeriodLabel.setText('Poling Period [µm]')
+
         self.ui_CrystalMaterialLabel.setText('Material')
         self.ui_CrystalNXLabel.setText('Refractive index (x)')
         self.ui_CrystalNYLabel.setText('Refractive index (y)')
         self.ui_CrystalNZLabel.setText('Refractive index (z)')
         self.ui_CrystalGroupBox.setTitle('Crystal')
 
-        self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalPolingPeriodSpinBox, 1, 1)
-        self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalPolingPeriodLabel,   1, 2)
+        #from/single/to sublayout
+        self.ui_CrystalfromLabel = QLabel()
+        self.ui_CrystaltoLabel = QLabel()
+        self.ui_CrystalsingleLabel = QLabel()
+        self.ui_CrystalfromLabel.setText('from')
+        self.ui_CrystaltoLabel.setText('to')
+        self.ui_CrystalsingleLabel.setText('single')
+
+        self.ui_CrystalTsingleSB = QDoubleSpinBox()
+        self.ui_CrystalTfromSB = QDoubleSpinBox()
+        self.ui_CrystalTtoSB = QDoubleSpinBox()
+        self.ui_CrystalTLabel = QLabel()
+        self.ui_CrystalTLabel.setText('Temperature [°C]')
+
+        self.ui_CrystalPolingPeriodsingleSB = QDoubleSpinBox()
+        self.ui_CrystalPolingPeriodfromSB = QDoubleSpinBox()
+        self.ui_CrystalPolingPeriodtoSB = QDoubleSpinBox()
+        self.ui_CrystalPolingPeriodLabel = QLabel()
+        self.ui_CrystalPolingPeriodLabel.setText('Poling Period [µm]')
+
+        self.ui_CrystalTsingleSB.setRange(-273.15, 1000)
+        self.ui_CrystalTfromSB.setRange(-273.15, 1000)
+        self.ui_CrystalTtoSB.setRange(-273.15, 1000)
+
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalfromLabel,                1, 2)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalsingleLabel,              1, 3)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystaltoLabel,                  1, 4)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalTLabel,                   2, 1)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalTfromSB,                  2, 2)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalTsingleSB,                2, 3)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalTtoSB,                    2, 4)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalPolingPeriodLabel,        3, 1)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalPolingPeriodfromSB,       3, 2)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalPolingPeriodsingleSB,     3, 3)
+        self.ui_sublayoutCrystal.addWidget(self.ui_CrystalPolingPeriodtoSB,         3, 4)
+
+
+        #main  layout
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalMaterialComboBox,    2, 1)
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalMaterialLabel,       2, 2)
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalNXComboBox,          3, 1)
@@ -231,6 +227,7 @@ class GUI(QMainWindow):
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalNYLabel,             4, 2)
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalNZComboBox,          5, 1)
         self.ui_layoutCrystalGroupBox.addWidget(self.ui_CrystalNZLabel,             5, 2)
+        self.ui_layoutCrystalGroupBox.addLayout(self.ui_sublayoutCrystal,           6, 1, -1, 2)
 
         for material in self.CrystalMaterials:
             self.ui_CrystalMaterialComboBox.addItem(material)
@@ -428,9 +425,9 @@ class GUI(QMainWindow):
             self.CrystalMaterial == lastMaterial
         self.CurrentAvailableRefractiveIndices = RefractiveIndex().getAvailableRefractiveIndices(self.CrystalMaterial)
 
-
-        self.CrystalPolingPeriod=self.config.get("Crystal Poling Period")
-
+        self.CrystalPolingPeriodFrom = self.config.get("Crystal Poling Period From")
+        self.CrystalPolingPeriodSingle = self.config.get("Crystal Poling Period Single")
+        self.CrystalPolingPeriodTo = self.config.get("Crystal Poling Period To")
 
         lastNX = self.config.get("Crystal Refractive Index X")
         if lastNX in self.CurrentAvailableRefractiveIndices[0]:
@@ -462,13 +459,15 @@ class GUI(QMainWindow):
         self.PulsewidthTo=self.config.get("Pump pulsewidth to")
         self.PumpShape=self.config.get("Pump pulse shape")
         self.PumpShapeApplyDeconvolutionFactor=self.config.get("Pump pulsewidth apply deconvolution factor")
-        self.TempFrom=self.config.get("Temperature from")
-        self.TempSingle=self.config.get("Temperature single")
-        self.TempTo=self.config.get("Temperature to")
+        self.CrystalTempFrom=self.config.get("Crystal Temperature from")
+        self.CrystalTempSingle=self.config.get("Crystal Temperature single")
+        self.CrystalTempTo=self.config.get("Crystal Temperature to")
         self.QPMOrder=self.config.get("QPM Order")
 
     def setProperties(self):
-        self.ui_CrystalPolingPeriodSpinBox.setValue(self.CrystalPolingPeriod*10**6)
+        self.ui_CrystalPolingPeriodsingleSB.setValue(self.CrystalPolingPeriodSingle*10**6)
+        self.ui_CrystalPolingPeriodfromSB.setValue(self.CrystalPolingPeriodFrom * 10 ** 6)
+        self.ui_CrystalPolingPeriodtoSB.setValue(self.CrystalPolingPeriodTo * 10 ** 6)
         self.ui_pumpwlfromSB.setValue(self.PumpWlFrom*10**9)
         self.ui_pumpwlsingleSB.setValue(self.PumpWlSingle*10**9)
         self.ui_pumpwltoSB.setValue(self.PumpWlTo*10**9)
@@ -482,13 +481,15 @@ class GUI(QMainWindow):
         idx=self.ui_pumpShapeCB.findText(self.PumpShape)
         self.ui_pumpShapeCB.setCurrentIndex(idx)
         self.ui_pumpShapeCorrectionFactorCheckBox.setChecked(self.PumpShapeApplyDeconvolutionFactor)
-        self.ui_TfromSB.setValue(self.TempFrom)
-        self.ui_TsingleSB.setValue(self.TempSingle)
-        self.ui_TtoSB.setValue(self.TempTo)
+        self.ui_CrystalTfromSB.setValue(self.CrystalTempFrom)
+        self.ui_CrystalTsingleSB.setValue(self.CrystalTempSingle)
+        self.ui_CrystalTtoSB.setValue(self.CrystalTempTo)
         self.ui_PlotPMCSBQPMorder.setValue(self.QPMOrder)
 
     def initConnections(self):
-        self.ui_CrystalPolingPeriodSpinBox.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalPolingPeriodfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalPolingPeriodtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalMaterialComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalNXComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalNYComboBox.currentIndexChanged.connect(self.getVarsFromGUI)
@@ -504,9 +505,9 @@ class GUI(QMainWindow):
         self.ui_pulsewidthtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pumpShapeCB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_pumpShapeCorrectionFactorCheckBox.stateChanged.connect(self.getVarsFromGUI)
-        self.ui_TsingleSB.valueChanged.connect(self.getVarsFromGUI)
-        self.ui_TfromSB.valueChanged.connect(self.getVarsFromGUI)
-        self.ui_TtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalTsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalTfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_CrystalTtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotPMCSBQPMorder.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
         self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
@@ -523,8 +524,8 @@ class GUI(QMainWindow):
         self.open_new_plot_window()
         pltwnd=self.pltwindowlist[pltwndidx]
         
-        Tmin = self.ui_TfromSB.value()
-        Tmax = self.ui_TtoSB.value()
+        Tmin = self.ui_CrystalTfromSB.value()
+        Tmax = self.ui_CrystalTtoSB.value()
         wl = self.ui_pumpwlsingleSB.value()*10**(-9)
         RefIdxList=[]
         materialList=[]
@@ -559,7 +560,7 @@ class GUI(QMainWindow):
         
         wlmin = self.ui_pumpwlfromSB.value()*10**(-9)
         wlmax = self.ui_pumpwltoSB.value()*10**(-9)
-        T = self.ui_TsingleSB.value()
+        T = self.ui_CrystalTsingleSB.value()
         RefIdxList = []
         materialList = []
         polList = []
@@ -595,7 +596,7 @@ class GUI(QMainWindow):
 
         #get variables from GUI
         lp = self.PumpWlSingle
-        PP = self.CrystalPolingPeriod
+        PP = self.CrystalPolingPeriodSingle
         m = self.QPMOrder
 
         # get Ref indices
@@ -605,7 +606,7 @@ class GUI(QMainWindow):
         refidxfunc=[nxfunc,nyfunc,nzfunc]
 
         #prepare plotting
-        plotrange = numpy.arange(self.ui_TfromSB.value(), self.ui_TtoSB.value(), 0.1)
+        plotrange = numpy.arange(self.ui_CrystalTfromSB.value(), self.ui_CrystalTtoSB.value(), 0.1)
 
         #get PMC from PMC class
         pmc=PMC()
@@ -631,7 +632,9 @@ class GUI(QMainWindow):
 
         #get variables from GUI
         lp = self.PumpWlSingle
-        PP = self.CrystalPolingPeriod
+        PP = self.CrystalPolingPeriodSingle
+        PPmin = self.CrystalPolingPeriodSingleFrom
+        PPmax = self.CrystalPolingPeriodSingleTo
         m = self.QPMOrder
 
         # get Ref indices
@@ -641,7 +644,7 @@ class GUI(QMainWindow):
         refidxfunc=[nxfunc,nyfunc,nzfunc]
 
         #prepare plotting
-        plotrange = numpy.arange(self.ui_TfromSB.value(), self.ui_TtoSB.value(), 0.1)
+        plotrange = numpy.arange(self.ui_CrystalTfromSB.value(), self.ui_CrystalTtoSB.value(), 0.1)
 
         #get PMC from PMC class
         pmc=PMC()
@@ -675,11 +678,16 @@ class GUI(QMainWindow):
         pass
 
     def getVarsFromGUI(self):
-        self.CrystalPolingPeriod = self.ui_CrystalPolingPeriodSpinBox.value()*10**(-6)
+        self.CrystalPolingPeriodSingle = self.ui_CrystalPolingPeriodsingleSB.value() * 10 ** (-6)
+        self.CrystalPolingPeriodFrom = self.ui_CrystalPolingPeriodfromSB.value() * 10 ** (-6)
+        self.CrystalPolingPeriodTo = self.ui_CrystalPolingPeriodtoSB.value() * 10 ** (-6)
         self.CrystalMaterial = self.ui_CrystalMaterialComboBox.currentText()
         self.CrystalNX = self.ui_CrystalNXComboBox.currentText()
         self.CrystalNY = self.ui_CrystalNYComboBox.currentText()
         self.CrystalNZ = self.ui_CrystalNZComboBox.currentText()
+        self.CrystalTempSingle = self.ui_CrystalTsingleSB.value()
+        self.CrystalTempFrom = self.ui_CrystalTfromSB.value()
+        self.CrystalTempTo = self.ui_CrystalTtoSB.value()
 
         self.PumpWlSingle = self.ui_pumpwlsingleSB.value()*10**(-9)
         self.PumpWlFrom = self.ui_pumpwlfromSB.value()*10**(-9)
@@ -694,17 +702,15 @@ class GUI(QMainWindow):
         self.SIWlSingle = self.ui_siwlsingleSB.value()*10**(-9)
         self.SIWlTo = self.ui_siwltoSB.value()*10**(-9)
 
-        self.TempSingle = self.ui_TsingleSB.value()
-        self.TempFrom = self.ui_TfromSB.value()
-        self.TempTo = self.ui_TtoSB.value()
-
         self.QPMOrder = self.ui_PlotPMCSBQPMorder.value()
 
         self.SaveSettings()
 
     def SaveSettings(self):
         self.config.set("Crystal Material", self.CrystalMaterial)
-        self.config.set("Crystal Poling Period", self.CrystalPolingPeriod)
+        self.config.set("Crystal Poling Period Single", self.CrystalPolingPeriodSingle)
+        self.config.set("Crystal Poling Period From", self.CrystalPolingPeriodFrom)
+        self.config.set("Crystal Poling Period To", self.CrystalPolingPeriodTo)
         self.config.set("Crystal Refractive Index X", self.CrystalNX)
         self.config.set("Crystal Refractive Index Y", self.CrystalNY)
         self.config.set("Crystal Refractive Index Z", self.CrystalNZ)
@@ -725,9 +731,9 @@ class GUI(QMainWindow):
         self.config.set("Pump pulse shape", self.PumpShape)
         self.config.set("Pump pulsewidth apply deconvolution factor", self.PumpShapeApplyDeconvolutionFactor)
 
-        self.config.set("Temperature from", self.TempFrom)
-        self.config.set("Temperature single", self.TempSingle)
-        self.config.set("Temperature to", self.TempTo)
+        self.config.set("Crystal Temperature from", self.CrystalTempFrom)
+        self.config.set("Crystal Temperature single", self.CrystalTempSingle)
+        self.config.set("Crystal Temperature to", self.CrystalTempTo)
 
     def showWindow(self):
         g = GUI()

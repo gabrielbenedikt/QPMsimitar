@@ -20,7 +20,9 @@ class Settings():
         self.config=[]
         #self.config.append(["key",value])
         self.config.append(["Crystal Material", "PPKTP"])
-        self.config.append(["Crystal Poling Period", 46.2])
+        self.config.append(["Crystal Poling Period From", 46.0])
+        self.config.append(["Crystal Poling Period Single", 46.25])
+        self.config.append(["Crystal Poling Period To", 46.4])
         self.config.append(["Crystal Refractive Index X", 'kato'])
         self.config.append(["Crystal Refractive Index Y", 'kato'])
         self.config.append(["Crystal Refractive Index Z", 'kato'])
@@ -41,9 +43,9 @@ class Settings():
         self.config.append(["Pump pulse shape", 'Sech^2'])
         self.config.append(["Pump pulsewidth apply deconvolution factor", True])
 
-        self.config.append(["Temperature from", 20])
-        self.config.append(["Temperature single", 35])
-        self.config.append(["Temperature to", 50])
+        self.config.append(["Crystal Temperature from", 20])
+        self.config.append(["Crystal Temperature single", 35])
+        self.config.append(["Crystal Temperature to", 50])
 
     def loadSettings(self):
         if Path('config.yaml').is_file():

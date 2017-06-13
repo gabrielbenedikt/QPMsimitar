@@ -102,12 +102,11 @@ class PMC():
                 idwl = numpy.zeros(len(PPrange))
                 txf = self.thermexpfactor(PPrange)
                 for i in range(0, len(PPrange)):
-                        print(PPrange[i])
                         [sigwl[i], idwl[i]] = self.SIwls([pumpwl, T, PPrange[i] * txf[i]])
 
                 # calculate the crossing point temperature
                 PPcp = 0
-                PPguess = 0
+                PPguess = ((PPrange[-1]-PPrange[0])/2)
                 PPcp = scipy.optimize.fsolve(self.wlgaponlyPP(T, pumpwl), PPguess)
 
                 # return:

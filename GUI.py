@@ -179,7 +179,7 @@ class GUI(QMainWindow):
         self.ui_CrystalNXLabel.setText('Refractive index (x)')
         self.ui_CrystalNYLabel.setText('Refractive index (y)')
         self.ui_CrystalNZLabel.setText('Refractive index (z)')
-        self.ui_CrystalGroupBox.setTitle('Crystal')
+        self.ui_CrystalGroupBox.setTitle('Crystal parameters')
 
         #from/single/to sublayout
         self.ui_CrystalfromLabel = QLabel()
@@ -353,7 +353,7 @@ class GUI(QMainWindow):
         self.ui_PlotPMCvsT_Btn.setText('Plot vs T')
 
         self.ui_PlotPMCvsPP_Btn = QPushButton()
-        self.ui_PlotPMCvsPP_Btn.setText('TODO: Plot vs PP')
+        self.ui_PlotPMCvsPP_Btn.setText('Plot vs PP')
 
         # set limits
         self.ui_PlotPMCSBQPMorder.setRange(-10000, 10000)
@@ -652,15 +652,15 @@ class GUI(QMainWindow):
         pmc=PMC()
 
         #TODO: get refractive indices functions and give them to pmc.getSI_wl
-        [siwl,idwl,Tcp]=pmc.getSI_wl_varPP(lp,plotrange,T,refidxfunc,m)
+        [siwl,idwl,PPcp]=pmc.getSI_wl_varPP(lp,plotrange,T,refidxfunc,m)
 
         #plot
         pltwnd.ax.plot(plotrange*10**6, siwl*10**9, lw=2, label='signal')
         pltwnd.ax.plot(plotrange*10**6, idwl*10**9, lw=2, label='idler')
         pltwnd.ax.set_xlabel('Poling Period [µm]')
         pltwnd.ax.set_ylabel('S/I Wavelength [nm]')
-        pltwnd.ax.set_title('Quasi Phase Matching Temperature Tuning Curve')
-        pltwnd.ax.annotate('Crossing point temperature: {0:.1f}°C'.format(Tcp),xy=(0.55, 0.01), xycoords='axes fraction')
+        pltwnd.ax.set_title('Quasi Phase Matching Poling Period Tuning Curve')
+        pltwnd.ax.annotate('Degenerate wavelengths (for {0:.1f}°C) at a poling period of {1:.2f} µm'.format(self.CrystalTempSingle,PPcp*10**6),xy=(0.01, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 

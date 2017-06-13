@@ -3,9 +3,10 @@
 import numpy
 import scipy
 import scipy.optimize
-import matplotlib
-import matplotlib.pyplot as plt
+import scipy.interpolate
 from Constants import Constants
+#import matplotlib
+#import matplotlib.pyplot as plt
 # import array
 # from matplotlib.offsetbox import AnchoredText
 # import os
@@ -36,14 +37,6 @@ class JSI:
         # plot JSA or JSI (choose only 1!)
         self.calcJSA = False
         self.calcJSI = True
-
-        # resolution
-        # number of subintervals the s/i wavelength range will be devided in
-        self.numpts = 500
-        # wavelengthrange to calculate [[a,b],[c,d]]
-        # will calculate signal from 2*pwl-a to 2*pwl+b
-        # will calculate idler from 2*pwl-c to 2*pwl+d
-        self.wlrange = [[5, 5], [5, 5]]
 
     # thermal expansion factor
     def thermexpfactor(self, T):
@@ -251,7 +244,7 @@ class JSI:
                 return (1)
 
     def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength,
-                 refidxfunc,qpmorder,filter,plotJSI,resolution,pumpshape):
+                 refidxfunc,qpmorder,filter,plotJSI,pumpshape):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -264,7 +257,6 @@ class JSI:
         # qpmorder: Quasi phase matching order
         # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
         # plotJSI: bool: True for JSI, false for JSA
-        # resolution: number of points signalrange and idlerrange will be devided into
         # pumpshape: string: Shape of pump beam (gaussian, sech^2)
         #
 
@@ -332,8 +324,6 @@ class JSI:
 
         X, Y = numpy.meshgrid(self.sigrange, self.idrange)
 
-        self.numpts=resolution
-
         if self.calcJSA:
             if self.calcGaussian:
                 [PE, PM, JS] = self.PEAnPMAnJSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
@@ -357,3 +347,111 @@ class JSI:
             return
 
         return [PE, PM, JS]
+
+    def getpurity(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,
+                 refidxfunc,qpmorder,filter,pumpshape):
+        #
+        # pumpwl: Pump wavelength
+        # signalrange: [double,double]: Signal wavelength range
+        # idlerrange: [double,double]: Idler wavelength range
+        # taurange: range of pump pulse durations
+        # temp: Temperature
+        # polingp: Crystal poling period
+        # crystallength: Length of crystal
+        # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
+        # qpmorder: Quasi phase matching order
+        # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
+        # pumpshape: string: Shape of pump beam (gaussian, sech^2)
+        #
+
+        print('start calculating JSA or JSI')
+
+        self.sigrange = signalrange
+        self.idrange = idlerrange
+        self.nx = refidxfunc[0]
+        self.ny = refidxfunc[1]
+        self.nz = refidxfunc[2]
+
+        self.pwl = pumpwl
+        self.taurange = taurange
+        self.m = qpmorder
+        self.T = temp
+        self.PP = polingp * self.thermexpfactor(self.T)
+        self.L = crystallength * self.thermexpfactor(self.T)
+
+        self.useFilter = True
+        self.filtermatrix = []
+
+        self.pumpshape = pumpshape
+
+        if (filter[0] == 'none'):
+            self.useFilter = False
+        else:
+            if (filter[0] == 'rectangular'):
+                self.filtertype = 'rectangular'
+            elif (filter[0] == 'gaussian'):
+                self.filtertype = 'gaussian'
+
+            if filter[1] == True:
+                self.filtersignal = True
+            else:
+                self.filtersignal = False
+
+            if filter[2] == True:
+                self.filteridler = True
+            else:
+                self.filteridler = False
+
+            if (filter[1] == False):
+                if (filter[2] == False):
+                    print('ERROR: filtertype not none but neither used for idler nor signal.')
+                else:
+                    for i in range(0, len(self.sigrange)):
+                        filtervector = []
+                        for j in range(0, len(self.idrange)):
+                            filtervector.append(self.filterfunction(self.sigrange[i], self.idrange[j]))
+                            self.filtermatrix.append(filtervector)
+
+        if self.pumpshape == 'gaussian':
+            self.calcGaussian = True
+            self.calcSech = False
+        else:
+            self.calcGaussian = False
+            self.calcSech = True
+
+        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+
+        purity = []
+
+        for i in range(0, len(self.taurange)):
+            self.tau = self.taurange[i]
+            # JSA
+            if self.calcGaussian:
+                JSA = self.JSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+            elif self.calcSech:
+                JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+
+            # Purity
+            # SDV
+            sA = scipy.linalg.svd(JSA, overwrite_a=True, compute_uv=False)
+            # singular values in s. need to normalize s to get the schmidt magnitudes
+            snA = sA / scipy.linalg.norm(sA, 2)
+            # sum of squares of schmidt magnitudes is purity
+            purity.append(numpy.sum(snA ** 4))
+            infostring = "Pulsewidth: {0:.5f}ps\tpurity: {1:.5f}".format(self.tau * 10 ** (12), purity[i])
+            print(infostring)
+
+        # interpolate purity curve
+        increased_taurange = numpy.linspace(self.taurange[0], self.taurange[-1], 100000)
+        interPur = scipy.interpolate.InterpolatedUnivariateSpline(self.taurange, purity)
+        interPurvals = interPur(increased_taurange)
+        max = numpy.max(interPurvals)
+        maxidx = numpy.argmax(interPurvals)
+
+        print("maximum:\n\t\t\tpurity: {0:.4f}".format(max))
+
+        return [purity,max,increased_taurange[maxidx]]

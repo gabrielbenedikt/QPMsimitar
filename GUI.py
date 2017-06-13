@@ -64,10 +64,10 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
         # Group: plot phase matching curve
         self.ui_layout.addLayout(self.ui_layoutPlotPMC, 2, 2)
-        # Group: plot JSI
-        self.ui_layout.addLayout(self.ui_layoutPlotJSI, 1, 3)
         # Group: Purity
-        self.ui_layout.addLayout(self.ui_layoutPurity, 2, 3)
+        self.ui_layout.addLayout(self.ui_layoutPurity, 1, 3)
+        # Group: plot JSI
+        self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -389,25 +389,25 @@ class GUI(QMainWindow):
         self.ui_PlotJSIGroupBox = QGroupBox()
         self.ui_layoutPlotJSIGroupBox = QGridLayout()
 
-        self.ui_PlotJSIGroupBox.setTitle('TODO: Plot JSI/JSA')
+        self.ui_PlotJSIGroupBox.setTitle('Plot JSI/JSA')
 
         self.ui_PlotJSI_Wlrange_SB = QDoubleSpinBox()
-        self.ui_PlotJSI_Wlrange_label = QLabel('Wavelength range [nm]')
+        self.ui_PlotJSI_Wlrange_label = QLabel('Wl range [nm]')
 
         self.ui_PlotJSIorJSALayout = QGridLayout()
-        self.ui_PlotJSI_plotJSIRadioButton = QRadioButton('Plot JSI')
-        self.ui_PlotJSI_plotJSARadioButton = QRadioButton('Plot JSA')
+        self.ui_PlotJSI_plotJSIRadioButton = QRadioButton('JSI')
+        self.ui_PlotJSI_plotJSARadioButton = QRadioButton('JSA')
         self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSIRadioButton, 1, 1)
-        self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 1, 2)
+        self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 2, 1)
         self.ui_PlotJSI_plotJSIRadioButton.setChecked(True)
 
-        self.ui_PlotJSI_plotBtn = QPushButton('TODO: Plot')
+        self.ui_PlotJSI_plotBtn = QPushButton('Plot')
 
         ## Add controls
-        self.ui_layoutPlotJSIGroupBox.addLayout(self.ui_PlotJSIorJSALayout, 1, 1, 1, -1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_label, 2, 1, 1, 1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_SB, 2, 2, 1, 1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_plotBtn, 3, 1, 1, -1)
+        self.ui_layoutPlotJSIGroupBox.addLayout(self.ui_PlotJSIorJSALayout, 1, 1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_label, 2, 1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_SB, 2, 2)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_plotBtn, 1, 2)
 
         self.ui_PlotJSIGroupBox.setLayout(self.ui_layoutPlotJSIGroupBox)
         self.ui_layoutPlotJSI.addWidget(self.ui_PlotJSIGroupBox)
@@ -703,7 +703,71 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_purity_vs_tau(self):
-        pass
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
+        wlpts = 50
+        taupts = 10
+        pwl = self.PumpWlSingle
+        PP = self.CrystalPolingPeriodSingle
+        L = self.CrystalLengthSingle
+        T = self.CrystalTempSingle
+        m = self.QPMOrder
+        taumin = self.PulsewidthFrom
+        taumax = self.PulsewidthTo
+        wlrange = self.JSIwlRange  # TODO: Implement own wlrange for purity
+        spectralfilters = ['none', True, True]  # TODO: Implement filters
+        FilterString = 'none'
+        pumpshape = self.PumpShape
+
+        calcGaussian = False
+        calcSech = False
+        if pumpshape == 'Gaussian':
+            calcGaussian = True
+        elif pumpshape == 'Sech^2':
+            calcSech = True
+        else:
+            print('Error: pump shape unknown to JSA/JSI plot routine')
+
+        # get Ref indices
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        taurange = numpy.arange(taumin, taumax, (taumax-taumin) / taupts)
+
+        Tvec = numpy.arange(T, T + 1, 2)
+
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+
+        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+
+        [purity, max, maxtau] = JSI().getpurity(pwl, signalrange, idlerrange, taurange, T,
+                                                PP, L, refidxfunc, m, spectralfilters, pumpshape)
+
+        AnnotateString = ''
+        AnnotateString = AnnotateString + \
+                         r'Maximum purity: {0:.3} at $\tau={1:.3}$ps'.format(max, maxtau * 10 ** 12)+'\n' \
+                         'Pump wavelength: {0:.2f}nm'.format(pwl*10**9)+'\n' \
+                         'Poling period: {0:.4f}µm'.format(PP*10**6)+'\n' \
+                         'Temperature: {0:.1f}°C'.format(T)+'\n' \
+                         'Crystal length: {0:.1f}mm'.format(L*10**3)+'\n'
+        if spectralfilters[0]!='none':
+            AnnotateString = AnnotateString + FilterString
+
+        # plot
+        pltwnd.ax.plot(taurange * 10 ** 12, purity, lw=2, label='purity')
+        pltwnd.ax.set_xlabel('Pulsewidth [ps]')
+        pltwnd.ax.set_ylabel('Purity')
+        pltwnd.ax.set_title('Purity')
+        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.2),
+                           xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.canvas.draw()
 
     def plot_purity_vs_pwl(self):
         pass

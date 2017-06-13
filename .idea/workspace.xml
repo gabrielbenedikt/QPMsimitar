@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="79fc32b8-7f62-4084-b783-888a49f47088" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/nohup.out" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/GUI.py" afterPath="$PROJECT_DIR$/GUI.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/PMC.py" afterPath="$PROJECT_DIR$/PMC.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Settings.py" afterPath="$PROJECT_DIR$/Settings.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TODO" afterPath="$PROJECT_DIR$/TODO" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/config.yaml" afterPath="$PROJECT_DIR$/config.yaml" />
@@ -17,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/Multiphoton$Multiphoton.coverage" NAME="Multiphoton Coverage Results" MODIFIED="1497349041572" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Multiphoton$Multiphoton.coverage" NAME="Multiphoton Coverage Results" MODIFIED="1497350664894" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/multiphotGUI$Multiphoton.coverage" NAME="Multiphoton Coverage Results" MODIFIED="1490820702955" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
@@ -63,8 +62,8 @@
       <file leaf-file-name="GUI.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/GUI.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="58">
-              <caret line="708" column="27" lean-forward="false" selection-start-line="708" selection-start-column="27" selection-end-line="708" selection-end-column="27" />
+            <state relative-caret-position="404">
+              <caret line="659" column="47" lean-forward="false" selection-start-line="659" selection-start-column="47" selection-end-line="659" selection-end-column="47" />
               <folding>
                 <element signature="e#19#29#0" expanded="true" />
                 <element signature="e#898#1132#0" expanded="false" />
@@ -81,8 +80,6 @@
                 <element signature="e#22804#25191#0" expanded="false" />
                 <element signature="e#25233#26658#0" expanded="false" />
                 <element signature="e#26701#28174#0" expanded="false" />
-                <element signature="e#28216#29653#0" expanded="false" />
-                <element signature="e#29696#31233#0" expanded="false" />
                 <element signature="e#31507#33081#0" expanded="false" />
                 <element signature="e#33119#34672#0" expanded="false" />
                 <element signature="e#34708#34747#0" expanded="false" />
@@ -102,11 +99,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Settings.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Settings.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Settings.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="164">
-              <caret line="23" column="65" lean-forward="false" selection-start-line="23" selection-start-column="65" selection-end-line="23" selection-end-column="65" />
+            <state relative-caret-position="179">
+              <caret line="24" column="60" lean-forward="false" selection-start-line="24" selection-start-column="60" selection-end-line="24" selection-end-column="60" />
               <folding>
                 <element signature="e#20#46#0" expanded="true" />
               </folding>
@@ -117,7 +114,7 @@
       <file leaf-file-name="JSI.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/JSI.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2715">
+            <state relative-caret-position="-2027">
               <caret line="187" column="43" lean-forward="false" selection-start-line="187" selection-start-column="43" selection-end-line="188" selection-end-column="19" />
               <folding>
                 <element signature="e#20#55#0" expanded="true" />
@@ -126,11 +123,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="PMC.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="PMC.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/PMC.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="660">
-              <caret line="46" column="118" lean-forward="false" selection-start-line="46" selection-start-column="118" selection-end-line="46" selection-end-column="118" />
+            <state relative-caret-position="719">
+              <caret line="108" column="19" lean-forward="false" selection-start-line="108" selection-start-column="19" selection-end-line="108" selection-end-column="19" />
               <folding>
                 <element signature="e#20#32#0" expanded="true" />
               </folding>
@@ -193,10 +190,10 @@
         <option value="$PROJECT_DIR$/Multiphoton.py" />
         <option value="$PROJECT_DIR$/RefractiveIndex.py" />
         <option value="$PROJECT_DIR$/Constants.py" />
-        <option value="$PROJECT_DIR$/PMC.py" />
         <option value="$PROJECT_DIR$/JSI.py" />
         <option value="$PROJECT_DIR$/Settings.py" />
         <option value="$PROJECT_DIR$/GUI.py" />
+        <option value="$PROJECT_DIR$/PMC.py" />
       </list>
     </option>
   </component>
@@ -584,8 +581,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -672,8 +667,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -760,8 +753,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -848,8 +839,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -936,8 +925,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -986,11 +973,39 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Multiphoton.py">
+    <entry file="file://$PROJECT_DIR$/Crystal.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="0" column="18" lean-forward="false" selection-start-line="0" selection-start-column="18" selection-end-line="0" selection-end-column="18" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/JSI.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2027">
+          <caret line="187" column="43" lean-forward="false" selection-start-line="187" selection-start-column="43" selection-end-line="188" selection-end-column="19" />
+          <folding>
+            <element signature="e#20#55#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Constants.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="13" column="68" lean-forward="false" selection-start-line="13" selection-start-column="68" selection-end-line="13" selection-end-column="68" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Settings.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="179">
+          <caret line="24" column="60" lean-forward="false" selection-start-line="24" selection-start-column="60" selection-end-line="24" selection-end-column="60" />
+          <folding>
+            <element signature="e#20#46#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1009,46 +1024,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Crystal.py">
+    <entry file="file://$PROJECT_DIR$/Multiphoton.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="18" lean-forward="false" selection-start-line="0" selection-start-column="18" selection-end-line="0" selection-end-column="18" />
+        <state relative-caret-position="15">
+          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Constants.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" column="68" lean-forward="false" selection-start-line="13" selection-start-column="68" selection-end-line="13" selection-end-column="68" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/JSI.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2715">
-          <caret line="187" column="43" lean-forward="false" selection-start-line="187" selection-start-column="43" selection-end-line="188" selection-end-column="19" />
-          <folding>
-            <element signature="e#20#55#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PMC.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="660">
-          <caret line="46" column="118" lean-forward="false" selection-start-line="46" selection-start-column="118" selection-end-line="46" selection-end-column="118" />
-          <folding>
-            <element signature="e#20#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/GUI.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="58">
-          <caret line="708" column="27" lean-forward="false" selection-start-line="708" selection-start-column="27" selection-end-line="708" selection-end-column="27" />
+        <state relative-caret-position="404">
+          <caret line="659" column="47" lean-forward="false" selection-start-line="659" selection-start-column="47" selection-end-line="659" selection-end-column="47" />
           <folding>
             <element signature="e#19#29#0" expanded="true" />
             <element signature="e#898#1132#0" expanded="false" />
@@ -1065,8 +1052,6 @@
             <element signature="e#22804#25191#0" expanded="false" />
             <element signature="e#25233#26658#0" expanded="false" />
             <element signature="e#26701#28174#0" expanded="false" />
-            <element signature="e#28216#29653#0" expanded="false" />
-            <element signature="e#29696#31233#0" expanded="false" />
             <element signature="e#31507#33081#0" expanded="false" />
             <element signature="e#33119#34672#0" expanded="false" />
             <element signature="e#34708#34747#0" expanded="false" />
@@ -1075,12 +1060,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Settings.py">
+    <entry file="file://$PROJECT_DIR$/PMC.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="164">
-          <caret line="23" column="65" lean-forward="false" selection-start-line="23" selection-start-column="65" selection-end-line="23" selection-end-column="65" />
+        <state relative-caret-position="719">
+          <caret line="108" column="19" lean-forward="false" selection-start-line="108" selection-start-column="19" selection-end-line="108" selection-end-column="19" />
           <folding>
-            <element signature="e#20#46#0" expanded="true" />
+            <element signature="e#20#32#0" expanded="true" />
           </folding>
         </state>
       </provider>

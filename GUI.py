@@ -597,6 +597,8 @@ class GUI(QMainWindow):
         #get variables from GUI
         lp = self.PumpWlSingle
         PP = self.CrystalPolingPeriodSingle
+        Tmin = self.CrystalTempFrom
+        Tmax = self.CrystalTempTo
         m = self.QPMOrder
 
         # get Ref indices
@@ -606,13 +608,13 @@ class GUI(QMainWindow):
         refidxfunc=[nxfunc,nyfunc,nzfunc]
 
         #prepare plotting
-        plotrange = numpy.arange(self.ui_CrystalTfromSB.value(), self.ui_CrystalTtoSB.value(), 0.1)
+        plotrange = numpy.arange(Tmin,Tmax, (Tmax-Tmin)/250)
 
         #get PMC from PMC class
         pmc=PMC()
 
         #TODO: get refractive indices functions and give them to pmc.getSI_wl
-        [siwl,idwl,Tcp]=pmc.getSI_wl(lp,PP,plotrange,refidxfunc,m)
+        [siwl,idwl,Tcp]=pmc.getSI_wl_varT(lp,PP,plotrange,refidxfunc,m)
 
         #plot
         pltwnd.ax.plot(plotrange, siwl*10**9, lw=2, label='signal')
@@ -632,10 +634,10 @@ class GUI(QMainWindow):
 
         #get variables from GUI
         lp = self.PumpWlSingle
-        PP = self.CrystalPolingPeriodSingle
-        PPmin = self.CrystalPolingPeriodSingleFrom
-        PPmax = self.CrystalPolingPeriodSingleTo
+        PPmin = self.CrystalPolingPeriodFrom
+        PPmax = self.CrystalPolingPeriodTo
         m = self.QPMOrder
+        T = self.CrystalTempSingle
 
         # get Ref indices
         nxfunc=RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
@@ -644,18 +646,18 @@ class GUI(QMainWindow):
         refidxfunc=[nxfunc,nyfunc,nzfunc]
 
         #prepare plotting
-        plotrange = numpy.arange(self.ui_CrystalTfromSB.value(), self.ui_CrystalTtoSB.value(), 0.1)
+        plotrange = numpy.arange(PPmin, PPmax, (PPmax-PPmin)/250)
 
         #get PMC from PMC class
         pmc=PMC()
 
         #TODO: get refractive indices functions and give them to pmc.getSI_wl
-        [siwl,idwl,Tcp]=pmc.getSI_wl(lp,PP,plotrange,refidxfunc,m)
+        [siwl,idwl,Tcp]=pmc.getSI_wl_varPP(lp,plotrange,T,refidxfunc,m)
 
         #plot
-        pltwnd.ax.plot(plotrange, siwl*10**9, lw=2, label='signal')
-        pltwnd.ax.plot(plotrange, idwl*10**9, lw=2, label='idler')
-        pltwnd.ax.set_xlabel('Temperature [°C]')
+        pltwnd.ax.plot(plotrange*10**6, siwl*10**9, lw=2, label='signal')
+        pltwnd.ax.plot(plotrange*10**6, idwl*10**9, lw=2, label='idler')
+        pltwnd.ax.set_xlabel('Poling Period [µm]')
         pltwnd.ax.set_ylabel('S/I Wavelength [nm]')
         pltwnd.ax.set_title('Quasi Phase Matching Temperature Tuning Curve')
         pltwnd.ax.annotate('Crossing point temperature: {0:.1f}°C'.format(Tcp),xy=(0.55, 0.01), xycoords='axes fraction')

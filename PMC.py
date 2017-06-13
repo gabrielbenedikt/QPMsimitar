@@ -54,8 +54,15 @@ class PMC():
                         return swl-iwl
                 return wlgap2
 
-        #calculate signal and idler wavelengths
-        def getSI_wl(self,pumpwl,polingp,Trange,refidxfunc,qpmorder):
+        # returns a function that only depends on the poling period
+        def wlgaponlyPP(self, T, lp):
+                def wlgap2(PP):
+                        swl, iwl = self.SIwls([lp, T, PP])
+                        return swl - iwl
+                return wlgap2
+
+        #calculate signal and idler wavelengths. Temperature is variated
+        def getSI_wl_varT(self,pumpwl,polingp,Trange,refidxfunc,qpmorder):
 
                 self.m=qpmorder
                 self.lp=pumpwl
@@ -79,3 +86,30 @@ class PMC():
                 #return:
                 #signal wavelength, idler wavelength, crossing point temperature
                 return [sigwl,idwl,Tcp[0]]
+
+        # calculate signal and idler wavelengths. PP is variated
+        def getSI_wl_varPP(self, pumpwl, PPrange, T, refidxfunc, qpmorder):
+
+                self.m = qpmorder
+                self.lp = pumpwl
+
+                self.nx = refidxfunc[0]
+                self.ny = refidxfunc[1]
+                self.nz = refidxfunc[2]
+                self.T = T
+
+                sigwl = numpy.zeros(len(PPrange))
+                idwl = numpy.zeros(len(PPrange))
+                txf = self.thermexpfactor(PPrange)
+                for i in range(0, len(PPrange)):
+                        print(PPrange[i])
+                        [sigwl[i], idwl[i]] = self.SIwls([pumpwl, T, PPrange[i] * txf[i]])
+
+                # calculate the crossing point temperature
+                PPcp = 0
+                PPguess = 0
+                PPcp = scipy.optimize.fsolve(self.wlgaponlyPP(T, pumpwl), PPguess)
+
+                # return:
+                # signal wavelength, idler wavelength, crossing point temperature
+                return [sigwl, idwl, PPcp[0]]

@@ -22,7 +22,7 @@ class Settings():
         self.config.append(["Crystal Material", "PPKTP"])
         self.config.append(["Crystal Poling Period From", 46.0])
         self.config.append(["Crystal Poling Period Single", 46.25])
-        self.config.append(["Crystal Poling Period To", 46.4])
+        self.config.append(["Crystal Poling Period To", 46.5])
         self.config.append(["Crystal Refractive Index X", 'kato'])
         self.config.append(["Crystal Refractive Index Y", 'kato'])
         self.config.append(["Crystal Refractive Index Z", 'kato'])

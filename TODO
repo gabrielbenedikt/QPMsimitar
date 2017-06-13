@@ -2,6 +2,9 @@ x)Thermal expansion of crystal: make it property of crystal and use this impleme
 
 PMC
 --vs PP
+Tcp
+--vs lambdap
+--vs PP
 JSA/JSI
 --with filters
 --Marginal spectra

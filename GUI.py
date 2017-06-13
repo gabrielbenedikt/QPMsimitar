@@ -403,11 +403,18 @@ class GUI(QMainWindow):
 
         self.ui_PlotJSI_plotBtn = QPushButton('Plot')
 
+        self.ui_PlotJSI_WLresolution_SB = QSpinBox()
+        self.ui_PlotJSI_WLresolution_Label = QLabel('Resolution')
+        self.ui_PlotJSI_WLresolution_SB.setMinimum(2)
+        self.ui_PlotJSI_WLresolution_SB.setMaximum(10000)
+
         ## Add controls
         self.ui_layoutPlotJSIGroupBox.addLayout(self.ui_PlotJSIorJSALayout, 1, 1)
         self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_label, 2, 1)
         self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_SB, 2, 2)
         self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_plotBtn, 1, 2)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_Label,3,1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_SB,3,2)
 
         self.ui_PlotJSIGroupBox.setLayout(self.ui_layoutPlotJSIGroupBox)
         self.ui_layoutPlotJSI.addWidget(self.ui_PlotJSIGroupBox)
@@ -421,16 +428,37 @@ class GUI(QMainWindow):
 
         self.ui_PurityGroupBox.setTitle('TODO: Purity')
 
-        self.ui_Purity_plotvsTau_Btn = QPushButton('TODO: Plot vs τ')
+        self.ui_Purity_plotvsTau_Btn = QPushButton('Plot vs τ')
         self.ui_Purity_plotvspwl_Btn = QPushButton('TODO: Plot vs λp')
         self.ui_Purity_plotvsL_Btn = QPushButton('TODO: Plot vs L')
         self.ui_Purity_plotvsTauandL_Btn = QPushButton('TODO: Plot vs L and τ')
 
+        self.ui_Purity_WLresolution_Label = QLabel('WL resolution')
+        self.ui_Purity_WLrange_Label = QLabel('WL range [nm]')
+        self.ui_Purity_Tauresolution_Label = QLabel('τ resolution')
+
+        self.ui_Purity_WLresolution_SB = QSpinBox()
+        self.ui_Purity_WLrange_SB = QSpinBox()
+        self.ui_Purity_Tauresolution_SB = QSpinBox()
+
+        self.ui_Purity_WLresolution_SB.setMinimum(2)
+        self.ui_Purity_WLresolution_SB.setMaximum(10000)
+        self.ui_Purity_WLrange_SB.setMinimum(2)
+        self.ui_Purity_WLrange_SB.setMaximum(10000)
+        self.ui_Purity_Tauresolution_SB.setMinimum(2)
+        self.ui_Purity_Tauresolution_SB.setMaximum(10000)
+
         ## Add controls
-        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTau_Btn, 1, 1, 1, 2)
-        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvspwl_Btn, 2, 1, 1, 2)
-        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsL_Btn, 3, 1, 1, 2)
-        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTauandL_Btn, 4, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_Tauresolution_Label, 1, 1)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_Tauresolution_SB, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_WLresolution_Label, 2, 1)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_WLresolution_SB, 2, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_WLrange_Label, 3, 1)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_WLrange_SB, 3, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTau_Btn, 4, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvspwl_Btn, 5, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsL_Btn, 6, 1, 1, 2)
+        self.ui_layoutPurityGroupBox.addWidget(self.ui_Purity_plotvsTauandL_Btn, 7, 1, 1, 2)
 
         self.ui_PurityGroupBox.setLayout(self.ui_layoutPurityGroupBox)
         self.ui_layoutPurity.addWidget(self.ui_PurityGroupBox)
@@ -488,6 +516,11 @@ class GUI(QMainWindow):
         self.CrystalLengthTo = self.config.get("Crystal Length to")
         self.QPMOrder = self.config.get("QPM Order")
         self.JSIwlRange = self.config.get("JSI wavelength range")
+        self.JSIresolution = self.config.get("JSI resolution")
+
+        self.PurityWLresolution = self.config.get("Purity wavelength resolution")
+        self.PurityTauresolution = self.config.get("Purity tau resolution")
+        self.PurityWLrange = self.config.get("Purity wavelength range")
 
     def setProperties(self):
         self.ui_CrystalPolingPeriodsingleSB.setValue(self.CrystalPolingPeriodSingle * 10 ** 6)
@@ -514,6 +547,11 @@ class GUI(QMainWindow):
         self.ui_CrystalLengthtoSB.setValue(self.CrystalLengthTo * 10 ** 3)
         self.ui_PlotPMCSBQPMorder.setValue(self.QPMOrder)
         self.ui_PlotJSI_Wlrange_SB.setValue(self.JSIwlRange * 10 ** 9)
+        self.ui_PlotJSI_WLresolution_SB.setValue(self.JSIresolution)
+
+        self.ui_Purity_WLresolution_SB.setValue(self.PurityWLresolution)
+        self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange*10**9)
+        self.ui_Purity_Tauresolution_SB.setValue(self.PurityTauresolution)
 
     def initConnections(self):
         self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
@@ -551,6 +589,10 @@ class GUI(QMainWindow):
         self.ui_CrystalLengthfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalLengthsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalLengthtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotJSI_WLresolution_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Purity_WLresolution_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Purity_WLrange_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Purity_Tauresolution_SB.valueChanged.connect(self.getVarsFromGUI)
 
     def plot_RefIdx_vs_T(self):
         pltwndidx = self.plotwindowcount
@@ -708,8 +750,8 @@ class GUI(QMainWindow):
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
 
-        wlpts = 50
-        taupts = 10
+        wlpts = self.PurityWLresolution
+        taupts = self.PurityTauresolution
         pwl = self.PumpWlSingle
         PP = self.CrystalPolingPeriodSingle
         L = self.CrystalLengthSingle
@@ -717,10 +759,14 @@ class GUI(QMainWindow):
         m = self.QPMOrder
         taumin = self.PulsewidthFrom
         taumax = self.PulsewidthTo
-        wlrange = self.JSIwlRange  # TODO: Implement own wlrange for purity
+        wlrange = self.PurityWLrange
         spectralfilters = ['none', True, True]  # TODO: Implement filters
         FilterString = 'none'
         pumpshape = self.PumpShape
+
+        print(self.JSIwlRange)
+        print(self.PurityWLrange)
+
 
         calcGaussian = False
         calcSech = False
@@ -779,10 +825,9 @@ class GUI(QMainWindow):
         pass
 
     def plot_jsi(self):
-        # TODO: let numpts (resolution) be chosen in GUI
         # TODO: Add filter section for marginal spectra
 
-        numpts=50
+        numpts=self.JSIresolution
         pwl=self.PumpWlSingle
         PP=self.CrystalPolingPeriodSingle
         L=self.CrystalLengthSingle
@@ -823,7 +868,7 @@ class GUI(QMainWindow):
         idlerrange = numpy.linspace(li - wlrange/2, li + wlrange/2, numpts)
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, numpts, pumpshape)
+                                      m, spectralfilters, plotJSI, pumpshape)
 
         #
         # plotting
@@ -937,6 +982,11 @@ class GUI(QMainWindow):
         self.QPMOrder = self.ui_PlotPMCSBQPMorder.value()
 
         self.JSIwlRange = self.ui_PlotJSI_Wlrange_SB.value() * 10 ** (-9)
+        self.JSIresolution = self.ui_PlotJSI_WLresolution_SB.value()
+
+        self.PurityWLresolution = self.ui_Purity_WLresolution_SB.value()
+        self.PurityWLrange = self.ui_Purity_WLrange_SB.value() * 10 ** (-9)
+        self.PurityTauresolution = self.ui_Purity_Tauresolution_SB.value()
 
         self.SaveSettings()
 
@@ -974,6 +1024,11 @@ class GUI(QMainWindow):
         self.config.set("Crystal Length to", self.CrystalLengthTo)
 
         self.config.set("JSI wavelength range", self.JSIwlRange)
+        self.config.set("JSI resolution", self.JSIresolution)
+
+        self.config.set("Purity wavelength resolution", self.PurityWLresolution)
+        self.config.set("Purity wavelength range", self.PurityWLrange)
+        self.config.set("Purity tau resolution", self.PurityTauresolution)
 
     def showWindow(self):
         g = GUI()

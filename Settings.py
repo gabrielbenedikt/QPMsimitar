@@ -52,6 +52,11 @@ class Settings:
         self.config.append(["Crystal Length to", 40])
 
         self.config.append(["JSI wavelength range", 8])
+        self.config.append(["JSI resolution", 50])
+
+        self.config.append(["Purity wavelength resolution", 50])
+        self.config.append(["Purity wavelength range", 8])
+        self.config.append(["Purity tau resolution", 20])
 
     def loadSettings(self):
         if Path('config.yaml').is_file():

@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import numpy
-class RefractiveIndex():
+
+
+class RefractiveIndex:
     def __init__(self):
         self.initConstants()
         self.materialList = ['PPKTP','KTP']

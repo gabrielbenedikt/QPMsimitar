@@ -4,7 +4,7 @@ import numpy
 import scipy
 import scipy.optimize
 
-class PMC():
+class PMC:
         def __init__(self):
             # Thermal expansion coefficients of KTP
             # (Emanueli 2003)

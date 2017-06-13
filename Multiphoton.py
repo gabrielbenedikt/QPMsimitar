@@ -7,7 +7,7 @@ from Settings import Settings
 from PyQt5.QtWidgets import QApplication
 import sys
 
-class MultiPhotonAnalysis():
+class MultiPhotonAnalysis:
     def __init__(self):
         self.config = Settings()
         self.config.standardSettings()

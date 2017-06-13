@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 
-import numpy, scipy, scipy.optimize
+import numpy
+import scipy
+import scipy.optimize
 import matplotlib
 import matplotlib.pyplot as plt
 from Constants import Constants
-import array
-from matplotlib.offsetbox import AnchoredText
-import os
+# import array
+# from matplotlib.offsetbox import AnchoredText
+# import os
 
-class JSI():
+
+class JSI:
     def __init__(self):
         # Thermal expansion coefficients of KTP
         # (Emanueli 2003)
@@ -16,9 +19,9 @@ class JSI():
         self.TXCb = 11 * 10 ** (-9)
         self.TXrefT = 25
 
-        #signal and idler wavelength filtering
+        # signal and idler wavelength filtering
         self.useFilter = False  # change filterfunction(ls,li) below
-        self.filtertype = 'rectangular' #type of filter used. TODO: Implement different filter functions
+        self.filtertype = 'rectangular'  # type of filter used. TODO: Implement different filter functions
         self.useabs = False  # take absolute value of pea?
 
         # Pump and crystal properties
@@ -58,7 +61,8 @@ class JSI():
         pc = self.m / PP
         return pp - ps - pi - pc
 
-    # this wrapper returns a n arroy of functions(phasematching conditions) that only takes signal- and idler-wavelength as arguments
+    # this wrapper returns a n arroy of functions(phasematching conditions)
+    # that only takes signal- and idler-wavelength as arguments
     def epconvonlywl(self, lp, T, PP):
         def epconv(x):
             # x[0]:lambda_p
@@ -68,14 +72,16 @@ class JSI():
 
         return epconv
 
-    # returns signal and idler wavelengths that satisfy phasematching conditions for a given pumpwavelength, temperature and poling period
+    # returns signal and idler wavelengths that satisfy phasematching
+    # conditions for a given pumpwavelength, temperature and poling period
     def SIwls(self, x):
         # x[0]: lambda_pump
         # x[1]: Temperature
         # x[2]: Poling period
         return scipy.optimize.fsolve(self.epconvonlywl(x[0], x[1], x[2]), [2 * x[0], 2 * x[0]], xtol=1e-6)
 
-    # returns difference between signal and idler wavelength for a given pumpwavelength, temperature and poling period
+    # returns difference between signal and idler wavelength
+    # for a given pumpwavelength, temperature and poling period
     def wlgap(self, x):
         # x[0]: lambda_pump
         # x[1]: Temperature
@@ -244,22 +250,28 @@ class JSI():
             else:
                 return (1)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength,refidxfunc,qpmorder,filter,plotJSI,resolution):
-        #pumpwl: Pump wavelength
-        #signalrange: [double,double]: Signal wavelength range
-        #idlerrange: [double,double]: Idler wavelength range
-        #tau: pump pulse duration
-        #temp: Temperature
-        #polingp: Crystal poling period
-        #crystallength: Length of crystal
-        #refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
-        #qpmorder: Quasi phase matching order
-        #filter: [string,bool,bool]: [Type of filter to use, True to use filter for signal, True to use filter for idler]
-        #plotJSI: bool: True for JSI, false for JSA
-        #resolution: number of points signalrange and idlerrange will be devided into
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength,
+                 refidxfunc,qpmorder,filter,plotJSI,resolution,pumpshape):
+        #
+        # pumpwl: Pump wavelength
+        # signalrange: [double,double]: Signal wavelength range
+        # idlerrange: [double,double]: Idler wavelength range
+        # tau: pump pulse duration
+        # temp: Temperature
+        # polingp: Crystal poling period
+        # crystallength: Length of crystal
+        # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
+        # qpmorder: Quasi phase matching order
+        # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
+        # plotJSI: bool: True for JSI, false for JSA
+        # resolution: number of points signalrange and idlerrange will be devided into
+        # pumpshape: string: Shape of pump beam (gaussian, sech^2)
+        #
 
-        #get signalrange!
-        #get idlerrange!
+        print('start calculating JSA or JSI')
+
+        self.sigrange = signalrange
+        self.idrange = idlerrange
         self.nx = refidxfunc[0]
         self.ny = refidxfunc[1]
         self.nz = refidxfunc[2]
@@ -272,6 +284,10 @@ class JSI():
         self.L = crystallength * self.thermexpfactor(self.T)
 
         self.useFilter=True
+        self.filtermatrix = []
+
+        self.pumpshape=pumpshape
+
         if (filter[0] == 'none'):
             self.useFilter=False
         else:
@@ -293,6 +309,12 @@ class JSI():
             if (filter[1]==False):
                 if (filter[2]==False):
                     print ('ERROR: filtertype not none but neither used for idler nor signal.')
+                else:
+                    for i in range(0, len(self.sigrange)):
+                        filtervector = []
+                        for j in range(0, len(self.idrange)):
+                            filtervector.append(self.filterfunction(self.sigrange[i], self.idrange[j]))
+                            self.filtermatrix.append(filtervector)
 
         if plotJSI==False:
             self.calcJSA = True
@@ -301,105 +323,37 @@ class JSI():
             self.calcJSA = False
             self.calcJSI = True
 
+        if self.pumpshape=='gaussian':
+            self.calcGaussian = True
+            self.calcSech = False
+        else:
+            self.calcGaussian = False
+            self.calcSech = True
+
+        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+
         self.numpts=resolution
 
+        if self.calcJSA:
+            if self.calcGaussian:
+                [PE, PM, JS] = self.PEAnPMAnJSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
+            elif self.calcSech:
+                [PE, PM, JS] = self.PEAnPMAnJSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
+        elif self.calcJSI:
+            if self.calcGaussian:
+                [PE, PM, JS] = self.PEInPMInJSIgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
+            elif self.calcSech:
+                [PE, PM, JS] = self.PEInPMInJSIsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
+        else:
+            print('Error: Calc neither JSA nor JSI.')
+            return
 
-
-    #################################
-    ###           JSI             ###
-    #################################
-    signalrange = numpy.linspace(2 * pwl - wlrange[0][0] * 10 ** (-9), 2 * pwl + wlrange[0][1] * 10 ** (-9), numpts)
-    sigpoints = len(signalrange)
-    idlerrange = numpy.linspace(2 * pwl - wlrange[1][0] * 10 ** (-9), 2 * pwl + wlrange[1][1] * 10 ** (-9), numpts)
-    idlpoints = len(idlerrange)
-
-    X, Y = numpy.meshgrid(signalrange, idlerrange)
-    filtermatrix = []
-    for i in range(0, len(signalrange)):
-        filtervector = []
-        for j in range(0, len(idlerrange)):
-            filtervector.append(filterfunction(signalrange[i], idlerrange[j]))
-        filtermatrix.append(filtervector)
-
-    if calcJSA:
-        print("Calculating PEA, PMA and JSA for gaussian beam shape...")
-        [Zpeig, Zpmig, Zjsig] = PEAnPMAnJSAgauss(pwl, X, Y, tau, T, PP, L)
-        print("Calculating PEA, PMA and JSA for sech2 beam shape...")
-        [Zpeis, Zpmis, Zjsis] = PEAnPMAnJSAsech(pwl, X, Y, tau, T, PP, L)
-        if useFilter:
-            Zjsag = Zjsag * filtermatrix
-            Zjsas = Zjsas * filtermatrix
-    elif calcJSI:
-        print("Calculating PEI, PMI and JSI for gaussian beam shape...")
-        [Zpeig, Zpmig, Zjsig] = PEInPMInJSIgauss(pwl, X, Y, tau, T, PP, L)
-        print("Calculating PEI, PMI and JSI for sech2 beam shape...")
-        [Zpeis, Zpmis, Zjsis] = PEInPMInJSIsech(pwl, X, Y, tau, T, PP, L)
-        if useFilter:
-            Zjsig = Zjsig * filtermatrix
-            Zjsis = Zjsis * filtermatrix
-
-    print("plotting..")
-    f, ((peigplt, pmigplt, jsigplt), (peisplt, pmisplt, jsisplt)) = plt.subplots(2, 3, sharex='col', sharey='row',
-                                                                                 figsize=(16, 11))
-    colormap = matplotlib.cm.jet
-    # axes range
-    xmin = numpy.min(signalrange) * 10 ** 9
-    xmax = numpy.max(signalrange) * 10 ** 9
-    ymin = numpy.min(idlerrange) * 10 ** 9
-    ymax = numpy.max(idlerrange) * 10 ** 9
-    # prepare subplots
-    ppeig = peigplt.imshow(Zpeig, cmap=colormap, vmin=abs(Zpeig).min(), vmax=abs(Zpeig).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    ppmig = pmigplt.imshow(Zpmig, cmap=colormap, vmin=abs(Zpmig).min(), vmax=abs(Zpmig).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    # pjsig = jsigplt.imshow(Zjsig, cmap=colormap, vmin=abs(Zjsig).min(), vmax=abs(Zjsig).max(),aspect='auto', origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
-    pjsig = jsigplt.imshow(Zjsig, cmap=colormap, vmin=abs(Zjsig).min(), vmax=abs(Zjsig).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    ppeis = peisplt.imshow(Zpeis, cmap=colormap, vmin=abs(Zpeis).min(), vmax=abs(Zpeis).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    peisplt.set_xlabel(r'$\lambda_s$ [nm]')
-    peisplt.set_ylabel(r'$\lambda_i$ [nm]')
-    ppmis = pmisplt.imshow(Zpmis, cmap=colormap, vmin=abs(Zpmis).min(), vmax=abs(Zpmis).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    # pjsis = jsisplt.imshow(Zjsis, cmap=colormap, vmin=abs(Zjsis).min(), vmax=abs(Zjsis).max(),aspect='auto', origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
-    pjsis = jsisplt.imshow(Zjsis, cmap=colormap, vmin=abs(Zjsis).min(), vmax=abs(Zjsis).max(), aspect='auto',
-                           origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-    # size of axes label
-    for plot in [peigplt, pmigplt, jsigplt, peisplt, pmisplt, jsisplt]:
-        plot.tick_params(axis='both', which='major', labelsize='medium')
-        plot.tick_params(axis='both', which='minor', labelsize='medium')
-    # label plot
-    if calcJSA:
-        peigplt.set_title('PEA', fontsize=20)
-        pmigplt.set_title('PMA', fontsize=20)
-        jsigplt.set_title('JSA', fontsize=20)
-        # f.suptitle('PEA, PMA and JSA for gaussian and sech2 beamshape',fontsize=24)
-    elif calcJSI:
-        peigplt.set_title('PEI', fontsize=20)
-        pmigplt.set_title('PMI', fontsize=20)
-        jsigplt.set_title('JSI', fontsize=20)
-        f.suptitle('PEI, PMI and JSI for gaussian and sech2 beamshape', fontsize=24)
-    # create legend
-    f.subplots_adjust(bottom=0.2)
-    cbar_ax = f.add_axes([0.05, 0.05, 0.9, 0.025])
-    cbar = f.colorbar(ppeig, cax=cbar_ax, orientation='horizontal')
-    cbar.set_label('a.u.', fontsize='medium', labelpad=-1)
-    # label rows with beamshape
-    pad = 20
-    jsigplt.annotate('gaussian', xy=(1, 0.5), xytext=(jsigplt.yaxis.labelpad + pad, 0),
-                     xycoords='axes fraction', textcoords='offset points',
-                     ha='right', va='center', rotation=270, fontsize=20)
-    jsisplt.annotate('sech2', xy=(1, 0.5), xytext=(jsisplt.yaxis.labelpad + pad, 0),
-                     xycoords='axes fraction', textcoords='offset points',
-                     ha='right', va='center', rotation=270, fontsize=20)
-    # state additional paramters on plot
-    parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
-        L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
-        T) + 'Pulse duration: {0:.2f}ps'.format(tau * 10 ** 12)
-    plt.annotate(parameterstring, xy=(0.005, 0.885), xycoords='figure fraction', fontsize=10, color='r')
-    plt.tight_layout(pad=8, w_pad=0.5, h_pad=2)
-    if saveplot:
-        print("saveing pdf...")
-        plt.savefig(plotsavename, format="pdf", transparent=True, bbox_inches='tight', pad_inches=0)
-    print("showing plot...")
-    plt.show()
+        return [PE, PM, JS]

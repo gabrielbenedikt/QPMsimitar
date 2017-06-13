@@ -3,7 +3,7 @@
 import ruamel.yaml as yaml
 from pathlib import Path
 
-class Settings():
+class Settings:
     def __init__(self):
         pass
 
@@ -46,6 +46,12 @@ class Settings():
         self.config.append(["Crystal Temperature from", 20])
         self.config.append(["Crystal Temperature single", 35])
         self.config.append(["Crystal Temperature to", 50])
+
+        self.config.append(["Crystal Length from", 20])
+        self.config.append(["Crystal Length single", 30])
+        self.config.append(["Crystal Length to", 40])
+
+        self.config.append(["JSI wavelength range", 8])
 
     def loadSettings(self):
         if Path('config.yaml').is_file():

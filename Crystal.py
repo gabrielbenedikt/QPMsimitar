@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-class Crystal():
+
+
+class Crystal:
     def __init(self):
         from enum import Enum
         self.AvailableCrystals = Enum('PPKTP')

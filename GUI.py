@@ -838,7 +838,7 @@ class GUI(QMainWindow):
         wlrange = self.PurityWLrange
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType,self.SIfilterIdlerCenterWL,self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType,self.SIfilterSignalCenterWL,self.SIfilterSignalFWHM)
-        spectralfilters = [ffi, ffs]
+        spectralfilters = [ffs, ffi]
         FilterString = 'none'
         pumpshape = self.PumpShape
         calcGaussian = False
@@ -910,7 +910,7 @@ class GUI(QMainWindow):
         wlrange=self.JSIwlRange
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffi,ffs]
+        spectralfilters = [ffs, ffi]
 
         plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
         if plotJSI==True:

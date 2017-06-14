@@ -255,7 +255,7 @@ class JSI:
         # crystallength: Length of crystal
         # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
         # qpmorder: Quasi phase matching order
-        # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
+        # filter: [function,function]: [filterfunction for signal, filterfunction for idler]
         # plotJSI: bool: True for JSI, false for JSA
         # pumpshape: string: Shape of pump beam (gaussian, sech^2)
         #

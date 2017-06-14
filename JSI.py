@@ -329,7 +329,7 @@ class JSI:
 
         return [PE, PM, JS]
 
-    def getpurity(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,
+    def getpurity_vsTau(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,
                  refidxfunc,qpmorder,filter,pumpshape):
         #
         # pumpwl: Pump wavelength
@@ -417,3 +417,92 @@ class JSI:
         print("maximum:\n\t\t\tpurity: {0:.4f}".format(max))
 
         return [purity,max,increased_taurange[maxidx]]
+
+    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,
+                 refidxfunc,qpmorder,filter,pumpshape):
+        #
+        # pumpwl: Pump wavelength
+        # signalrange: [double,double]: Signal wavelength range
+        # idlerrange: [double,double]: Idler wavelength range
+        # taurange: range of pump pulse durations
+        # temp: Temperature
+        # polingp: Crystal poling period
+        # crystallength: Length of crystal
+        # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
+        # qpmorder: Quasi phase matching order
+        # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
+        # pumpshape: string: Shape of pump beam (gaussian, sech^2)
+        #
+
+        print('start calculating JSA or JSI')
+
+        self.sigrange = signalrange
+        self.idrange = idlerrange
+        self.nx = refidxfunc[0]
+        self.ny = refidxfunc[1]
+        self.nz = refidxfunc[2]
+
+        self.pwl = pumpwl
+        self.tau = tau
+        self.m = qpmorder
+        self.T = temp
+        self.PP = polingp * self.thermexpfactor(self.T)
+        self.Lrange = crystallengthrange * self.thermexpfactor(self.T)
+
+        self.pumpshape = pumpshape
+
+        self.filtermatrix = []
+
+        self.useFilter = True
+        self.filtersignalfunction = filter[0]
+        self.filteridlerfunction = filter[1]
+        for i in range(0, len(self.sigrange)):
+            filtervector = []
+            for j in range(0, len(self.idrange)):
+                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                filtervector.append(filterval)
+            self.filtermatrix.append(filtervector)
+
+        if self.pumpshape == 'gaussian':
+            self.calcGaussian = True
+            self.calcSech = False
+        else:
+            self.calcGaussian = False
+            self.calcSech = True
+
+        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+
+        purity = []
+
+        for i in range(0, len(self.Lrange)):
+            self.L = self.Lrange[i]
+            # JSA
+            if self.calcGaussian:
+                JSA = self.JSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+            elif self.calcSech:
+                JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+
+            # Purity
+            # SDV
+            sA = scipy.linalg.svd(JSA, overwrite_a=True, compute_uv=False)
+            # singular values in s. need to normalize s to get the schmidt magnitudes
+            snA = sA / scipy.linalg.norm(sA, 2)
+            # sum of squares of schmidt magnitudes is purity
+            purity.append(numpy.sum(snA ** 4))
+            infostring = "Crystal length: {0:.5f}ps\tpurity: {1:.5f}".format(self.L * 10 ** (3), purity[i])
+            print(infostring)
+
+        # interpolate purity curve
+        increased_Lrange = numpy.linspace(self.Lrange[0], self.Lrange[-1], 100000)
+        interPur = scipy.interpolate.InterpolatedUnivariateSpline(self.Lrange, purity)
+        interPurvals = interPur(increased_Lrange)
+        max = numpy.max(interPurvals)
+        maxidx = numpy.argmax(interPurvals)
+
+        print("maximum:\n\t\t\tpurity: {0:.4f}".format(max))
+
+        return [purity,max,increased_Lrange[maxidx]]

@@ -137,7 +137,8 @@ class GUI(QMainWindow):
 
         self.ui_pumpShapeCorrectionFactorCheckBox = QCheckBox()
         self.ui_pumpShapeCorrectionFactorLabel = QLabel()
-        self.ui_pumpShapeCorrectionFactorLabel.setText('Apply deconvolution factor?')
+        self.ui_pumpShapeCorrectionFactorLabel.setText('TODO: Apply deconvolution factor?')
+        # TODO: use deconvolution factor if set
 
         self.ui_layoutUpper.addWidget(self.ui_fromLabel, 1, 2)
         self.ui_layoutUpper.addWidget(self.ui_singleLabel, 1, 3)
@@ -394,7 +395,7 @@ class GUI(QMainWindow):
         self.ui_layoutSIfilterGroupBox = QVBoxLayout()
         self.ui_layoutSIfilterUpper = QGridLayout()
 
-        self.ui_SIfilterGroupBox.setTitle('TODO: S/I spectral filtering')
+        self.ui_SIfilterGroupBox.setTitle('S/I spectral filtering')
 
         self.ui_SIfilterSignalLabel = QLabel('signal')
         self.ui_SIfilterIdlerLabel = QLabel('idler')
@@ -483,12 +484,12 @@ class GUI(QMainWindow):
 
         self.ui_Purity_plotvsTau_Btn = QPushButton('Plot vs τ')
         self.ui_Purity_plotvspwl_Btn = QPushButton('TODO: Plot vs λp')
-        self.ui_Purity_plotvsL_Btn = QPushButton('TODO: Plot vs L')
+        self.ui_Purity_plotvsL_Btn = QPushButton('Plot vs L')
         self.ui_Purity_plotvsTauandL_Btn = QPushButton('TODO: Plot vs L and τ')
 
         self.ui_Purity_WLresolution_Label = QLabel('WL resolution')
         self.ui_Purity_WLrange_Label = QLabel('WL range [nm]')
-        self.ui_Purity_Tauresolution_Label = QLabel('τ resolution')
+        self.ui_Purity_Tauresolution_Label = QLabel('τ or L resolution')
 
         self.ui_Purity_WLresolution_SB = QSpinBox()
         self.ui_Purity_WLrange_SB = QSpinBox()
@@ -865,7 +866,7 @@ class GUI(QMainWindow):
         signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
         idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
-        [purity, max, maxtau] = JSI().getpurity(pwl, signalrange, idlerrange, taurange, T,
+        [purity, max, maxtau] = JSI().getpurity_vsTau(pwl, signalrange, idlerrange, taurange, T,
                                                 PP, L, refidxfunc, m, spectralfilters, pumpshape)
 
         AnnotateString = ''
@@ -883,7 +884,7 @@ class GUI(QMainWindow):
         pltwnd.ax.set_xlabel('Pulsewidth [ps]')
         pltwnd.ax.set_ylabel('Purity')
         pltwnd.ax.set_title('Purity')
-        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.2),
+        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1),
                            xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
@@ -892,7 +893,74 @@ class GUI(QMainWindow):
         pass
 
     def plot_purity_vs_L(self):
-        pass
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
+        wlpts = self.PurityWLresolution
+        pts = self.PurityTauresolution
+        pwl = self.PumpWlSingle
+        PP = self.CrystalPolingPeriodSingle
+        Lmin = self.CrystalLengthFrom
+        Lmax = self.CrystalLengthTo
+        T = self.CrystalTempSingle
+        m = self.QPMOrder
+        tau = self.PulsewidthSingle
+        wlrange = self.PurityWLrange
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffs, ffi]
+        FilterString = 'none'
+        pumpshape = self.PumpShape
+        calcGaussian = False
+        calcSech = False
+        if pumpshape == 'Gaussian':
+            calcGaussian = True
+        elif pumpshape == 'Sech^2':
+            calcSech = True
+        else:
+            print('Error: pump shape unknown to JSA/JSI plot routine')
+
+        # get Ref indices
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        Lrange = numpy.arange(Lmin, Lmax, (Lmax- Lmin) / pts)
+
+        Tvec = numpy.arange(T, T + 1, 2)
+
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+
+        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+
+        [purity, max, maxL] = JSI().getpurity_vsL(pwl, signalrange, idlerrange, tau, T,
+                                                PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
+
+        AnnotateString = ''
+        AnnotateString = AnnotateString + \
+                         r'Maximum purity: {0:.3f} at L={1:.2f}mm'.format(max, maxL*10**3) + '\n' \
+                                                                                                       'Pump wavelength: {0:.2f}nm'.format(
+            pwl * 10 ** 9) + '\n' \
+                             'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n' \
+                                                                               'Temperature: {0:.1f}°C'.format(T) + '\n' \
+                                                                                                                    'Pulsewidth: {0:.2f}ps'.format(
+            tau * 10 ** 12) + '\n'
+        if spectralfilters[0] != 'none':
+            AnnotateString = AnnotateString + FilterString
+
+        # plot
+        pltwnd.ax.plot(Lrange * 10 ** 3, purity, lw=2, label='purity')
+        pltwnd.ax.set_xlabel('Crystal length [mm]')
+        pltwnd.ax.set_ylabel('Purity')
+        pltwnd.ax.set_title('Purity')
+        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1),
+                           xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.canvas.draw()
 
     def plot_purity_vs_Tau_and_L(self):
         pass

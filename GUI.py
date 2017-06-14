@@ -672,10 +672,6 @@ class GUI(QMainWindow):
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
 
     def plot_RefIdx_vs_T(self):
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         Tmin = self.ui_CrystalTfromSB.value()
         Tmax = self.ui_CrystalTtoSB.value()
         wl = self.ui_pumpwlsingleSB.value() * 10 ** (-9)
@@ -695,6 +691,10 @@ class GUI(QMainWindow):
         # NOTE: Let num (1000 here) be set in GUI
         plotrange = numpy.linspace(Tmin, Tmax, 1000)
 
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
         for i in range(0, len(RefIdxList)):
             pltwnd.ax.plot(plotrange, RefIdxList[i](wl, plotrange),
                            label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
@@ -707,10 +707,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_RefIdx_vs_wl(self):
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         wlmin = self.ui_pumpwlfromSB.value() * 10 ** (-9)
         wlmax = self.ui_pumpwltoSB.value() * 10 ** (-9)
         T = self.ui_CrystalTsingleSB.value()
@@ -730,6 +726,10 @@ class GUI(QMainWindow):
         # NOTE: Let num (1000 here) be set in GUI
         plotrange = numpy.linspace(wlmin, wlmax, 1000)
 
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
         for i in range(0, len(RefIdxList)):
             pltwnd.ax.plot(plotrange * 10 ** 9, RefIdxList[i](plotrange, T),
                            label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
@@ -742,11 +742,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_T(self):
-        # init plot window
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         # get variables from GUI
         lp = self.PumpWlSingle
         PP = self.CrystalPolingPeriodSingle
@@ -763,13 +758,13 @@ class GUI(QMainWindow):
         # prepare plotting
         plotrange = numpy.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
 
-        # get PMC from PMC class
-        pmc = PMC()
-
-        # TODO: get refractive indices functions and give them to pmc.getSI_wl
-        [siwl, idwl, Tcp] = pmc.getSI_wl_varT(lp, PP, plotrange, refidxfunc, m)
+        [siwl, idwl, Tcp] = PMC().getSI_wl_varT(lp, PP, plotrange, refidxfunc, m)
 
         # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.plot(plotrange, siwl * 10 ** 9, lw=2, label='signal')
         pltwnd.ax.plot(plotrange, idwl * 10 ** 9, lw=2, label='idler')
         pltwnd.ax.set_xlabel('Temperature [°C]')
@@ -781,11 +776,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_PP(self):
-        # init plot window
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         # get variables from GUI
         lp = self.PumpWlSingle
         PPmin = self.CrystalPolingPeriodFrom
@@ -802,13 +792,13 @@ class GUI(QMainWindow):
         # prepare plotting
         plotrange = numpy.arange(PPmin, PPmax, (PPmax - PPmin) / 250)
 
-        # get PMC from PMC class
-        pmc = PMC()
-
-        # TODO: get refractive indices functions and give them to pmc.getSI_wl
-        [siwl, idwl, PPcp] = pmc.getSI_wl_varPP(lp, plotrange, T, refidxfunc, m)
+        [siwl, idwl, PPcp] = PMC().getSI_wl_varPP(lp, plotrange, T, refidxfunc, m)
 
         # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.plot(plotrange * 10 ** 6, siwl * 10 ** 9, lw=2, label='signal')
         pltwnd.ax.plot(plotrange * 10 ** 6, idwl * 10 ** 9, lw=2, label='idler')
         pltwnd.ax.set_xlabel('Poling Period [µm]')
@@ -822,11 +812,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_purity_vs_tau(self):
-        # init plot window
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         wlpts = self.PurityWLresolution
         taupts = self.PurityTauresolution
         pwl = self.PumpWlSingle
@@ -888,6 +873,11 @@ class GUI(QMainWindow):
         AnnotateString = AnnotateString + FilterString
 
         # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
         pltwnd.ax.plot(taurange * 10 ** 12, purity, lw=2, label='purity')
         pltwnd.ax.set_xlabel('Pulsewidth [ps]')
         pltwnd.ax.set_ylabel('Purity')
@@ -901,11 +891,6 @@ class GUI(QMainWindow):
         pass
 
     def plot_purity_vs_L(self):
-        # init plot window
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
-
         wlpts = self.PurityWLresolution
         pts = self.PurityTauresolution
         pwl = self.PumpWlSingle
@@ -968,6 +953,10 @@ class GUI(QMainWindow):
         AnnotateString = AnnotateString + FilterString
 
         # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.plot(Lrange * 10 ** 3, purity, lw=2, label='purity')
         pltwnd.ax.set_xlabel('Crystal length [mm]')
         pltwnd.ax.set_ylabel('Purity')
@@ -978,10 +967,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_purity_vs_Tau_and_L(self):
-        # init plot window
-        pltwndidx = self.plotwindowcount
-        self.open_new_plot_window()
-        pltwnd = self.pltwindowlist[pltwndidx]
 
         wlpts = self.PurityWLresolution
         pts = self.PurityTauresolution
@@ -1045,6 +1030,11 @@ class GUI(QMainWindow):
         xmax = numpy.max(Taurange) * 10 ** 12  # *taucfsech
         ymin = numpy.min(Lrange) * 10 ** 3
         ymax = numpy.max(Lrange) * 10 ** 3
+
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.grid('off')
         plot=pltwnd.ax.imshow(purity, cmap=colormap, vmin=abs(purity).min(), vmax=abs(purity).max(),aspect='auto',
                          origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
@@ -1064,8 +1054,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_jsi(self):
-        # TODO: Add filter section for marginal spectra
-
         numpts=self.JSIresolution
         pwl=self.PumpWlSingle
         PP=self.CrystalPolingPeriodSingle
@@ -1146,11 +1134,11 @@ class GUI(QMainWindow):
         ymin = numpy.min(idlerrange) * 10 ** 9
         ymax = numpy.max(idlerrange) * 10 ** 9
         # prepare subplots
-        ppe = pltwnd.peplt.imshow(PE, cmap=colormap, vmin=abs(PE).min(), vmax=abs(PE).max(), aspect='auto',
+        ppe = pltwnd.peplt.imshow(PE, cmap=colormap, vmin=PE.min(), vmax=PE.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        ppm = pltwnd.pmplt.imshow(PM, cmap=colormap, vmin=abs(PM).min(), vmax=abs(PM).max(), aspect='auto',
+        ppm = pltwnd.pmplt.imshow(PM, cmap=colormap, vmin=PM.min(), vmax=PM.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        pjs = pltwnd.jsplt.imshow(JS, cmap=colormap, vmin=abs(JS).min(), vmax=abs(JS).max(), aspect='auto',
+        pjs = pltwnd.jsplt.imshow(JS, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')

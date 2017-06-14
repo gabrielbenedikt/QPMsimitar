@@ -1,22 +1,26 @@
 x)Thermal expansion of crystal: make it property of crystal and use this implementation (in PMC / JSI / ...)
 
-Tcp
---vs lambdap
---vs PP
-JSA/JSI
---Marginal spectra
-FWHM
---vs tau
---vs L
---with filters
-Group velocity matching?
-HOM dips
---indistinguishability
--->https://arxiv.org/pdf/1211.0120.pdf
---two sources?
-SPDC parameters
---p
---higher order emission
-More Setup details
---Coupling (needs L, n(x,y,z), pump focusing, collection optics ? ) see "High efficiency coupling of photon pairs in practice"
-----Spectral-Spatial Correlation function (Same paper)
+x)Tcp
+----vs lambdap
+----vs PP
+x)JSA/JSI
+----Marginal spectra
+x)FWHM
+----vs tau
+----vs L
+----with filters
+x)Group velocity matching?
+x)HOM dips
+----indistinguishability
+---->https://arxiv.org/pdf/1211.0120.pdf
+----two sources?
+x)SPDC parameters
+----p
+----higher order emission
+x)More Setup details
+----Coupling (needs L, n(x,y,z), pump focusing, collection optics ? ) see "High efficiency coupling of photon pairs in practice"
+--------Spectral-Spatial Correlation function (Same paper)
+x)Calc PP from Tcp
+
+z)make it possible to add plots to existing plots
+----e.g.: PMC for two different PPs of lps

@@ -485,7 +485,7 @@ class GUI(QMainWindow):
         self.ui_Purity_plotvsTau_Btn = QPushButton('Plot vs τ')
         self.ui_Purity_plotvspwl_Btn = QPushButton('TODO: Plot vs λp')
         self.ui_Purity_plotvsL_Btn = QPushButton('Plot vs L')
-        self.ui_Purity_plotvsTauandL_Btn = QPushButton('TODO: Plot vs L and τ')
+        self.ui_Purity_plotvsTauandL_Btn = QPushButton('Plot vs L and τ')
 
         self.ui_Purity_WLresolution_Label = QLabel('WL resolution')
         self.ui_Purity_WLrange_Label = QLabel('WL range [nm]')
@@ -876,8 +876,16 @@ class GUI(QMainWindow):
                          'Poling period: {0:.4f}µm'.format(PP*10**6)+'\n' \
                          'Temperature: {0:.1f}°C'.format(T)+'\n' \
                          'Crystal length: {0:.1f}mm'.format(L*10**3)+'\n'
-        if spectralfilters[0]!='none':
-            AnnotateString = AnnotateString + FilterString
+        FilterString = ''
+        print(self.SIfilterSignalType)
+        if self.SIfilterSignalType.casefold() != 'none':
+            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9,
+                                         self.SIfilterSignalFWHM * 10 ** 9) + '\n'
+        if self.SIfilterIdlerType.casefold() != 'none':
+            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
+        AnnotateString = AnnotateString + FilterString
 
         # plot
         pltwnd.ax.plot(taurange * 10 ** 12, purity, lw=2, label='purity')
@@ -949,8 +957,15 @@ class GUI(QMainWindow):
                                                                                'Temperature: {0:.1f}°C'.format(T) + '\n' \
                                                                                                                     'Pulsewidth: {0:.2f}ps'.format(
             tau * 10 ** 12) + '\n'
-        if spectralfilters[0] != 'none':
-            AnnotateString = AnnotateString + FilterString
+        FilterString = ''
+        if self.SIfilterSignalType.casefold() != 'none':
+            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9,
+                                         self.SIfilterSignalFWHM * 10 ** 9) + '\n'
+        if self.SIfilterIdlerType.casefold() != 'none':
+            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
+        AnnotateString = AnnotateString + FilterString
 
         # plot
         pltwnd.ax.plot(Lrange * 10 ** 3, purity, lw=2, label='purity')
@@ -963,7 +978,90 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_purity_vs_Tau_and_L(self):
-        pass
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
+        wlpts = self.PurityWLresolution
+        pts = self.PurityTauresolution
+        pwl = self.PumpWlSingle
+        PP = self.CrystalPolingPeriodSingle
+        Lmin = self.CrystalLengthFrom
+        Lmax = self.CrystalLengthTo
+        T = self.CrystalTempSingle
+        m = self.QPMOrder
+        taumin = self.PulsewidthFrom
+        taumax = self.PulsewidthTo
+        wlrange = self.PurityWLrange
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffs, ffi]
+        FilterString = 'none'
+        pumpshape = self.PumpShape
+        calcGaussian = False
+        calcSech = False
+        if pumpshape == 'Gaussian':
+            calcGaussian = True
+        elif pumpshape == 'Sech^2':
+            calcSech = True
+        else:
+            print('Error: pump shape unknown to JSA/JSI plot routine')
+
+        # get Ref indices
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        Lrange = numpy.arange(Lmin, Lmax, (Lmax - Lmin) / pts)
+        Taurange = numpy.arange(taumin, taumax, (taumax - taumin) / pts)
+
+        Tvec = numpy.arange(T, T + 1, 2)
+
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+
+        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+
+        purity = JSI().getpurity_vsLandTau(pwl, signalrange, idlerrange, Taurange, T,
+                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
+
+        AnnotateString = ''
+        AnnotateString = AnnotateString + 'Pump wavelength: {0:.2f}nm'.format(pwl * 10 ** 9) + '\n'+\
+                         'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n'
+        FilterString = ''
+        if self.SIfilterSignalType.casefold() != 'none':
+            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9, self.SIfilterSignalFWHM * 10 ** 9) + '\n'
+        if self.SIfilterIdlerType.casefold() != 'none':
+            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
+                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
+        AnnotateString = AnnotateString + FilterString
+
+        # plot
+        colormap = matplotlib.cm.jet
+        xmin = numpy.min(Taurange) * 10 ** 12  # *taucfsech
+        xmax = numpy.max(Taurange) * 10 ** 12  # *taucfsech
+        ymin = numpy.min(Lrange) * 10 ** 3
+        ymax = numpy.max(Lrange) * 10 ** 3
+        pltwnd.ax.grid('off')
+        plot=pltwnd.ax.imshow(purity, cmap=colormap, vmin=abs(purity).min(), vmax=abs(purity).max(),aspect='auto',
+                         origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
+        #(Lrange * 10 ** 3, purity, lw=2, label='purity')
+        pltwnd.ax.set_xlabel('Pulse width [ps]')
+        pltwnd.ax.set_ylabel('Crystal length [mm]')
+        pltwnd.ax.set_title('Purity')
+        pltwnd.ax.annotate(AnnotateString, xy=(0, 1),
+                           xycoords='axes fraction')
+
+        pltwnd.fig.subplots_adjust(bottom=0.2)
+        pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
+        pltwnd.cbar = pltwnd.fig.colorbar(plot, cax=pltwnd.cbar_ax, orientation='horizontal')
+        pltwnd.cbar.set_label('a.u.', fontsize='medium', labelpad=-1)
+
+        pltwnd.ax.legend()
+        pltwnd.canvas.draw()
 
     def plot_jsi(self):
         # TODO: Add filter section for marginal spectra

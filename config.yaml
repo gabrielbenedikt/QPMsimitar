@@ -27,7 +27,7 @@
 - [JSI resolution, 50]
 - [Purity wavelength resolution, 50]
 - [Purity wavelength range, 8.0e-09]
-- [Purity tau resolution, 10]
+- [Purity tau resolution, 30]
 - [SI filter Idler Type, None]
 - [SI filter Signal Type, None]
 - [SI filter Idler center wavelength, 1.5500000000000002e-06]

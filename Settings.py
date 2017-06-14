@@ -58,6 +58,13 @@ class Settings:
         self.config.append(["Purity wavelength range", 8])
         self.config.append(["Purity tau resolution", 20])
 
+        self.config.append(["SI filter Idler Type", "None"])
+        self.config.append(["SI filter Signal Type", "None"])
+        self.config.append(["SI filter Idler center wavelength", 1550])
+        self.config.append(["SI filter Signal center wavelength", 1550])
+        self.config.append(["SI filter Idler FWHM", 3])
+        self.config.append(["SI filter Signal FWHM", 3])
+
     def loadSettings(self):
         if Path('config.yaml').is_file():
             with open('config.yaml') as stream:

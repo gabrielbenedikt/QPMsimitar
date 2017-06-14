@@ -6,6 +6,7 @@ from PyQt5.QtGui import QFont
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
 from JSI import JSI
+from Filters import Filters
 import numpy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
@@ -51,6 +52,7 @@ class GUI(QMainWindow):
 
         self.ui_layoutCrystal = self.initLayoutCrystal()
         self.ui_layoutPump = self.initLayoutPump()
+        self.ui_layoutSIfilter = self.initLayoutSIfilter()
         self.ui_layoutPlotRefractiveIndex = self.initLayoutPlotRefractiveIndex()
         self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
         self.ui_layoutPlotJSI = self.initLayoutPlotJSI()
@@ -60,6 +62,8 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutCrystal, 1, 1)
         # Group: set pump properties
         self.ui_layout.addLayout(self.ui_layoutPump, 2, 1)
+        # Group: S/I spectral filtering
+        self.ui_layout.addLayout(self.ui_layoutSIfilter, 3, 1)
         # Group: plot refractive indices
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
         # Group: plot phase matching curve
@@ -384,6 +388,55 @@ class GUI(QMainWindow):
 
         return self.ui_layoutPlotPMC
 
+    def initLayoutSIfilter(self):
+        self.ui_layoutSIfilter = QGridLayout()
+        self.ui_SIfilterGroupBox = QGroupBox()
+        self.ui_layoutSIfilterGroupBox = QVBoxLayout()
+        self.ui_layoutSIfilterUpper = QGridLayout()
+
+        self.ui_SIfilterGroupBox.setTitle('TODO: S/I spectral filtering')
+
+        self.ui_SIfilterSignalLabel = QLabel('signal')
+        self.ui_SIfilterIdlerLabel = QLabel('idler')
+        self.ui_SIfilterTypeLabel = QLabel('Type')
+        self.ui_SIfiltercenterWLLabel = QLabel('Center WL [nm]')
+        self.ui_SIfilterBandwidthLabel = QLabel('FWHM [nm]')
+
+        self.ui_SIfilterSignalCenterWL_SB = QDoubleSpinBox()
+        self.ui_SIfilterIdlerCenterWL_SB = QDoubleSpinBox()
+        self.ui_SIfilterSignalFWHM_SB = QDoubleSpinBox()
+        self.ui_SIfilterIdlerFWHM_SB = QDoubleSpinBox()
+        self.ui_SIfilterSignalCenterWL_SB.setRange(0,10000)
+        self.ui_SIfilterIdlerCenterWL_SB.setRange(0,10000)
+        self.ui_SIfilterSignalFWHM_SB.setRange(0,10000)
+        self.ui_SIfilterIdlerFWHM_SB.setRange(0,10000)
+
+        self.ui_SIfilterSignalType_CB = QComboBox()
+        self.ui_SIfilterIdlerType_CB = QComboBox()
+
+        for Type in self.SIfilterTypes:
+            self.ui_SIfilterSignalType_CB.addItem(Type)
+            self.ui_SIfilterIdlerType_CB.addItem(Type)
+
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterTypeLabel,            1, 2)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfiltercenterWLLabel,        1, 3)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterBandwidthLabel,       1, 4)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterSignalLabel,          2, 1)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterSignalType_CB,        2, 2)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterSignalCenterWL_SB,    2, 3)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterSignalFWHM_SB,        2, 4)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterIdlerLabel,           3, 1)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterIdlerType_CB,         3, 2)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterIdlerCenterWL_SB,     3, 3)
+        self.ui_layoutSIfilterUpper.addWidget(self.ui_SIfilterIdlerFWHM_SB,         3, 4)
+
+        self.ui_layoutSIfilterGroupBox.addLayout(self.ui_layoutSIfilterUpper)
+
+        self.ui_SIfilterGroupBox.setLayout(self.ui_layoutSIfilterGroupBox)
+        self.ui_layoutSIfilter.addWidget(self.ui_SIfilterGroupBox)
+
+        return self.ui_layoutSIfilter
+
     def initLayoutPlotJSI(self):
         self.ui_layoutPlotJSI = QGridLayout()
         self.ui_PlotJSIGroupBox = QGroupBox()
@@ -494,9 +547,7 @@ class GUI(QMainWindow):
         else:
             self.CrystalNZ = self.CurrentAvailableRefractiveIndices[2]
 
-        self.lastRefractiveIndex = [self.CrystalNX,
-                                    self.CrystalNY,
-                                    self.CrystalNZ]
+        self.lastRefractiveIndex = [self.CrystalNX, self.CrystalNY, self.CrystalNZ]
         self.PumpWlFrom = self.config.get("Pump wavelength from")
         self.PumpWlSingle = self.config.get("Pump wavelength single")
         self.PumpWlTo = self.config.get("Pump wavelength to")
@@ -521,6 +572,14 @@ class GUI(QMainWindow):
         self.PurityWLresolution = self.config.get("Purity wavelength resolution")
         self.PurityTauresolution = self.config.get("Purity tau resolution")
         self.PurityWLrange = self.config.get("Purity wavelength range")
+
+        self.SIfilterIdlerType = self.config.get("SI filter Idler Type")
+        self.SIfilterSignalType = self.config.get("SI filter Signal Type")
+        self.SIfilterIdlerCenterWL = self.config.get("SI filter Idler center wavelength")
+        self.SIfilterSignalCenterWL = self.config.get("SI filter Signal center wavelength")
+        self.SIfilterIdlerFWHM = self.config.get("SI filter Idler FWHM")
+        self.SIfilterSignalFWHM = self.config.get("SI filter Signal FWHM")
+        self.SIfilterTypes = Filters().FilterList
 
     def setProperties(self):
         self.ui_CrystalPolingPeriodsingleSB.setValue(self.CrystalPolingPeriodSingle * 10 ** 6)
@@ -548,10 +607,20 @@ class GUI(QMainWindow):
         self.ui_PlotPMCSBQPMorder.setValue(self.QPMOrder)
         self.ui_PlotJSI_Wlrange_SB.setValue(self.JSIwlRange * 10 ** 9)
         self.ui_PlotJSI_WLresolution_SB.setValue(self.JSIresolution)
-
         self.ui_Purity_WLresolution_SB.setValue(self.PurityWLresolution)
         self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange*10**9)
         self.ui_Purity_Tauresolution_SB.setValue(self.PurityTauresolution)
+        idx = 0
+        idx = self.ui_SIfilterIdlerType_CB.findText(self.SIfilterIdlerType)
+        self.ui_SIfilterIdlerType_CB.setCurrentIndex(idx)
+        idx = 0
+        idx = self.ui_SIfilterSignalType_CB.findText(self.SIfilterSignalType)
+        self.ui_SIfilterSignalType_CB.setCurrentIndex(idx)
+        self.ui_SIfilterIdlerCenterWL_SB.setValue(self.SIfilterIdlerCenterWL * 10 ** 9)
+        self.ui_SIfilterSignalCenterWL_SB.setValue(self.SIfilterSignalCenterWL * 10 ** 9)
+        self.ui_SIfilterIdlerFWHM_SB.setValue(self.SIfilterIdlerFWHM * 10 ** 9)
+        self.ui_SIfilterSignalFWHM_SB.setValue(self.SIfilterSignalFWHM * 10 ** 9)
+
 
     def initConnections(self):
         self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
@@ -593,6 +662,16 @@ class GUI(QMainWindow):
         self.ui_Purity_WLresolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_WLrange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_Tauresolution_SB.valueChanged.connect(self.getVarsFromGUI)
+
+        self.ui_SIfilterIdlerType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_SIfilterSignalType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
+        self.ui_SIfilterIdlerCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_SIfilterSignalCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
+
+
+
 
     def plot_RefIdx_vs_T(self):
         pltwndidx = self.plotwindowcount
@@ -763,11 +842,6 @@ class GUI(QMainWindow):
         spectralfilters = ['none', True, True]  # TODO: Implement filters
         FilterString = 'none'
         pumpshape = self.PumpShape
-
-        print(self.JSIwlRange)
-        print(self.PurityWLrange)
-
-
         calcGaussian = False
         calcSech = False
         if pumpshape == 'Gaussian':
@@ -988,6 +1062,13 @@ class GUI(QMainWindow):
         self.PurityWLrange = self.ui_Purity_WLrange_SB.value() * 10 ** (-9)
         self.PurityTauresolution = self.ui_Purity_Tauresolution_SB.value()
 
+        self.SIfilterIdlerType = self.ui_SIfilterIdlerType_CB.currentText()
+        self.SIfilterSignalType = self.ui_SIfilterSignalType_CB.currentText()
+        self.SIfilterIdlerCenterWL = self.ui_SIfilterIdlerCenterWL_SB.value() * 10 ** (-9)
+        self.SIfilterSignalCenterWL = self.ui_SIfilterSignalCenterWL_SB.value() * 10 ** (-9)
+        self.SIfilterIdlerFWHM = self.ui_SIfilterIdlerFWHM_SB.value() * 10 ** (-9)
+        self.SIfilterSignalFWHM = self.ui_SIfilterSignalFWHM_SB.value() * 10 ** (-9)
+
         self.SaveSettings()
 
     def SaveSettings(self):
@@ -1029,6 +1110,13 @@ class GUI(QMainWindow):
         self.config.set("Purity wavelength resolution", self.PurityWLresolution)
         self.config.set("Purity wavelength range", self.PurityWLrange)
         self.config.set("Purity tau resolution", self.PurityTauresolution)
+
+        self.config.set("SI filter Idler Type", self.SIfilterIdlerType)
+        self.config.set("SI filter Signal Type", self.SIfilterSignalType)
+        self.config.set("SI filter Idler center wavelength", self.SIfilterIdlerCenterWL)
+        self.config.set("SI filter Signal center wavelength", self.SIfilterSignalCenterWL)
+        self.config.set("SI filter Idler FWHM", self.SIfilterIdlerFWHM)
+        self.config.set("SI filter Signal FWHM", self.SIfilterSignalFWHM)
 
     def showWindow(self):
         g = GUI()

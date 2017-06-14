@@ -275,38 +275,19 @@ class JSI:
         self.PP = polingp * self.thermexpfactor(self.T)
         self.L = crystallength * self.thermexpfactor(self.T)
 
-        self.useFilter=True
+        self.pumpshape = pumpshape
+
         self.filtermatrix = []
 
-        self.pumpshape=pumpshape
-
-        if (filter[0] == 'none'):
-            self.useFilter=False
-        else:
-            if (filter[0] == 'rectangular'):
-                self.filtertype = 'rectangular'
-            elif (filter[0] == 'gaussian'):
-                self.filtertype = 'gaussian'
-
-            if filter[1]==True:
-                self.filtersignal=True
-            else:
-                self.filtersignal=False
-
-            if filter[2]==True:
-                self.filteridler=True
-            else:
-                self.filteridler=False
-
-            if (filter[1]==False):
-                if (filter[2]==False):
-                    print ('ERROR: filtertype not none but neither used for idler nor signal.')
-                else:
-                    for i in range(0, len(self.sigrange)):
-                        filtervector = []
-                        for j in range(0, len(self.idrange)):
-                            filtervector.append(self.filterfunction(self.sigrange[i], self.idrange[j]))
-                            self.filtermatrix.append(filtervector)
+        self.useFilter = True
+        self.filtersignalfunction = filter[0]
+        self.filteridlerfunction = filter[1]
+        for i in range(0, len(self.sigrange)):
+            filtervector = []
+            for j in range(0, len(self.idrange)):
+                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                filtervector.append(filterval)
+            self.filtermatrix.append(filtervector)
 
         if plotJSI==False:
             self.calcJSA = True
@@ -379,38 +360,19 @@ class JSI:
         self.PP = polingp * self.thermexpfactor(self.T)
         self.L = crystallength * self.thermexpfactor(self.T)
 
-        self.useFilter = True
-        self.filtermatrix = []
-
         self.pumpshape = pumpshape
 
-        if (filter[0] == 'none'):
-            self.useFilter = False
-        else:
-            if (filter[0] == 'rectangular'):
-                self.filtertype = 'rectangular'
-            elif (filter[0] == 'gaussian'):
-                self.filtertype = 'gaussian'
+        self.filtermatrix = []
 
-            if filter[1] == True:
-                self.filtersignal = True
-            else:
-                self.filtersignal = False
-
-            if filter[2] == True:
-                self.filteridler = True
-            else:
-                self.filteridler = False
-
-            if (filter[1] == False):
-                if (filter[2] == False):
-                    print('ERROR: filtertype not none but neither used for idler nor signal.')
-                else:
-                    for i in range(0, len(self.sigrange)):
-                        filtervector = []
-                        for j in range(0, len(self.idrange)):
-                            filtervector.append(self.filterfunction(self.sigrange[i], self.idrange[j]))
-                            self.filtermatrix.append(filtervector)
+        self.useFilter = True
+        self.filtersignalfunction = filter[0]
+        self.filteridlerfunction = filter[1]
+        for i in range(0, len(self.sigrange)):
+            filtervector = []
+            for j in range(0, len(self.idrange)):
+                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                filtervector.append(filterval)
+            self.filtermatrix.append(filtervector)
 
         if self.pumpshape == 'gaussian':
             self.calcGaussian = True

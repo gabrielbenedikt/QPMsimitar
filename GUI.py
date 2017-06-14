@@ -606,6 +606,7 @@ class GUI(QMainWindow):
         self.ui_CrystalLengthtoSB.setValue(self.CrystalLengthTo * 10 ** 3)
         self.ui_PlotPMCSBQPMorder.setValue(self.QPMOrder)
         self.ui_PlotJSI_Wlrange_SB.setValue(self.JSIwlRange * 10 ** 9)
+
         self.ui_PlotJSI_WLresolution_SB.setValue(self.JSIresolution)
         self.ui_Purity_WLresolution_SB.setValue(self.PurityWLresolution)
         self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange*10**9)
@@ -620,7 +621,6 @@ class GUI(QMainWindow):
         self.ui_SIfilterSignalCenterWL_SB.setValue(self.SIfilterSignalCenterWL * 10 ** 9)
         self.ui_SIfilterIdlerFWHM_SB.setValue(self.SIfilterIdlerFWHM * 10 ** 9)
         self.ui_SIfilterSignalFWHM_SB.setValue(self.SIfilterSignalFWHM * 10 ** 9)
-
 
     def initConnections(self):
         self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
@@ -669,9 +669,6 @@ class GUI(QMainWindow):
         self.ui_SIfilterSignalCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
-
-
-
 
     def plot_RefIdx_vs_T(self):
         pltwndidx = self.plotwindowcount
@@ -839,7 +836,9 @@ class GUI(QMainWindow):
         taumin = self.PulsewidthFrom
         taumax = self.PulsewidthTo
         wlrange = self.PurityWLrange
-        spectralfilters = ['none', True, True]  # TODO: Implement filters
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType,self.SIfilterIdlerCenterWL,self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType,self.SIfilterSignalCenterWL,self.SIfilterSignalFWHM)
+        spectralfilters = [ffi, ffs]
         FilterString = 'none'
         pumpshape = self.PumpShape
         calcGaussian = False
@@ -909,7 +908,9 @@ class GUI(QMainWindow):
         m=self.QPMOrder
         tau=self.PulsewidthSingle
         wlrange=self.JSIwlRange
-        spectralfilters = ['none', True, True]
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffi,ffs]
 
         plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
         if plotJSI==True:
@@ -958,7 +959,7 @@ class GUI(QMainWindow):
         # need customization for 3 plots in 1 window
         pltwnd.layout.removeWidget(pltwnd.canvas)
         pltwnd.layout.removeWidget(pltwnd.toolbar)
-        pltwnd.fig = figure(facecolor="white")  # , figsize=(40,40))
+        pltwnd.fig = figure(facecolor="white")
         pltwnd.peplt = pltwnd.fig.add_subplot(131)
         pltwnd.pmplt = pltwnd.fig.add_subplot(132)
         pltwnd.jsplt = pltwnd.fig.add_subplot(133)

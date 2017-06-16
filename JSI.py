@@ -90,6 +90,13 @@ class JSI:
 
         return wlgap2
 
+    # returns a function that only depends on the poling period
+    def wlgaponlyPP(self, lp, T):
+        def wlgap2(PP):
+            swl, iwl = self.SIwls([lp, T, PP * self.thermexpfactor(T)])
+            return swl - iwl
+        return wlgap2
+
     def deltak(self, lp, ls, li, T, PP):
         tmp = self.pconv(lp, ls, li, T, PP)
         return 2 * Constants().pi * tmp
@@ -242,6 +249,12 @@ class JSI:
                 return (0)
             else:
                 return (1)
+
+    def GetEffectivePP(self, m, Tcp, PPguess, lp, refidxfunc):
+        self.nx = refidxfunc[0]
+        self.ny = refidxfunc[1]
+        self.nz = refidxfunc[2]
+        return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
     def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength,
                  refidxfunc,qpmorder,filter,plotJSI,pumpshape):

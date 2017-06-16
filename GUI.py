@@ -57,6 +57,7 @@ class GUI(QMainWindow):
         self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
         self.ui_layoutPlotJSI = self.initLayoutPlotJSI()
         self.ui_layoutPurity = self.initLayoutPurity()
+        self.ui_layoutGetEffPP = self.initLayoutGetEffPP()
 
         # Group: set crystal properties
         self.ui_layout.addLayout(self.ui_layoutCrystal, 1, 1)
@@ -72,6 +73,8 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutPurity, 1, 3)
         # Group: plot JSI
         self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3)
+        # Group: Get effective poling period
+        self.ui_layout.addLayout(self.ui_layoutGetEffPP, 3, 2)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -214,6 +217,9 @@ class GUI(QMainWindow):
         self.ui_CrystalPolingPeriodtoSB = QDoubleSpinBox()
         self.ui_CrystalPolingPeriodLabel = QLabel()
         self.ui_CrystalPolingPeriodLabel.setText('Poling Period [µm]')
+        self.ui_CrystalPolingPeriodsingleSB.setDecimals(4)
+        self.ui_CrystalPolingPeriodfromSB.setDecimals(4)
+        self.ui_CrystalPolingPeriodtoSB.setDecimals(4)
 
         self.ui_CrystalLengthsingleSB = QDoubleSpinBox()
         self.ui_CrystalLengthfromSB = QDoubleSpinBox()
@@ -519,6 +525,26 @@ class GUI(QMainWindow):
 
         return self.ui_layoutPurity
 
+    def initLayoutGetEffPP(self):
+        self.ui_layoutGetEffPP = QGridLayout()
+        self.ui_GetEffPPGroupBox = QGroupBox()
+        self.ui_layoutGetEffPPGroupBox = QGridLayout()
+
+        self.ui_GetEffPPGroupBox.setTitle('Get effective poling period')
+
+        self.ui_GetEffPPlabelQPMorder = QLabel()
+        self.ui_GetEffPPlabelQPMorder.setText('QPM order')
+
+        self.ui_GetEffPP_Btn = QPushButton()
+        self.ui_GetEffPP_Btn.setText('Get effective PP')
+
+        self.ui_layoutGetEffPPGroupBox.addWidget(self.ui_GetEffPP_Btn, 1, 1)
+
+        self.ui_GetEffPPGroupBox.setLayout(self.ui_layoutGetEffPPGroupBox)
+        self.ui_layoutGetEffPP.addWidget(self.ui_GetEffPPGroupBox)
+
+        return self.ui_layoutGetEffPP
+
     def getProperties(self):
         self.CrystalMaterials = RefractiveIndex().materialList
         self.CrystalMaterial = self.CrystalMaterials[0]  # fallback
@@ -607,7 +633,6 @@ class GUI(QMainWindow):
         self.ui_CrystalLengthtoSB.setValue(self.CrystalLengthTo * 10 ** 3)
         self.ui_PlotPMCSBQPMorder.setValue(self.QPMOrder)
         self.ui_PlotJSI_Wlrange_SB.setValue(self.JSIwlRange * 10 ** 9)
-
         self.ui_PlotJSI_WLresolution_SB.setValue(self.JSIresolution)
         self.ui_Purity_WLresolution_SB.setValue(self.PurityWLresolution)
         self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange*10**9)
@@ -663,13 +688,13 @@ class GUI(QMainWindow):
         self.ui_Purity_WLresolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_WLrange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_Tauresolution_SB.valueChanged.connect(self.getVarsFromGUI)
-
         self.ui_SIfilterIdlerType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
 
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_CrystalTfromSB.value()
@@ -1179,6 +1204,19 @@ class GUI(QMainWindow):
         pltwnd.fig.set_size_inches(8,3)
         pltwnd.canvas.draw()
         pltwnd.resize(1200,600)
+
+    def GetEffectivePolingPeriod(self):
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        m=self.QPMOrder
+        Tcp=self.CrystalTempSingle
+        PPguess=self.CrystalPolingPeriodSingle
+        lp=self.PumpWlSingle
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+        PP=JSI().GetEffectivePP(m, Tcp,PPguess,lp,refidxfunc)
+        self.ui_CrystalPolingPeriodsingleSB.setValue(PP*10**6)
+
 
     def getVarsFromGUI(self):
         self.CrystalPolingPeriodSingle = self.ui_CrystalPolingPeriodsingleSB.value() * 10 ** (-6)

@@ -296,7 +296,7 @@ class JSI:
             self.calcJSA = False
             self.calcJSI = True
 
-        if self.pumpshape=='gaussian':
+        if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
         else:
@@ -374,7 +374,7 @@ class JSI:
                 filtervector.append(filterval)
             self.filtermatrix.append(filtervector)
 
-        if self.pumpshape == 'gaussian':
+        if self.pumpshape.casefold() == 'gaussian':
             self.calcGaussian = True
             self.calcSech = False
         else:
@@ -463,7 +463,7 @@ class JSI:
                 filtervector.append(filterval)
             self.filtermatrix.append(filtervector)
 
-        if self.pumpshape == 'gaussian':
+        if self.pumpshape.casefold() == 'gaussian':
             self.calcGaussian = True
             self.calcSech = False
         else:
@@ -552,7 +552,7 @@ class JSI:
                 filtervector.append(filterval)
             self.filtermatrix.append(filtervector)
 
-        if self.pumpshape == 'gaussian':
+        if self.pumpshape.casefold() == 'gaussian':
             self.calcGaussian = True
             self.calcSech = False
         else:

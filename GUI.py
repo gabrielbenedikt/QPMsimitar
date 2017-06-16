@@ -2,11 +2,12 @@
 from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                              QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
                              QRadioButton, QGridLayout, QVBoxLayout, QScrollArea)
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import (QFont, QMouseEvent)
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
 from JSI import JSI
 from Filters import Filters
+from QTreimps import QHoverPushButton
 import numpy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
@@ -39,6 +40,20 @@ class GUI(QMainWindow):
         self.config = config
 
         self.initUI()
+
+        self.Highlight_PMCvsT = False
+        self.Highlight_PMCvsTau = False
+        self.Highlight_GetEffectivePP = False
+        self.Highlight_JSI = False
+        self.Highlight_PurityvsTau = False
+        self.Highlight_PurityvsL = False
+        self.Highlight_PurityvsTauAndL = False
+
+        self.HighlightedSpinBox = "QSpinBox { background-color: yellow; }"
+        self.HighlightedDoubleSpinBox = "QDoubleSpinBox { background-color: yellow; }"
+        self.HighlightedComboBox = "QComboBox { background-color: yellow; }"
+        self.HighlightedRadioButton = "QRadioButton { background-color: yellow; }"
+        self.HighlightedWidget = "QWidget { background-color: yellow; }"
 
     def initUI(self):
         QToolTip.setFont(QFont('SansSerif', 10))
@@ -324,10 +339,12 @@ class GUI(QMainWindow):
         # vertical scroll area
         # containing checkboxes with all available refractive indices
 
-        self.ui_PlotRefractiveIndex_Btn_Plot_T = QPushButton()
+        self.ui_PlotRefractiveIndex_Btn_Plot_T = QHoverPushButton()
         self.ui_PlotRefractiveIndex_Btn_Plot_T.setText('Plot vs T')
-        self.ui_PlotRefractiveIndex_Btn_Plot_wl = QPushButton()
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.setObjectName('Plot refractive indices vs T')
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl = QHoverPushButton()
         self.ui_PlotRefractiveIndex_Btn_Plot_wl.setText(r'Plot vs λp')
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.setObjectName('Plot refractive indices vs wl')
         # self.ui_PlotRefractiveIndex_Btn_Plot_wl.setText(r'Plot vs '+QChar(0xbb, 0x03))
 
         self.ui_layoutPlotRefractiveIndexScrollArea.setWidget(self.ui_layoutPlotRefractiveIndexScrollAreaWidget)
@@ -376,11 +393,13 @@ class GUI(QMainWindow):
 
         self.ui_PlotPMCSBQPMorder = QSpinBox()
 
-        self.ui_PlotPMCvsT_Btn = QPushButton()
+        self.ui_PlotPMCvsT_Btn = QHoverPushButton()
         self.ui_PlotPMCvsT_Btn.setText('Plot vs T')
+        self.ui_PlotPMCvsT_Btn.setObjectName('Plot PMC vs T')
 
-        self.ui_PlotPMCvsPP_Btn = QPushButton()
+        self.ui_PlotPMCvsPP_Btn = QHoverPushButton()
         self.ui_PlotPMCvsPP_Btn.setText('Plot vs PP')
+        self.ui_PlotPMCvsPP_Btn.setObjectName('Plot PMC vs PP')
 
         # set limits
         self.ui_PlotPMCSBQPMorder.setRange(-10000, 10000)
@@ -461,8 +480,8 @@ class GUI(QMainWindow):
         self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 2, 1)
         self.ui_PlotJSI_plotJSIRadioButton.setChecked(True)
 
-        self.ui_PlotJSI_plotBtn = QPushButton('Plot')
-
+        self.ui_PlotJSI_plotBtn = QHoverPushButton('Plot')
+        self.ui_PlotJSI_plotBtn.setObjectName('Plot JSA JSI')
         self.ui_PlotJSI_WLresolution_SB = QSpinBox()
         self.ui_PlotJSI_WLresolution_Label = QLabel('Resolution')
         self.ui_PlotJSI_WLresolution_SB.setMinimum(2)
@@ -488,10 +507,14 @@ class GUI(QMainWindow):
 
         self.ui_PurityGroupBox.setTitle('TODO: Purity')
 
-        self.ui_Purity_plotvsTau_Btn = QPushButton('Plot vs τ')
-        self.ui_Purity_plotvspwl_Btn = QPushButton('TODO: Plot vs λp')
-        self.ui_Purity_plotvsL_Btn = QPushButton('Plot vs L')
-        self.ui_Purity_plotvsTauandL_Btn = QPushButton('Plot vs L and τ')
+        self.ui_Purity_plotvsTau_Btn = QHoverPushButton('Plot vs τ')
+        self.ui_Purity_plotvspwl_Btn = QHoverPushButton('TODO: Plot vs λp')
+        self.ui_Purity_plotvsL_Btn = QHoverPushButton('Plot vs L')
+        self.ui_Purity_plotvsTauandL_Btn = QHoverPushButton('Plot vs L and τ')
+        self.ui_Purity_plotvsTau_Btn.setObjectName('Plot Purity vs tau')
+        self.ui_Purity_plotvspwl_Btn.setObjectName('Plot Purity vs lp')
+        self.ui_Purity_plotvsL_Btn.setObjectName('Plot Purity vs L')
+        self.ui_Purity_plotvsTauandL_Btn.setObjectName('Plot Purity vs L and tau')
 
         self.ui_Purity_WLresolution_Label = QLabel('WL resolution')
         self.ui_Purity_WLrange_Label = QLabel('WL range [nm]')
@@ -535,8 +558,9 @@ class GUI(QMainWindow):
         self.ui_GetEffPPlabelQPMorder = QLabel()
         self.ui_GetEffPPlabelQPMorder.setText('QPM order')
 
-        self.ui_GetEffPP_Btn = QPushButton()
+        self.ui_GetEffPP_Btn = QHoverPushButton()
         self.ui_GetEffPP_Btn.setText('Get effective PP')
+        self.ui_GetEffPP_Btn.setObjectName('Get effective PP')
 
         self.ui_layoutGetEffPPGroupBox.addWidget(self.ui_GetEffPP_Btn, 1, 1)
 
@@ -695,6 +719,28 @@ class GUI(QMainWindow):
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
+
+        self.ui_PlotPMCvsT_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotPMCvsPP_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_GetEffPP_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotJSI_plotBtn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_Purity_plotvsTau_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_Purity_plotvspwl_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_Purity_plotvsL_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_Purity_plotvsTauandL_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+
+        self.ui_PlotPMCvsT_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotPMCvsPP_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_GetEffPP_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotJSI_plotBtn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_Purity_plotvsTau_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_Purity_plotvspwl_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_Purity_plotvsL_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_Purity_plotvsTauandL_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
 
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_CrystalTfromSB.value()
@@ -877,15 +923,15 @@ class GUI(QMainWindow):
         idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         [purity, max, maxtau] = JSI().getpurity_vsTau(pwl, signalrange, idlerrange, taurange, T,
-                                                PP, L, refidxfunc, m, spectralfilters, pumpshape)
+                                                      PP, L, refidxfunc, m, spectralfilters, pumpshape)
 
         AnnotateString = ''
         AnnotateString = AnnotateString + \
                          r'Maximum purity: {0:.3} at $\tau={1:.3}$ps'.format(max, maxtau * 10 ** 12)+'\n' \
-                         'Pump wavelength: {0:.2f}nm'.format(pwl*10**9)+'\n' \
-                         'Poling period: {0:.4f}µm'.format(PP*10**6)+'\n' \
-                         'Temperature: {0:.1f}°C'.format(T)+'\n' \
-                         'Crystal length: {0:.1f}mm'.format(L*10**3)+'\n'
+                                                                                                     'Pump wavelength: {0:.2f}nm'.format(pwl*10**9)+'\n' \
+                                                                                                                                                    'Poling period: {0:.4f}µm'.format(PP*10**6)+'\n' \
+                                                                                                                                                                                                'Temperature: {0:.1f}°C'.format(T)+'\n' \
+                                                                                                                                                                                                                                   'Crystal length: {0:.1f}mm'.format(L*10**3)+'\n'
         FilterString = ''
         print(self.SIfilterSignalType)
         if self.SIfilterSignalType.casefold() != 'none':
@@ -956,12 +1002,12 @@ class GUI(QMainWindow):
         idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         [purity, max, maxL] = JSI().getpurity_vsL(pwl, signalrange, idlerrange, tau, T,
-                                                PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
+                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
 
         AnnotateString = ''
         AnnotateString = AnnotateString + \
                          r'Maximum purity: {0:.3f} at L={1:.2f}mm'.format(max, maxL*10**3) + '\n' \
-                                                                                                       'Pump wavelength: {0:.2f}nm'.format(
+                                                                                             'Pump wavelength: {0:.2f}nm'.format(
             pwl * 10 ** 9) + '\n' \
                              'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n' \
                                                                                'Temperature: {0:.1f}°C'.format(T) + '\n' \
@@ -1035,10 +1081,10 @@ class GUI(QMainWindow):
         idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         purity = JSI().getpurity_vsLandTau(pwl, signalrange, idlerrange, Taurange, T,
-                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
+                                           PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
 
         AnnotateString = ''
-        AnnotateString = AnnotateString + 'Pump wavelength: {0:.2f}nm'.format(pwl * 10 ** 9) + '\n'+\
+        AnnotateString = AnnotateString + 'Pump wavelength: {0:.2f}nm'.format(pwl * 10 ** 9) + '\n'+ \
                          'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n'
         FilterString = ''
         if self.SIfilterSignalType.casefold() != 'none':
@@ -1062,7 +1108,7 @@ class GUI(QMainWindow):
         pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.grid('off')
         plot=pltwnd.ax.imshow(purity, cmap=colormap, vmin=abs(purity).min(), vmax=abs(purity).max(),aspect='auto',
-                         origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
+                              origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
         #(Lrange * 10 ** 3, purity, lw=2, label='purity')
         pltwnd.ax.set_xlabel('Pulse width [ps]')
         pltwnd.ax.set_ylabel('Crystal length [mm]')
@@ -1209,14 +1255,13 @@ class GUI(QMainWindow):
         nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
         nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
         m=self.QPMOrder
         Tcp=self.CrystalTempSingle
         PPguess=self.CrystalPolingPeriodSingle
         lp=self.PumpWlSingle
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
         PP=JSI().GetEffectivePP(m, Tcp,PPguess,lp,refidxfunc)
         self.ui_CrystalPolingPeriodsingleSB.setValue(PP*10**6)
-
 
     def getVarsFromGUI(self):
         self.CrystalPolingPeriodSingle = self.ui_CrystalPolingPeriodsingleSB.value() * 10 ** (-6)
@@ -1321,6 +1366,198 @@ class GUI(QMainWindow):
         self.pltwindowlist[self.plotwindowcount].show()
         self.plotwindowcount = self.plotwindowcount + 1
 
+    def MouseHoverEnter(self, str):
+        if str == 'Plot PMC vs T':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+        elif str == 'Plot PMC vs PP':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedDoubleSpinBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+        elif str == 'Plot refractive indices vs T':
+            self.ui_CrystalTfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setStyleSheet(self.HighlightedWidget)
+        elif str == 'Plot refractive indices vs wl':
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpwlfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpwltoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setStyleSheet(self.HighlightedWidget)
+        elif str == 'Get effective PP':
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+        elif str == 'Plot JSA JSI':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pulsewidthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotJSI_Wlrange_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+
+            self.ui_PlotJSI_plotJSARadioButton.setStyleSheet(self.HighlightedRadioButton)
+            self.ui_PlotJSI_plotJSIRadioButton.setStyleSheet(self.HighlightedRadioButton)
+            plotJSI = self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_PlotJSI_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+        elif str == 'Plot Purity vs tau':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pulsewidthfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pulsewidthtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_Purity_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_Tauresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_WLrange_SB.setStyleSheet(self.HighlightedSpinBox)
+        elif str == 'Plot Purity vs lp':
+            pass
+        elif str == 'Plot Purity vs L':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pulsewidthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_Purity_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_Tauresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_WLrange_SB.setStyleSheet(self.HighlightedSpinBox)
+        elif str == 'Plot Purity vs L and tau':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pulsewidthfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pulsewidthtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+
+            self.ui_Purity_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_Tauresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_Purity_WLrange_SB.setStyleSheet(self.HighlightedSpinBox)
+        else:
+            print('No Object name specified in QHoverPushButton!')
+
+
+    def MouseHoverLeave(self, str):
+        self.ui_pumpwlfromSB.setStyleSheet("")
+        self.ui_pumpwlsingleSB.setStyleSheet("")
+        self.ui_pumpwltoSB.setStyleSheet("")
+        self.ui_pulsewidthfromSB.setStyleSheet("")
+        self.ui_pulsewidthsingleSB.setStyleSheet("")
+        self.ui_pulsewidthtoSB.setStyleSheet("")
+        self.ui_CrystalPolingPeriodfromSB.setStyleSheet("")
+        self.ui_CrystalPolingPeriodsingleSB.setStyleSheet("")
+        self.ui_CrystalPolingPeriodtoSB.setStyleSheet("")
+        self.ui_CrystalLengthfromSB.setStyleSheet("")
+        self.ui_CrystalLengthsingleSB.setStyleSheet("")
+        self.ui_CrystalLengthtoSB.setStyleSheet("")
+        self.ui_CrystalTtoSB.setStyleSheet("")
+        self.ui_CrystalTsingleSB.setStyleSheet("")
+        self.ui_CrystalTfromSB.setStyleSheet("")
+        self.ui_PlotPMCSBQPMorder.setStyleSheet("")
+        self.ui_CrystalNXComboBox.setStyleSheet("")
+        self.ui_CrystalNYComboBox.setStyleSheet("")
+        self.ui_CrystalNZComboBox.setStyleSheet("")
+        self.ui_CrystalMaterialComboBox.setStyleSheet("")
+        self.ui_pumpShapeCB.setStyleSheet("")
+        self.ui_SIfilterIdlerType_CB.setStyleSheet("")
+        self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet("")
+        self.ui_SIfilterIdlerFWHM_SB.setStyleSheet("")
+        self.ui_SIfilterSignalType_CB.setStyleSheet("")
+        self.ui_SIfilterSignalCenterWL_SB.setStyleSheet("")
+        self.ui_SIfilterSignalFWHM_SB.setStyleSheet("")
+        self.ui_PlotJSI_plotJSARadioButton.setStyleSheet("")
+        self.ui_PlotJSI_plotJSIRadioButton.setStyleSheet("")
+        self.ui_PlotJSI_Wlrange_SB.setStyleSheet("")
+        self.ui_PlotJSI_WLresolution_SB.setStyleSheet("")
+        self.ui_Purity_WLresolution_SB.setStyleSheet("")
+        self.ui_Purity_Tauresolution_SB.setStyleSheet("")
+        self.ui_Purity_WLrange_SB.setStyleSheet("")
+        self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setStyleSheet("")
 
 class PlotWindow(QWidget):
     def __init__(self):

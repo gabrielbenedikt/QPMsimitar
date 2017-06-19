@@ -557,3 +557,73 @@ class JSI:
             Tcp.append(tmp)
 
         return Tcp
+
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,
+                           JSIresolution, pumpshape, delayrange, refidxfunc, filter):
+        [self.nx, self.ny, self.nz] = refidxfunc
+        if pumpshape.casefold() =='gaussian':
+            self.calcGaussian = True
+            self.calcSech = False
+        else:
+            self.calcGaussian = False
+            self.calcSech = True
+
+        self.filtermatrix = []
+
+        self.useFilter = True
+        self.filtersignalfunction = filter[0]
+        self.filteridlerfunction = filter[1]
+        for i in range(0, len(signalrange)):
+            filtervector = []
+            for j in range(0, len(idlerrange)):
+                filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
+                filtervector.append(filterval)
+            self.filtermatrix.append(filtervector)
+
+        X, Y = numpy.meshgrid(signalrange, idlerrange)
+
+        HOMI = []
+
+        for i in range(0,len(delayrange)):
+            if self.calcSech:
+                jsi = self.JSIsech(pwl, X, Y, tau, temp, polingp, cl)
+                jsa = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
+                jsa_cc = numpy.conjugate(self.JSAsech(pwl, Y, X, tau, temp, polingp, cl))
+            elif self.calcGaussian:
+                jsi = self.JSIgauss(pwl, X, Y, tau, temp, polingp, cl)
+                jsa = self.JSAgauss(pwl, X, Y, tau, temp, polingp, cl)
+                jsa_cc = numpy.conjugate(self.JSAgauss(pwl, Y, X, tau, temp, polingp, cl))
+            else:
+                print('ERROR: Unknown pump beamshape')
+
+            phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
+
+            ProbMX = jsi-phase*jsa*jsa_cc
+
+            tmp=0
+            for i in range(0,len(X)):
+                for j in range(0,len(Y)):
+                    tmp = tmp + ProbMX[i][j]
+            HOMI.append(tmp)
+
+        # omit tiny imaginary parts
+        HOMI = numpy.abs(HOMI)
+
+        # norm to 1/2
+        max = numpy.max(HOMI)
+        HOMI = HOMI/max
+        HOMI = 0.5*HOMI
+
+        # determine visibility
+        homimax=numpy.max(HOMI)
+        homimin=numpy.min(HOMI)
+        vis = numpy.abs((homimax-homimin)/(homimax+homimin))
+
+        # calc FWHM
+        visinterpolf = scipy.interpolate.interp1d(delayrange, HOMI-0.25)
+        negroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/2)-2)])
+        posroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/2)+2)])
+
+        homfwhm=posroot[0]-negroot[0]
+
+        return [HOMI,vis,homfwhm]

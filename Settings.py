@@ -20,26 +20,26 @@ class Settings:
         self.config=[]
         #self.config.append(["key",value])
         self.config.append(["Crystal Material", "PPKTP"])
-        self.config.append(["Crystal Poling Period From", 46.0])
-        self.config.append(["Crystal Poling Period Single", 46.25])
-        self.config.append(["Crystal Poling Period To", 46.5])
+        self.config.append(["Crystal Poling Period From", 46.0*10**(-6)])
+        self.config.append(["Crystal Poling Period Single", 46.25*10**(-6)])
+        self.config.append(["Crystal Poling Period To", 46.5*10**(-6)])
         self.config.append(["Crystal Refractive Index X", 'kato'])
         self.config.append(["Crystal Refractive Index Y", 'kato'])
         self.config.append(["Crystal Refractive Index Z", 'kato'])
 
         self.config.append(["QPM Order", -1])
 
-        self.config.append(["Pump wavelength from", 760])
-        self.config.append(["Pump wavelength single", 775])
-        self.config.append(["Pump wavelength to", 790])
+        self.config.append(["Pump wavelength from", 760*10**(-9)])
+        self.config.append(["Pump wavelength single", 775*10**(-9)])
+        self.config.append(["Pump wavelength to", 790*10**(-9)])
 
-        self.config.append(["SI wavelength from", 1500])
-        self.config.append(["SI wavelength single", 1550])
-        self.config.append(["SI wavelength to", 1600])
+        self.config.append(["SI wavelength from", 1500*10**(-9)])
+        self.config.append(["SI wavelength single", 1550*10**(-9)])
+        self.config.append(["SI wavelength to", 1600*10**(-9)])
 
-        self.config.append(["Pump pulsewidth from", 1])
-        self.config.append(["Pump pulsewidth single", 2.9])
-        self.config.append(["Pump pulsewidth to", 5])
+        self.config.append(["Pump pulsewidth from", 1*10**(-12)])
+        self.config.append(["Pump pulsewidth single", 2.9*10**(-12)])
+        self.config.append(["Pump pulsewidth to", 5*10**(-12)])
         self.config.append(["Pump pulse shape", 'Sech^2'])
         self.config.append(["Pump pulsewidth apply deconvolution factor", True])
 
@@ -47,23 +47,26 @@ class Settings:
         self.config.append(["Crystal Temperature single", 35])
         self.config.append(["Crystal Temperature to", 50])
 
-        self.config.append(["Crystal Length from", 20])
-        self.config.append(["Crystal Length single", 30])
-        self.config.append(["Crystal Length to", 40])
+        self.config.append(["Crystal Length from", 20*10**(-3)])
+        self.config.append(["Crystal Length single", 30*10**(-3)])
+        self.config.append(["Crystal Length to", 40*10**(-3)])
 
-        self.config.append(["JSI wavelength range", 8])
+        self.config.append(["JSI wavelength range", 8*10**(-9)])
         self.config.append(["JSI resolution", 50])
 
         self.config.append(["Purity wavelength resolution", 50])
-        self.config.append(["Purity wavelength range", 8])
+        self.config.append(["Purity wavelength range", 8*10**(-9)])
         self.config.append(["Purity tau resolution", 20])
 
         self.config.append(["SI filter Idler Type", "None"])
         self.config.append(["SI filter Signal Type", "None"])
-        self.config.append(["SI filter Idler center wavelength", 1550])
-        self.config.append(["SI filter Signal center wavelength", 1550])
-        self.config.append(["SI filter Idler FWHM", 3])
-        self.config.append(["SI filter Signal FWHM", 3])
+        self.config.append(["SI filter Idler center wavelength", 1550*10**(-9)])
+        self.config.append(["SI filter Signal center wavelength", 1550*10**(-9)])
+        self.config.append(["SI filter Idler FWHM", 3*10**(-9)])
+        self.config.append(["SI filter Signal FWHM", 3*10**(-9)])
+
+        self.config.append(["HOM interference plot resolution", 20])
+        self.config.append(["HOM interference plot range", 6*10**(-12)])
 
     def loadSettings(self):
         if Path('config.yaml').is_file():

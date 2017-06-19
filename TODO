@@ -1,8 +1,5 @@
 x)Thermal expansion of crystal: make it property of crystal and use this implementation (in PMC / JSI / ...)
 
-x)Tcp
-----vs lambdap
-----vs PP
 x)JSA/JSI
 ----Marginal spectra
 x)FWHM
@@ -20,7 +17,6 @@ x)SPDC parameters
 x)More Setup details
 ----Coupling (needs L, n(x,y,z), pump focusing, collection optics ? ) see "High efficiency coupling of photon pairs in practice"
 --------Spectral-Spatial Correlation function (Same paper)
-x)Calc PP from Tcp
 
 z)make it possible to add plots to existing plots
 ----e.g.: PMC for two different PPs of lps

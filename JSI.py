@@ -596,6 +596,11 @@ class JSI:
             else:
                 print('ERROR: Unknown pump beamshape')
 
+            if self.useFilter:
+                jsa = jsa*self.filtermatrix
+                jsi = jsi*self.filtermatrix
+                jsa_cc = jsa_cc*self.filtermatrix
+
             phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
 
             ProbMX = jsi-phase*jsa*jsa_cc
@@ -617,12 +622,12 @@ class JSI:
         # determine visibility
         homimax=numpy.max(HOMI)
         homimin=numpy.min(HOMI)
-        vis = numpy.abs((homimax-homimin)/(homimax+homimin))
+        vis = numpy.abs((homimax-homimin)/(homimax))
 
         # calc FWHM
         visinterpolf = scipy.interpolate.interp1d(delayrange, HOMI-0.25)
-        negroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/2)-2)])
-        posroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/2)+2)])
+        negroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/3))])
+        posroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)*2/3))])
 
         homfwhm=posroot[0]-negroot[0]
 

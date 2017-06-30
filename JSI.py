@@ -186,8 +186,8 @@ class JSI:
         return (1 / numpy.cosh(argument))
 
     # pump envelope intensity for gaussian beam
-    def PEIsech(self, lp, ls, li, dw):
-        return (self.PEAsech(lp, ls, li, dw)) ** 2
+    def PEIsech(self, lp, ls, li, B):
+        return (self.PEAsech(lp, ls, li, B)) ** 2
 
     # joint spectral amplitude for sech^2 beam
     def JSAsech(self, lp, ls, li, tauac, t, pp, cl):
@@ -561,6 +561,10 @@ class JSI:
     def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,
                            JSIresolution, pumpshape, delayrange, refidxfunc, filter):
         [self.nx, self.ny, self.nz] = refidxfunc
+        #
+        # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
+        # Ansari, 2013 msc thesis
+        #
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
@@ -625,9 +629,25 @@ class JSI:
         vis = numpy.abs((homimax-homimin)/(homimax))
 
         # calc FWHM
-        visinterpolf = scipy.interpolate.interp1d(delayrange, HOMI-0.25)
-        negroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)/3))])
-        posroot = scipy.optimize.fsolve(visinterpolf, delayrange[int(numpy.floor(len(delayrange)*2/3))])
+        #visinterpolf = scipy.interpolate.interp1d(delayrange, HOMI-0.25)
+        #negrootstartest=delayrange[int(numpy.floor(len(delayrange)/3))]
+        #posrootstartest=delayrange[int(numpy.floor(len(delayrange)*2/3))]
+        #print('Estimate for negative root: ', negrootstartest)
+        #print('Estimate for positive root: ', posrootstartest)
+        #negroot = scipy.optimize.fsolve(visinterpolf, negrootstartest)
+        #posroot = scipy.optimize.fsolve(visinterpolf, posrootstartest)
+        
+        #anorther try, maybe more stable=
+        delayrangeneg = delayrange[:int(numpy.floor(len(delayrange)/2))]
+        delayrangepos = delayrange[int(numpy.floor(len(delayrange)/2)):]
+        HOMIneg = HOMI[:int(numpy.floor(len(HOMI)/2))]
+        HOMIpos = HOMI[int(numpy.floor(len(HOMI)/2)):]
+        visinterpolfneg = scipy.interpolate.interp1d(delayrangeneg, HOMIneg-0.25, fill_value='extrapolate')
+        visinterpolfpos = scipy.interpolate.interp1d(delayrangepos, HOMIpos-0.25, fill_value='extrapolate')
+        negrootstartest=delayrangeneg[int(numpy.floor(len(delayrangeneg)/2))]
+        posrootstartest=delayrangepos[int(numpy.floor(len(delayrangepos)/2))]
+        negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
+        posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
 
         homfwhm=posroot[0]-negroot[0]
 

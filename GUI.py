@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                              QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
-                             QRadioButton, QGridLayout, QVBoxLayout, QScrollArea)
+                             QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
 from PyQt5.QtGui import (QFont, QMouseEvent)
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
@@ -12,19 +12,6 @@ import numpy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
-
-
-#
-# from PyQt5.QtWidgets import (QHBoxLayout, QSizePolicy)
-# import sys
-# from PyQt5.QtCore import QObject, QVariant
-# from PyQt5 import QtCore, QtGui
-# import PyQt5.QtCore
-# import matplotlib.pyplot as plt
-# import scipy
-# from Multiphoton import MultiPhotonAnalysis
-# from Settings import Settings
-
 
 # noinspection PyAttributeOutsideInit
 class GUI(QMainWindow):
@@ -67,6 +54,7 @@ class GUI(QMainWindow):
         self.ui_layoutGetEffPP = self.initLayoutGetEffPP()
         self.ui_layoutTcp = self.initLayoutTcp()
         self.ui_layoutHOM = self.initLayoutHOM()
+        self.ui_layoutPlotFWHM = self.initLayoutPlotFWHM()
 
         # Group: set crystal properties
         self.ui_layout.addLayout(self.ui_layoutCrystal, 1, 1)
@@ -78,16 +66,18 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
         # Group: plot phase matching curve
         self.ui_layout.addLayout(self.ui_layoutPlotPMC, 2, 2)
+        # Group: Get effective poling period
+        self.ui_layout.addLayout(self.ui_layoutGetEffPP, 3, 2)
         # Group: Purity
         self.ui_layout.addLayout(self.ui_layoutPurity, 1, 3)
         # Group: plot JSI
         self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3)
-        # Group: Get effective poling period
-        self.ui_layout.addLayout(self.ui_layoutGetEffPP, 3, 2)
         # Group: Crossing point temperature vs different variables
         self.ui_layout.addLayout(self.ui_layoutTcp, 3, 3)
         # Group: HOM
-        self.ui_layout.addLayout(self.ui_layoutHOM, 3, 4)
+        self.ui_layout.addLayout(self.ui_layoutHOM, 2, 4)
+        #Group: Plot FWHM of marginal spectral
+        self.ui_layout.addLayout(self.ui_layoutPlotFWHM, 3, 4)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -325,7 +315,6 @@ class GUI(QMainWindow):
         return self.ui_layoutHOM
 
     def initLayoutPlotRefractiveIndex(self):
-
         # |Grid Layout
         # |->GroupBox
         # ||->Grid Layout
@@ -334,6 +323,7 @@ class GUI(QMainWindow):
         # |||||->Grid layout
         # ||||||->Checkboxes
         # |||->Button
+
         self.ui_layoutPlotRefractiveIndex = QGridLayout()
         self.ui_layoutPlotRefractiveIndexGroupBox = QGroupBox()
         self.ui_layoutPlotRefractiveIndexGroupBoxLayout = QGridLayout()
@@ -513,7 +503,7 @@ class GUI(QMainWindow):
         self.ui_PurityGroupBox = QGroupBox()
         self.ui_layoutPurityGroupBox = QGridLayout()
 
-        self.ui_PurityGroupBox.setTitle('TODO: Purity')
+        self.ui_PurityGroupBox.setTitle('Purity')
 
         self.ui_Purity_plotvsTau_Btn = QHoverPushButton('Plot vs τ')
         self.ui_Purity_plotvspwl_Btn = QHoverPushButton('TODO: Plot vs λp')
@@ -563,9 +553,6 @@ class GUI(QMainWindow):
 
         self.ui_GetEffPPGroupBox.setTitle('Get effective poling period')
 
-        self.ui_GetEffPPlabelQPMorder = QLabel()
-        self.ui_GetEffPPlabelQPMorder.setText('QPM order')
-
         self.ui_GetEffPP_Btn = QHoverPushButton()
         self.ui_GetEffPP_Btn.setText('Get effective PP')
         self.ui_GetEffPP_Btn.setObjectName('Get effective PP')
@@ -576,6 +563,36 @@ class GUI(QMainWindow):
         self.ui_layoutGetEffPP.addWidget(self.ui_GetEffPPGroupBox)
 
         return self.ui_layoutGetEffPP
+
+    def initLayoutPlotFWHM(self):
+        self.ui_layoutPlotFWHM = QGridLayout()
+        self.ui_PlotFWHMGroupBox = QGroupBox()
+        self.ui_layoutPlotFWHMGroupBox = QGridLayout()
+
+        self.ui_PlotFWHMGroupBox.setTitle('TODO: Plot marginal FWHM')
+
+        self.ui_PlotFWHMvstau_Btn = QHoverPushButton()
+        self.ui_PlotFWHMvstau_Btn.setText('TODO: Plot vs τ')
+        self.ui_PlotFWHMvstau_Btn.setObjectName('Plot marginal FWHM vs tau')
+        
+        self.ui_PlotFWHMresolution_Label = QLabel('Resolution')
+        self.ui_PlotFWHMresolution_SB = QSpinBox()
+        self.ui_PlotFWHMresolution_SB.setRange(2,10000)
+        
+        self.ui_PlotFWHMprecision_Label = QLabel('Precision')
+        self.ui_PlotFWHMprecision_SB = QSpinBox()
+        self.ui_PlotFWHMprecision_SB.setRange(1,10)
+
+        self.ui_layoutPlotFWHMGroupBox.addWidget(self.ui_PlotFWHMresolution_Label, 1, 1)
+        self.ui_layoutPlotFWHMGroupBox.addWidget(self.ui_PlotFWHMresolution_SB, 1, 2)
+        self.ui_layoutPlotFWHMGroupBox.addWidget(self.ui_PlotFWHMprecision_Label, 2, 1)
+        self.ui_layoutPlotFWHMGroupBox.addWidget(self.ui_PlotFWHMprecision_SB, 2, 2)
+        self.ui_layoutPlotFWHMGroupBox.addWidget(self.ui_PlotFWHMvstau_Btn, 3, 1, 1, -1)
+
+        self.ui_PlotFWHMGroupBox.setLayout(self.ui_layoutPlotFWHMGroupBox)
+        self.ui_layoutPlotFWHM.addWidget(self.ui_PlotFWHMGroupBox)
+
+        return self.ui_layoutPlotFWHM
 
     def initLayoutTcp(self):
         self.ui_layoutTcp = QGridLayout()
@@ -665,7 +682,10 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.config.get('HOM interference plot resolution')
         self.HOMdelayrange = self.config.get('HOM interference plot range')
-
+        
+        self.fwhmres = self.config.get('FWHM plot resolution')
+        self.fwhmprecision = self.config.get('FWHM decimal precision')
+        
     def setProperties(self):
         self.ui_CrystalPolingPeriodsingleSB.setValue(self.CrystalPolingPeriodSingle * 10 ** 6)
         self.ui_CrystalPolingPeriodfromSB.setValue(self.CrystalPolingPeriodFrom * 10 ** 6)
@@ -708,8 +728,26 @@ class GUI(QMainWindow):
 
         self.ui_HOM_Vis_Resolution_SB.setValue(self.HOMresolution)
         self.ui_HOM_Vis_DelayRange_SB.setValue(self.HOMdelayrange*10**12)
+        
+        self.ui_PlotFWHMresolution_SB.setValue(self.fwhmres)
+        self.ui_PlotFWHMprecision_SB.setValue(self.fwhmprecision)
 
     def initConnections(self):
+        self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
+        self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
+        self.ui_PlotPMCvsT_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
+        self.ui_PlotPMCvsPP_Btn.pressed.connect(self.plot_pmc_wl_vs_PP)
+        self.ui_Purity_plotvsTau_Btn.pressed.connect(self.plot_purity_vs_tau)
+        self.ui_Purity_plotvspwl_Btn.pressed.connect(self.plot_purity_vs_pwl)
+        self.ui_PlotJSI_plotBtn.pressed.connect(self.plot_jsi)
+        self.ui_Purity_plotvsTauandL_Btn.pressed.connect(self.plot_purity_vs_Tau_and_L)
+        self.ui_Purity_plotvsL_Btn.pressed.connect(self.plot_purity_vs_L)
+        self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
+        self.ui_Tcp_vslp_Btn.pressed.connect(self.plot_Tcp_vs_lp)
+        self.ui_Tcp_vsPP_Btn.pressed.connect(self.plot_Tcp_vs_PP)
+        self.ui_HOM_PlotVis_Btn.pressed.connect(self.plot_HOM_vis)
+        self.ui_PlotFWHMvstau_Btn.pressed.connect(self.plot_FWHM_vs_tau)
+        
         self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalPolingPeriodfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalPolingPeriodtoSB.valueChanged.connect(self.getVarsFromGUI)
@@ -732,15 +770,6 @@ class GUI(QMainWindow):
         self.ui_CrystalTfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotPMCSBQPMorder.valueChanged.connect(self.getVarsFromGUI)
-        self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
-        self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
-        self.ui_PlotPMCvsT_Btn.pressed.connect(self.plot_pmc_wl_vs_T)
-        self.ui_PlotPMCvsPP_Btn.pressed.connect(self.plot_pmc_wl_vs_PP)
-        self.ui_Purity_plotvsTau_Btn.pressed.connect(self.plot_purity_vs_tau)
-        self.ui_Purity_plotvspwl_Btn.pressed.connect(self.plot_purity_vs_pwl)
-        self.ui_PlotJSI_plotBtn.pressed.connect(self.plot_jsi)
-        self.ui_Purity_plotvsTauandL_Btn.pressed.connect(self.plot_purity_vs_Tau_and_L)
-        self.ui_Purity_plotvsL_Btn.pressed.connect(self.plot_purity_vs_L)
         self.ui_PlotJSI_Wlrange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalLengthfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalLengthsingleSB.valueChanged.connect(self.getVarsFromGUI)
@@ -755,12 +784,10 @@ class GUI(QMainWindow):
         self.ui_SIfilterSignalCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
-        self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
-        self.ui_Tcp_vslp_Btn.pressed.connect(self.plot_Tcp_vs_lp)
-        self.ui_Tcp_vsPP_Btn.pressed.connect(self.plot_Tcp_vs_PP)
-        self.ui_HOM_PlotVis_Btn.pressed.connect(self.plot_HOM_vis)
         self.ui_HOM_Vis_DelayRange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_Resolution_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotFWHMresolution_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_PlotFWHMprecision_SB.valueChanged.connect(self.getVarsFromGUI)
 
         self.ui_PlotPMCvsT_Btn.mouseentersignal.connect(self.MouseHoverEnter)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.mouseentersignal.connect(self.MouseHoverEnter)
@@ -775,6 +802,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vslp_Btn.mouseentersignal.connect(self.MouseHoverEnter)
         self.ui_Tcp_vsPP_Btn.mouseentersignal.connect(self.MouseHoverEnter)
         self.ui_HOM_PlotVis_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotFWHMvstau_Btn.mouseentersignal.connect(self.MouseHoverEnter)
 
         self.ui_PlotPMCvsT_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.mouseleavesignal.connect(self.MouseHoverLeave)
@@ -789,6 +817,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vslp_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_Tcp_vsPP_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_HOM_PlotVis_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotFWHMvstau_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
 
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_CrystalTfromSB.value()
@@ -1086,7 +1115,6 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_purity_vs_Tau_and_L(self):
-
         wlpts = self.PurityWLresolution
         pts = self.PurityTauresolution
         pwl = self.PumpWlSingle
@@ -1398,6 +1426,71 @@ class GUI(QMainWindow):
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
+    def plot_FWHM_vs_tau(self):
+        pwl = self.PumpWlSingle
+        T = self.CrystalTempSingle
+        PP = self.CrystalPolingPeriodSingle
+        m = self.QPMOrder
+        cl = self.CrystalLengthSingle
+        pumpshape = self.PumpShape
+        JSIresolution = self.JSIresolution
+        JSIwlrange = self.JSIwlRange
+        taumin = self.PulsewidthFrom
+        taumax = self.PulsewidthTo
+        fwhmres = self.fwhmres
+        decprec = self.fwhmprecision
+
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffs, ffi]
+
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        Tvec = numpy.arange(T, T + 1, 2)
+        [ls, li, unused] = [0,0,0]
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+        signalrange = numpy.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
+        idlerrange = numpy.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
+        
+        taurange = numpy.linspace(taumin, taumax, fwhmres)
+
+        sigfwhm=[]
+        idfwhm=[]
+        [sigfwhm, idfwhm] = JSI().getFWHMvstau(pwl, signalrange, idlerrange, T, PP, m, cl, taurange, refidxfunc, spectralfilters, JSIresolution, pumpshape, decprec)
+        
+        
+        # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+        ploterror=False
+        if len(sigfwhm) == len(taurange):
+            pltwnd.ax.plot(taurange * 10 ** 12, sigfwhm, lw=2, label='Signal FWHM')
+        else:
+            ploterror=True
+        if len(idfwhm) == len(taurange):
+            pltwnd.ax.plot(taurange * 10 ** 12, idfwhm, lw=2, label='Idler FWHM')
+        else:
+            ploterror=True
+        
+        if ploterror:
+            pltwnd.close()
+            msgbox=QMessageBox()
+            msgbox.setText('Error: could not find enough values for FWHM. Try increasing JSI resolution or JSI range.')
+            msgbox.exec()
+        else:
+            pltwnd.ax.set_xlabel('Pump pulse width [ps]')
+            pltwnd.ax.set_ylabel('FWHM [nm]')
+            pltwnd.ax.set_title('FWHM of marginal sectra')
+            #pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
+                            #xycoords='axes fraction')
+            pltwnd.ax.legend()
+            pltwnd.canvas.draw()
+
     def GetEffectivePolingPeriod(self):
         nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
         nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
@@ -1456,7 +1549,10 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.ui_HOM_Vis_Resolution_SB.value()
         self.HOMdelayrange = self.ui_HOM_Vis_DelayRange_SB.value()*10**(-12)
-
+        
+        self.fwhmres = self.ui_PlotFWHMresolution_SB.value()
+        self.fwhmprecision = self.ui_PlotFWHMprecision_SB.value()
+        
         self.SaveSettings()
 
     def SaveSettings(self):
@@ -1508,6 +1604,9 @@ class GUI(QMainWindow):
 
         self.config.set("HOM interference plot resolution", self.HOMresolution)
         self.config.set("HOM interference plot range", self.HOMdelayrange)
+        
+        self.config.set('FWHM plot resolution', self.fwhmres)
+        self.config.set('FWHM decimal precision', self.fwhmprecision)
 
     def showWindow(self):
         g = GUI()
@@ -1698,6 +1797,29 @@ class GUI(QMainWindow):
             self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
             self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
             self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+        elif str == 'Plot marginal FWHM vs tau':
+            self.ui_pulsewidthfromSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pulsewidthtoSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotJSI_Wlrange_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotJSI_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_PlotFWHMresolution_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_PlotFWHMprecision_SB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
         else:
             print('No Object name specified in QHoverPushButton!')
 
@@ -1739,6 +1861,8 @@ class GUI(QMainWindow):
         self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setStyleSheet("")
         self.ui_HOM_Vis_DelayRange_SB.setStyleSheet("")
         self.ui_HOM_Vis_Resolution_SB.setStyleSheet("")
+        self.ui_PlotFWHMresolution_SB.setStyleSheet("")
+        self.ui_PlotFWHMprecision_SB.setStyleSheet("")
 
 class PlotWindow(QWidget):
     def __init__(self):
@@ -1758,7 +1882,6 @@ class PlotWindow(QWidget):
 
     def open(self):
         self.show(self)
-
 
 
 if __name__ == '__main__':

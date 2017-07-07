@@ -256,8 +256,8 @@ class JSI:
         self.nz = refidxfunc[2]
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength,
-                 refidxfunc,qpmorder,filter,plotJSI,pumpshape):
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filter,plotJSI,pumpshape):
+        print('start calculating JSA or JSI')
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -272,8 +272,6 @@ class JSI:
         # plotJSI: bool: True for JSI, false for JSA
         # pumpshape: string: Shape of pump beam (gaussian, sech^2)
         #
-
-        print('start calculating JSA or JSI')
 
         self.sigrange = signalrange
         self.idrange = idlerrange
@@ -342,8 +340,7 @@ class JSI:
 
         return [PE, PM, JS]
 
-    def getpurity_vsTau(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,
-                 refidxfunc,qpmorder,filter,pumpshape):
+    def getpurity_vsTau(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,refidxfunc,qpmorder,filter,pumpshape):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -431,8 +428,7 @@ class JSI:
 
         return [purity,max,increased_taurange[maxidx]]
 
-    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,
-                 refidxfunc,qpmorder,filter,pumpshape):
+    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,refidxfunc,qpmorder,filter,pumpshape):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -521,7 +517,6 @@ class JSI:
         return [purity,max,increased_Lrange[maxidx]]
 
     def getTcpVslp(self,pwlrange,temp,polingp,refidxfunc,qpmorder):
-
         self.PP=polingp
         self.T = temp
         [self.nx,self.ny,self.nz] = refidxfunc
@@ -540,7 +535,6 @@ class JSI:
         return Tcp
 
     def getTcpVsPP(self,PPrange,temp,pwl,refidxfunc,qpmorder):
-
         self.pwl=pwl
         self.T = temp
         [self.nx,self.ny,self.nz] = refidxfunc
@@ -558,8 +552,7 @@ class JSI:
 
         return Tcp
 
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,
-                           JSIresolution, pumpshape, delayrange, refidxfunc, filter):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, refidxfunc, filter):
         [self.nx, self.ny, self.nz] = refidxfunc
         #
         # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
@@ -652,3 +645,63 @@ class JSI:
         homfwhm=posroot[0]-negroot[0]
 
         return [HOMI,vis,homfwhm]
+
+    def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filter, JSIresolution, pumpshape, decprec):
+        [self.nx, self.ny, self.nz] = refidxfunc
+        if pumpshape.casefold() =='gaussian':
+            self.calcGaussian = True
+            self.calcSech = False
+        else:
+            self.calcGaussian = False
+            self.calcSech = True
+
+        self.filtermatrix = []
+
+        self.useFilter = True
+        self.filtersignalfunction = filter[0]
+        self.filteridlerfunction = filter[1]
+        for i in range(0, len(signalrange)):
+            filtervector = []
+            for j in range(0, len(idlerrange)):
+                filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
+                filtervector.append(filterval)
+            self.filtermatrix.append(filtervector)
+        
+        fwhmsig=[]
+        fwhmid=[]
+        
+        for h in range(0,len(taurange)):
+            if self.calcGaussian:
+                jsi=self.JSIgauss(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)
+            elif self.calcSech: 
+                jsi = self.JSIsech(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)
+            else:
+                print('ERROR: Unknown pump beamshape')
+            if self.useFilter:
+                jsi = jsi*self.filtermatrix
+            result = jsi-0.5
+            hmptss=[]
+            hmptsi=[]
+            hmpts=[]
+            
+            #option 1
+            result=result.round(decprec)
+            idcs=numpy.where(result==0) 
+            for i in range(0,len(idcs[0])):
+                    hmptss.append(signalrange[idcs[0][i]]*10**9)
+                    hmptsi.append(idlerrange[idcs[1][i]]*10**9)
+                    
+            #option 2
+            #for i in range(0,len(signalrange)):
+            #    for j in range(0,len(idlerrange)):
+            #        if (numpy.abs(result[i][j])<eps):
+            #            hmptss.append(signalrange[i]*10**9)
+            #            hmptsi.append(idlerrange[j]*10**9)
+            
+            if len(hmptss) != 0:
+                if len(hmptsi) !=0:
+                    plot=True
+                    fwhmsig.append(max(hmptss)-min(hmptss))
+                    fwhmid.append(max(hmptsi)-min(hmptsi))
+            
+        return [fwhmsig,fwhmid]

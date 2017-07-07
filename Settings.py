@@ -67,6 +67,9 @@ class Settings:
 
         self.config.append(["HOM interference plot resolution", 20])
         self.config.append(["HOM interference plot range", 6*10**(-12)])
+        
+        self.config.append(['FWHM plot resolution',10])
+        self.config.append(['FWHM decimal precision',3])
 
     def loadSettings(self):
         if Path('config.yaml').is_file():

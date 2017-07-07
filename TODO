@@ -3,9 +3,8 @@ x)Thermal expansion of crystal: make it property of crystal and use this impleme
 x)JSA/JSI
 ----Marginal spectra
 x)FWHM
-----vs tau
 ----vs L
-----with filters
+----user tau uncertainty
 x)Group velocity matching?
 x)HOM dips
 ----indistinguishability

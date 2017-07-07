@@ -12,3 +12,11 @@ class Constants:
 
         self.tbwpgauss = 0.441
         self.tbwpsech = ((2 * numpy.log(1 + numpy.sqrt(2))) / (self.pi)) ** 2
+    
+    def usetaucf(self, useit):
+        if useit:
+            self.taucfgauss=0.1 / numpy.sqrt(2)
+            self.taucfsech=0.647
+        else:
+            self.taucfgauss = 1
+            self.taucfsech = 1

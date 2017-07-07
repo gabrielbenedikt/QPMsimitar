@@ -7,6 +7,7 @@ from RefractiveIndex import RefractiveIndex
 from PMC import PMC
 from JSI import JSI
 from Filters import Filters
+from Constants import Constants
 from QTreimps import QHoverPushButton
 import numpy
 from pylab import *
@@ -569,10 +570,10 @@ class GUI(QMainWindow):
         self.ui_PlotFWHMGroupBox = QGroupBox()
         self.ui_layoutPlotFWHMGroupBox = QGridLayout()
 
-        self.ui_PlotFWHMGroupBox.setTitle('TODO: Plot marginal FWHM')
+        self.ui_PlotFWHMGroupBox.setTitle('Plot marginal FWHM')
 
         self.ui_PlotFWHMvstau_Btn = QHoverPushButton()
-        self.ui_PlotFWHMvstau_Btn.setText('TODO: Plot vs τ')
+        self.ui_PlotFWHMvstau_Btn.setText('Plot vs τ')
         self.ui_PlotFWHMvstau_Btn.setObjectName('Plot marginal FWHM vs tau')
         
         self.ui_PlotFWHMresolution_Label = QLabel('Resolution')
@@ -747,6 +748,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vsPP_Btn.pressed.connect(self.plot_Tcp_vs_PP)
         self.ui_HOM_PlotVis_Btn.pressed.connect(self.plot_HOM_vis)
         self.ui_PlotFWHMvstau_Btn.pressed.connect(self.plot_FWHM_vs_tau)
+        self.ui_pumpShapeCorrectionFactorCheckBox.stateChanged.connect(self.getVarsFromGUI)
         
         self.ui_CrystalPolingPeriodsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalPolingPeriodfromSB.valueChanged.connect(self.getVarsFromGUI)
@@ -765,7 +767,6 @@ class GUI(QMainWindow):
         self.ui_pulsewidthfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pulsewidthtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pumpShapeCB.currentIndexChanged.connect(self.getVarsFromGUI)
-        self.ui_pumpShapeCorrectionFactorCheckBox.stateChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTtoSB.valueChanged.connect(self.getVarsFromGUI)
@@ -1439,6 +1440,7 @@ class GUI(QMainWindow):
         taumax = self.PulsewidthTo
         fwhmres = self.fwhmres
         decprec = self.fwhmprecision
+        usetaucf = self.PumpShapeApplyDeconvolutionFactor
 
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
@@ -1450,7 +1452,9 @@ class GUI(QMainWindow):
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
         Tvec = numpy.arange(T, T + 1, 2)
-        [ls, li, unused] = [0,0,0]
+        ls=0
+        li=0
+        unused=0
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
         signalrange = numpy.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
         idlerrange = numpy.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
@@ -1459,7 +1463,7 @@ class GUI(QMainWindow):
 
         sigfwhm=[]
         idfwhm=[]
-        [sigfwhm, idfwhm] = JSI().getFWHMvstau(pwl, signalrange, idlerrange, T, PP, m, cl, taurange, refidxfunc, spectralfilters, JSIresolution, pumpshape, decprec)
+        [sigfwhm, idfwhm] = JSI().getFWHMvstau(pwl, signalrange, idlerrange, T, PP, m, cl, taurange, refidxfunc, spectralfilters, JSIresolution, pumpshape, decprec, usetaucf)
         
         
         # plot
@@ -1480,7 +1484,7 @@ class GUI(QMainWindow):
         if ploterror:
             pltwnd.close()
             msgbox=QMessageBox()
-            msgbox.setText('Error: could not find enough values for FWHM. Try increasing JSI resolution or JSI range.')
+            #msgbox.setText('Error: could not find enough values for FWHM. Try increasing JSI resolution or JSI range.')
             msgbox.exec()
         else:
             pltwnd.ax.set_xlabel('Pump pulse width [ps]')
@@ -1617,6 +1621,10 @@ class GUI(QMainWindow):
         self.pltwindowlist.append(PlotWindow())
         self.pltwindowlist[self.plotwindowcount].show()
         self.plotwindowcount = self.plotwindowcount + 1
+
+    def toggle_usecf(self):
+        self.PumpShapeApplyDeconvolutionFactor = self.ui_pumpShapeCorrectionFactorCheckBox.isChecked()
+        Constants().usetaucf(self.PumpShapeApplyDeconvolutionFactor)
 
     def MouseHoverEnter(self, str):
         if str == 'Plot PMC vs T':

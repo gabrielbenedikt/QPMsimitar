@@ -37,6 +37,8 @@ class JSI:
         # plot JSA or JSI (choose only 1!)
         self.calcJSA = False
         self.calcJSI = True
+        
+        self.usetaucf = False
 
     # thermal expansion factor
     def thermexpfactor(self, T):
@@ -140,7 +142,10 @@ class JSI:
     # joint spectral amplitude for gaussian beam
     def JSAgauss(self, lp, ls, li, tauac, t, pp, cl):
         # tauac: autocorrelator measured pulsewidth
-        tau = tauac * Constants().taucfgauss
+        if self.usetaucf:
+            tau = tauac * Constants().taucfgauss
+        else:
+            tau = tauac
         # tau=tauac
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
@@ -158,7 +163,10 @@ class JSI:
 
     def PEAnPMAnJSAgauss(self, lp, ls, li, tauac, t, pp, cl):
         # tauac: autocorrelator measured pulsewidth
-        tau = tauac * Constants().taucfgauss
+        if self.usetaucf:
+            tau = tauac * Constants().taucfgauss
+        else:
+            tau = tauac
         # tau=tauac
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
@@ -191,7 +199,10 @@ class JSI:
 
     # joint spectral amplitude for sech^2 beam
     def JSAsech(self, lp, ls, li, tauac, t, pp, cl):
-        tau = tauac * Constants().taucfsech
+        if self.usetaucf:
+            tau = tauac * Constants().taucfsech
+        else:
+            tau = tauac
         # tau=tauac
         dw = 2 * Constants().pi * Constants().tbwpsech / (tau)
         B = 2 * numpy.arccosh(numpy.sqrt(2)) / dw
@@ -207,7 +218,10 @@ class JSI:
         return self.JSAsech(lp, ls, li, tauac, t, pp, cl) ** 2
 
     def PEAnPMAnJSAsech(self, lp, ls, li, tauac, t, pp, cl):
-        tau = tauac * Constants().taucfsech
+        if self.usetaucf:
+            tau = tauac * Constants().taucfsech
+        else:
+            tau = tauac
         # tau=tauac
         dw = 2 * Constants().pi * Constants().tbwpsech / (tau)
         B = 2 * numpy.arccosh(numpy.sqrt(2)) / dw
@@ -646,8 +660,9 @@ class JSI:
 
         return [HOMI,vis,homfwhm]
 
-    def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filter, JSIresolution, pumpshape, decprec):
+    def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filter, JSIresolution, pumpshape, decprec, usetaucf):
         [self.nx, self.ny, self.nz] = refidxfunc
+        self.usetaucf = usetaucf
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
@@ -670,16 +685,18 @@ class JSI:
         fwhmsig=[]
         fwhmid=[]
         
+        #TMP
+        self.useFilter=False
+        
         for h in range(0,len(taurange)):
             if self.calcGaussian:
-                jsi=self.JSIgauss(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)
+                result =self.JSIgauss(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
             elif self.calcSech: 
-                jsi = self.JSIsech(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)
+                result = self.JSIsech(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
             else:
                 print('ERROR: Unknown pump beamshape')
             if self.useFilter:
-                jsi = jsi*self.filtermatrix
-            result = jsi-0.5
+                result = result*self.filtermatrix
             hmptss=[]
             hmptsi=[]
             hmpts=[]
@@ -694,13 +711,12 @@ class JSI:
             #option 2
             #for i in range(0,len(signalrange)):
             #    for j in range(0,len(idlerrange)):
-            #        if (numpy.abs(result[i][j])<eps):
+            #        if (numpy.abs(result[i][j])<10**(-decprec)):
             #            hmptss.append(signalrange[i]*10**9)
             #            hmptsi.append(idlerrange[j]*10**9)
             
             if len(hmptss) != 0:
                 if len(hmptsi) !=0:
-                    plot=True
                     fwhmsig.append(max(hmptss)-min(hmptss))
                     fwhmid.append(max(hmptsi)-min(hmptsi))
             

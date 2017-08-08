@@ -1,3 +1,5 @@
+x) BUG: Changing temperature changes Filter central wavelength
+
 x)Thermal expansion of crystal: make it property of crystal and use this implementation (in PMC / JSI / ...)
 
 x)JSA/JSI

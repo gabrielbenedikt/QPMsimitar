@@ -479,8 +479,8 @@ class GUI(QMainWindow):
         self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 2, 1)
         self.ui_PlotJSI_plotJSIRadioButton.setChecked(True)
         
-        self.ui_PlotJSI_filterlossBtn = QHoverPushButton('TODO: Estimate filter losses')
-        self.ui_PlotJSI_filterlossBtn.setObjectName('Esimate filter losses')
+        self.ui_PlotJSI_filterlossBtn = QHoverPushButton('Estimate filter losses')
+        self.ui_PlotJSI_filterlossBtn.setObjectName('Estimate filter losses')
 
         self.ui_PlotJSI_plotBtn = QHoverPushButton('Plot')
         self.ui_PlotJSI_plotBtn.setObjectName('Plot JSA JSI')
@@ -809,6 +809,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vsPP_Btn.mouseentersignal.connect(self.MouseHoverEnter)
         self.ui_HOM_PlotVis_Btn.mouseentersignal.connect(self.MouseHoverEnter)
         self.ui_PlotFWHMvstau_Btn.mouseentersignal.connect(self.MouseHoverEnter)
+        self.ui_PlotJSI_filterlossBtn.mouseentersignal.connect(self.MouseHoverEnter)
 
         self.ui_PlotPMCvsT_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_PlotRefractiveIndex_Btn_Plot_T.mouseleavesignal.connect(self.MouseHoverLeave)
@@ -824,6 +825,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vsPP_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_HOM_PlotVis_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_PlotFWHMvstau_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
+        self.ui_PlotJSI_filterlossBtn.mouseleavesignal.connect(self.MouseHoverLeave)
 
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_CrystalTfromSB.value()
@@ -1984,7 +1986,7 @@ class GUI(QMainWindow):
             self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
             self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedSpinBox)
             self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
-        elif str == 'Esimate filter losses':
+        elif str == 'Estimate filter losses':
             self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
             self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
             self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)

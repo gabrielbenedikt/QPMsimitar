@@ -1379,9 +1379,15 @@ class GUI(QMainWindow):
         Tvec=numpy.arange(T,T+1,2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+        print('***debug***: ls: ', ls)
+        print('***debug***: li: ', li)
 
         signalrange = numpy.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
         idlerrange = numpy.linspace(li - wlrange/2, li + wlrange/2, numpts)
+        print('***debug***: min(signalrange): ', numpy.min(signalrange))
+        print('***debug***: max(signalrange): ', numpy.max(signalrange))
+        print('***debug***: min(idlerrange):  ', numpy.min(idlerrange))
+        print('***debug***: max(idlerrange):  ', numpy.max(idlerrange))
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfilters, plotJSI, pumpshape)
@@ -1440,9 +1446,9 @@ class GUI(QMainWindow):
         ymin = numpy.min(idlerrange) * 10 ** 9
         ymax = numpy.max(idlerrange) * 10 ** 9
         # prepare subplots
-        ppe = pltwnd.peplt.imshow(JS, cmap=colormap, vmin=PE.min(), vmax=PE.max(), aspect='auto',
+        ppe = pltwnd.peplt.imshow(JS, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        ppm = pltwnd.pmplt.imshow(JSref, cmap=colormap, vmin=PM.min(), vmax=PM.max(), aspect='auto',
+        ppm = pltwnd.pmplt.imshow(JSref, cmap=colormap, vmin=JSref.min(), vmax=JSref.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         # pjs = pltwnd.jsplt.imshow(JSref, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
         #                          origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
@@ -1454,15 +1460,15 @@ class GUI(QMainWindow):
             plot.tick_params(axis='both', which='minor', labelsize='medium')
         # label plot
         if calcJSA:
-            pltwnd.peplt.set_title('PEA', fontsize=20)
-            pltwnd.pmplt.set_title('PMA', fontsize=20)
+            pltwnd.peplt.set_title('with filters', fontsize=20)
+            pltwnd.pmplt.set_title('wo filters', fontsize=20)
             #pltwnd.jsplt.set_title('JSA', fontsize=20)
-            pltwnd.fig.suptitle('TODO: Plot JSA with and without filter.', fontsize=24)
+            pltwnd.fig.suptitle('Estimating filter losses', fontsize=24)
         elif calcJSI:
-            pltwnd.peplt.set_title('PEI', fontsize=20)
-            pltwnd.pmplt.set_title('PMI', fontsize=20)
+            pltwnd.peplt.set_title('with filters', fontsize=20)
+            pltwnd.pmplt.set_title('wo filters', fontsize=20)
             #pltwnd.jsplt.set_title('JSI', fontsize=20)
-            pltwnd.fig.suptitle('TODO: Plot JSI with and without filter.', fontsize=24)
+            pltwnd.fig.suptitle('Estimating filter losses', fontsize=24)
         # create legend
         pltwnd.fig.subplots_adjust(bottom=0.2)
         pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
@@ -1471,7 +1477,7 @@ class GUI(QMainWindow):
         pad = 20
         parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
             L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
-            T) + 'Pulse duration: {0:.2f}ps\n'.format(tau * 10 ** 12) + 'Filterlosses: {0:.2f}%'.format(filterlosses*100)
+            T) + 'Pulse duration: {0:.2f}ps\n'.format(tau * 10 ** 12) + 'Filter losses: {0:.2f}%'.format(filterlosses*100)
         if calcGaussian:
             parameterstring = parameterstring + '\nGaussian beam shape'
         elif calcSech:

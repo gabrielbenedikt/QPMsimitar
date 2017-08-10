@@ -310,7 +310,7 @@ class JSI:
         for i in range(0, len(self.sigrange)):
             filtervector = []
             for j in range(0, len(self.idrange)):
-                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                filterval=self.filteridlerfunction(self.idrange[j])*self.filtersignalfunction(self.sigrange[i])
                 filtervector.append(filterval)
             self.filtermatrix.append(filtervector)
 

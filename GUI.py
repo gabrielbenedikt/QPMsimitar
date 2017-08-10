@@ -478,6 +478,9 @@ class GUI(QMainWindow):
         self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSIRadioButton, 1, 1)
         self.ui_PlotJSIorJSALayout.addWidget(self.ui_PlotJSI_plotJSARadioButton, 2, 1)
         self.ui_PlotJSI_plotJSIRadioButton.setChecked(True)
+        
+        self.ui_PlotJSI_filterlossBtn = QHoverPushButton('TODO: Estimate filter losses')
+        self.ui_PlotJSI_filterlossBtn.setObjectName('Esimate filter losses')
 
         self.ui_PlotJSI_plotBtn = QHoverPushButton('Plot')
         self.ui_PlotJSI_plotBtn.setObjectName('Plot JSA JSI')
@@ -488,11 +491,12 @@ class GUI(QMainWindow):
 
         ## Add controls
         self.ui_layoutPlotJSIGroupBox.addLayout(self.ui_PlotJSIorJSALayout, 1, 1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_label, 2, 1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_SB, 2, 2)
         self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_plotBtn, 1, 2)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_Label,3,1)
-        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_SB,3,2)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_filterlossBtn, 2, 1, 1, -1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_label, 3, 1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_Wlrange_SB, 3, 2)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_Label,4,1)
+        self.ui_layoutPlotJSIGroupBox.addWidget(self.ui_PlotJSI_WLresolution_SB,4,2)
 
         self.ui_PlotJSIGroupBox.setLayout(self.ui_layoutPlotJSIGroupBox)
         self.ui_layoutPlotJSI.addWidget(self.ui_PlotJSIGroupBox)
@@ -741,6 +745,7 @@ class GUI(QMainWindow):
         self.ui_Purity_plotvsTau_Btn.pressed.connect(self.plot_purity_vs_tau)
         self.ui_Purity_plotvspwl_Btn.pressed.connect(self.plot_purity_vs_pwl)
         self.ui_PlotJSI_plotBtn.pressed.connect(self.plot_jsi)
+        self.ui_PlotJSI_filterlossBtn.pressed.connect(self.estimate_filter_losses)
         self.ui_Purity_plotvsTauandL_Btn.pressed.connect(self.plot_purity_vs_Tau_and_L)
         self.ui_Purity_plotvsL_Btn.pressed.connect(self.plot_purity_vs_L)
         self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
@@ -1327,6 +1332,157 @@ class GUI(QMainWindow):
         pltwnd.fig.set_size_inches(8,3)
         pltwnd.canvas.draw()
         pltwnd.resize(1200,600)
+    
+    def estimate_filter_losses(self):
+        numpts=self.JSIresolution
+        pwl=self.PumpWlSingle
+        PP=self.CrystalPolingPeriodSingle
+        L=self.CrystalLengthSingle
+        T=self.CrystalTempSingle
+        m=self.QPMOrder
+        tau=self.PulsewidthSingle
+        wlrange=self.JSIwlRange
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffs, ffi]
+        
+        #as reference: no filters:
+        ffiref = Filters().getFilterFunction('None', 1, 1) #arguments: filtertype, central wl, bandwidth. only first argument does matter if type is 'None'
+        ffsref = Filters().getFilterFunction('None', 1, 1)
+        spectralfiltersref = [ffsref, ffiref]
+
+        plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        if plotJSI==True:
+            calcJSA=False
+            calcJSI=True
+        else:
+            calcJSA=True
+            calcJSI=False
+
+        pumpshape = self.PumpShape
+        calcGaussian=False
+        calcSech=False
+        if pumpshape == 'Gaussian':
+            calcGaussian=True
+        elif pumpshape == 'Sech^2':
+            calcSech=True
+        else:
+            print('Error: pump shape unknown to JSA/JSI plot routine')
+
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        Tvec=numpy.arange(T,T+1,2)
+
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+
+        signalrange = numpy.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
+        idlerrange = numpy.linspace(li - wlrange/2, li + wlrange/2, numpts)
+
+        [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+                                      m, spectralfilters, plotJSI, pumpshape)
+        [PEref,PMref,JSref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+                                      m, spectralfiltersref, plotJSI, pumpshape)
+        
+        #
+        # calculating losses
+        #
+        magnitude_withfilter = 0
+        magnitude_wofilter = 0
+        
+        for i in range(0,len(JS)):
+            for j in range(0,len(JS[i])):
+                magnitude_withfilter = magnitude_withfilter + JS[i,j]
+                magnitude_wofilter = magnitude_wofilter + JSref[i,j]
+        
+        filterlosses = (1- magnitude_withfilter/magnitude_wofilter)
+        
+        print('magnitude wo filter: ', magnitude_wofilter)
+        print('magnitude w filter: ', magnitude_withfilter)
+        print('filterlosses: ', filterlosses)
+        
+        #
+        # plotting
+        #
+
+        print("plotting..")
+
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+
+        # need customization for 3 plots in 1 window
+        pltwnd.layout.removeWidget(pltwnd.canvas)
+        pltwnd.layout.removeWidget(pltwnd.toolbar)
+        pltwnd.fig = figure(facecolor="white")
+        pltwnd.peplt = pltwnd.fig.add_subplot(131)
+        pltwnd.pmplt = pltwnd.fig.add_subplot(132)
+        #pltwnd.jsplt = pltwnd.fig.add_subplot(133)
+        pltwnd.peplt.set_aspect('equal')
+        pltwnd.pmplt.set_aspect('equal')
+        #pltwnd.jsplt.set_aspect('equal')
+        pltwnd.canvas = FigureCanvas(pltwnd.fig)
+        pltwnd.canvas.setParent(pltwnd)
+        pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
+        # self.addToolBar(self.toolbar)
+        pltwnd.layout.addWidget(pltwnd.canvas)
+        pltwnd.layout.addWidget(pltwnd.toolbar)
+
+        colormap = matplotlib.cm.jet
+        # axes range
+        xmin = numpy.min(signalrange) * 10 ** 9
+        xmax = numpy.max(signalrange) * 10 ** 9
+        ymin = numpy.min(idlerrange) * 10 ** 9
+        ymax = numpy.max(idlerrange) * 10 ** 9
+        # prepare subplots
+        ppe = pltwnd.peplt.imshow(JS, cmap=colormap, vmin=PE.min(), vmax=PE.max(), aspect='auto',
+                                  origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+        ppm = pltwnd.pmplt.imshow(JSref, cmap=colormap, vmin=PM.min(), vmax=PM.max(), aspect='auto',
+                                  origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+        # pjs = pltwnd.jsplt.imshow(JSref, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
+        #                          origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+        pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
+        pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')
+        # size of axes label
+        for plot in [pltwnd.peplt, pltwnd.pmplt]: #, pltwnd.jsplt]:
+            plot.tick_params(axis='both', which='major', labelsize='medium')
+            plot.tick_params(axis='both', which='minor', labelsize='medium')
+        # label plot
+        if calcJSA:
+            pltwnd.peplt.set_title('PEA', fontsize=20)
+            pltwnd.pmplt.set_title('PMA', fontsize=20)
+            #pltwnd.jsplt.set_title('JSA', fontsize=20)
+            pltwnd.fig.suptitle('TODO: Plot JSA with and without filter.', fontsize=24)
+        elif calcJSI:
+            pltwnd.peplt.set_title('PEI', fontsize=20)
+            pltwnd.pmplt.set_title('PMI', fontsize=20)
+            #pltwnd.jsplt.set_title('JSI', fontsize=20)
+            pltwnd.fig.suptitle('TODO: Plot JSI with and without filter.', fontsize=24)
+        # create legend
+        pltwnd.fig.subplots_adjust(bottom=0.2)
+        pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
+        pltwnd.cbar = pltwnd.fig.colorbar(ppe, cax=pltwnd.cbar_ax, orientation='horizontal')
+        pltwnd.cbar.set_label('a.u.', fontsize='medium', labelpad=-1)
+        pad = 20
+        parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
+            L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
+            T) + 'Pulse duration: {0:.2f}ps\n'.format(tau * 10 ** 12) + 'Filterlosses: {0:.2f}%'.format(filterlosses*100)
+        if calcGaussian:
+            parameterstring = parameterstring + '\nGaussian beam shape'
+        elif calcSech:
+            parameterstring = parameterstring + '\nsech^2 beam shape'
+        # state additional paramters on plot
+        pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
+
+        pltwnd.peplt.set_aspect('equal')
+        pltwnd.pmplt.set_aspect('equal')
+        #pltwnd.jsplt.set_aspect('equal')
+        pltwnd.fig.set_size_inches(8,3)
+        pltwnd.canvas.draw()
+        pltwnd.resize(1200,600)
 
     def plot_Tcp_vs_PP(self):
         numpts = 100
@@ -1828,6 +1984,28 @@ class GUI(QMainWindow):
             self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
             self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedSpinBox)
             self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+        elif str == 'Esimate filter losses':
+            self.ui_pumpwlsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalPolingPeriodsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_CrystalTsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotPMCSBQPMorder.setStyleSheet(self.HighlightedSpinBox)
+            self.ui_pulsewidthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotJSI_Wlrange_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterIdlerCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterIdlerFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalType_CB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_SIfilterSignalCenterWL_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_SIfilterSignalFWHM_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_PlotJSI_plotJSARadioButton.setStyleSheet(self.HighlightedRadioButton)
+            self.ui_PlotJSI_plotJSIRadioButton.setStyleSheet(self.HighlightedRadioButton)
+            self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalMaterialComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNXComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNYComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_CrystalNZComboBox.setStyleSheet(self.HighlightedComboBox)
+            self.ui_PlotJSI_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
         else:
             print('No Object name specified in QHoverPushButton!')
 

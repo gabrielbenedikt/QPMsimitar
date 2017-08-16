@@ -10,6 +10,7 @@ from Filters import Filters
 from Constants import Constants
 from QTreimps import QHoverPushButton
 import numpy
+import scipy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
@@ -1336,6 +1337,10 @@ class GUI(QMainWindow):
         pltwnd.resize(1200,600)
     
     def estimate_filter_losses(self):
+        #
+        # TODO: eps should be chosable in GUI
+        #
+        eps=10**(-5) #used to find zeros in JSA, to cut sidelobes
         numpts=self.JSIresolution
         pwl=self.PumpWlSingle
         PP=self.CrystalPolingPeriodSingle
@@ -1353,7 +1358,8 @@ class GUI(QMainWindow):
         ffsref = Filters().getFilterFunction('None', 1, 1)
         spectralfiltersref = [ffsref, ffiref]
 
-        plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        #plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        plotJSI = True
         if plotJSI==True:
             calcJSA=False
             calcJSI=True
@@ -1393,24 +1399,80 @@ class GUI(QMainWindow):
                                       m, spectralfilters, plotJSI, pumpshape)
         [PEref,PMref,JSref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfiltersref, plotJSI, pumpshape)
+        [PEwoSL,PMwoSL,JSwoSL] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+                                      m, spectralfiltersref, plotJSI, pumpshape)
+        
+        #Sidelobeless JSI
+        #what is done here:
+        #y) Find first minima in JSA along -45° axis
+        #y) cut JSA along +45° axis going through these points
+        #y) calculate overlap
+        #Note: only valid vor GVD matched JSA
+        
+        #find -45° axis
+        JSdiagonal=[]
+        wlrangelen=len(signalrange)
+        for i in range(1,wlrangelen):
+            JSdiagonal.append(JSwoSL[i,wlrangelen-i])
+        JSdiagonalinterpol=scipy.interpolate.interp1d(numpy.linspace(signalrange[1],signalrange[-1],numpts-1), JSdiagonal, kind='cubic', bounds_error=False)
+        
+        #find lowest values along -45° axis
+        wlrangehalf=int(len(signalrange)/2)
+        luvalold=JSdiagonalinterpol(signalrange[wlrangehalf-1])
+        rlvalold=JSdiagonalinterpol(signalrange[wlrangehalf+1])
+        #bools to stop at first minima from central peak
+        foundlumin=False
+        foundrlmin=False
+        for i in range(2,wlrangehalf):
+            #calculate next values along axis
+            luval=JSdiagonalinterpol(signalrange[wlrangehalf-i])
+            rlval=JSdiagonalinterpol(signalrange[wlrangehalf+i])
+            #check if they are smaller than the last values
+            if foundlumin==False:
+                if luval<luvalold:
+                    luvalold=luval
+                    luminidx=wlrangehalf-i
+                else:
+                    foundlumin=True
+            if foundrlmin==False:
+                if rlval<rlvalold:
+                    rlvalold=rlval
+                    rlminidx=wlrangehalf+i
+                else:
+                    foundrlmin=True
+        
+        wlrangelength=len(signalrange)
+        #set JSA to 0 everywhere but between two +45° axes going through the points just calculated
+        for i in range(0,len(signalrange)):
+            for j in range(0,len(signalrange)):
+                if i < (2*luminidx-wlrangelength+j):
+                    JSwoSL[i,j]=0
+                elif i > (2*rlminidx-wlrangelength+j):
+                    JSwoSL[i,j]=0
         
         #
         # calculating losses
         #
+        
         magnitude_withfilter = 0
         magnitude_wofilter = 0
+        magnitude_wosidelobes = 0
         
         for i in range(0,len(JS)):
             for j in range(0,len(JS[i])):
                 magnitude_withfilter = magnitude_withfilter + JS[i,j]
                 magnitude_wofilter = magnitude_wofilter + JSref[i,j]
+                magnitude_wosidelobes = magnitude_wosidelobes + JSwoSL[i,j]
         
         filterlosses = (1- magnitude_withfilter/magnitude_wofilter)
+        sidelobelosses = (1-magnitude_wosidelobes/magnitude_wofilter)
         
         print('magnitude wo filter: ', magnitude_wofilter)
         print('magnitude w filter: ', magnitude_withfilter)
+        print('magnitude wo sidelobes: ', magnitude_wosidelobes)
         print('filterlosses: ', filterlosses)
-        
+        print('sidelobelosses: ', sidelobelosses)
+                
         #
         # plotting
         #
@@ -1428,10 +1490,10 @@ class GUI(QMainWindow):
         pltwnd.fig = figure(facecolor="white")
         pltwnd.peplt = pltwnd.fig.add_subplot(131)
         pltwnd.pmplt = pltwnd.fig.add_subplot(132)
-        #pltwnd.jsplt = pltwnd.fig.add_subplot(133)
+        pltwnd.jsplt = pltwnd.fig.add_subplot(133)
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
-        #pltwnd.jsplt.set_aspect('equal')
+        pltwnd.jsplt.set_aspect('equal')
         pltwnd.canvas = FigureCanvas(pltwnd.fig)
         pltwnd.canvas.setParent(pltwnd)
         pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
@@ -1450,25 +1512,26 @@ class GUI(QMainWindow):
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         ppm = pltwnd.pmplt.imshow(JSref, cmap=colormap, vmin=JSref.min(), vmax=JSref.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        # pjs = pltwnd.jsplt.imshow(JSref, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
-        #                          origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+        pjs = pltwnd.jsplt.imshow(JSwoSL, cmap=colormap, vmin=JSwoSL.min(), vmax=JSwoSL.max(), aspect='auto',
+                                  origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')
+        #pltwnd.pjs.set_ylabel(r'$\lambda_i$ [nm]')
         # size of axes label
-        for plot in [pltwnd.peplt, pltwnd.pmplt]: #, pltwnd.jsplt]:
+        for plot in [pltwnd.peplt, pltwnd.pmplt, pltwnd.jsplt]:
             plot.tick_params(axis='both', which='major', labelsize='medium')
             plot.tick_params(axis='both', which='minor', labelsize='medium')
         # label plot
         if calcJSA:
             pltwnd.peplt.set_title('with filters', fontsize=20)
             pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            #pltwnd.jsplt.set_title('JSA', fontsize=20)
-            pltwnd.fig.suptitle('Estimating filter losses', fontsize=24)
+            pltwnd.jsplt.set_title('wo sidelobes', fontsize=20)
+            pltwnd.fig.suptitle('Estimating losses', fontsize=24)
         elif calcJSI:
             pltwnd.peplt.set_title('with filters', fontsize=20)
             pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            #pltwnd.jsplt.set_title('JSI', fontsize=20)
-            pltwnd.fig.suptitle('Estimating filter losses', fontsize=24)
+            pltwnd.jsplt.set_title('wo sidelobes', fontsize=20)
+            pltwnd.fig.suptitle('Estimating losses', fontsize=24)
         # create legend
         pltwnd.fig.subplots_adjust(bottom=0.2)
         pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
@@ -1477,17 +1540,19 @@ class GUI(QMainWindow):
         pad = 20
         parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
             L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
-            T) + 'Pulse duration: {0:.2f}ps\n'.format(tau * 10 ** 12) + 'Filter losses: {0:.2f}%'.format(filterlosses*100)
+            T) + 'Pulse duration: {0:.2f}ps'.format(tau * 10 ** 12)
+        lossesstring = 'Filter losses: {0:.2f}%\n'.format(filterlosses*100) + 'Sidelobe losses: {0:.2f}%'.format(sidelobelosses*100)
         if calcGaussian:
             parameterstring = parameterstring + '\nGaussian beam shape'
         elif calcSech:
             parameterstring = parameterstring + '\nsech^2 beam shape'
         # state additional paramters on plot
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
+        pltwnd.peplt.annotate(lossesstring, xy=(0.2, 0.9475), xycoords='figure fraction', fontsize=9, color='r')
 
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
-        #pltwnd.jsplt.set_aspect('equal')
+        pltwnd.jsplt.set_aspect('equal')
         pltwnd.fig.set_size_inches(8,3)
         pltwnd.canvas.draw()
         pltwnd.resize(1200,600)

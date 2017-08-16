@@ -1397,9 +1397,11 @@ class GUI(QMainWindow):
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfilters, plotJSI, pumpshape)
+        [PEwoSL, PMwoSL, JSwoSL] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+                                      m, spectralfilters, plotJSI, pumpshape)
         [PEref,PMref,JSref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfiltersref, plotJSI, pumpshape)
-        [PEwoSL,PMwoSL,JSwoSL] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+        [PEwoSLref,PMwoSLref,JSwoSLref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfiltersref, plotJSI, pumpshape)
         
         #Sidelobeless JSI
@@ -1413,7 +1415,7 @@ class GUI(QMainWindow):
         JSdiagonal=[]
         wlrangelen=len(signalrange)
         for i in range(1,wlrangelen):
-            JSdiagonal.append(JSwoSL[i,wlrangelen-i])
+            JSdiagonal.append(JSwoSLref[i,wlrangelen-i])
         JSdiagonalinterpol=scipy.interpolate.interp1d(numpy.linspace(signalrange[1],signalrange[-1],numpts-1), JSdiagonal, kind='cubic', bounds_error=False)
         
         #find lowest values along -45° axis
@@ -1446,8 +1448,10 @@ class GUI(QMainWindow):
         for i in range(0,len(signalrange)):
             for j in range(0,len(signalrange)):
                 if i < (2*luminidx-wlrangelength+j):
+                    JSwoSLref[i,j]=0
                     JSwoSL[i,j]=0
                 elif i > (2*rlminidx-wlrangelength+j):
+                    JSwoSLref[i,j]=0
                     JSwoSL[i,j]=0
         
         #
@@ -1456,22 +1460,29 @@ class GUI(QMainWindow):
         
         magnitude_withfilter = 0
         magnitude_wofilter = 0
-        magnitude_wosidelobes = 0
+        magnitude_wofilter_wosidelobes = 0
+        magnitude_wfilter_wosidelobes = 0
         
         for i in range(0,len(JS)):
             for j in range(0,len(JS[i])):
                 magnitude_withfilter = magnitude_withfilter + JS[i,j]
                 magnitude_wofilter = magnitude_wofilter + JSref[i,j]
-                magnitude_wosidelobes = magnitude_wosidelobes + JSwoSL[i,j]
+                magnitude_wfilter_wosidelobes = magnitude_wfilter_wosidelobes + JSwoSL[i,j]
+                magnitude_wofilter_wosidelobes = magnitude_wofilter_wosidelobes + JSwoSLref[i,j]
         
         filterlosses = (1- magnitude_withfilter/magnitude_wofilter)
-        sidelobelosses = (1-magnitude_wosidelobes/magnitude_wofilter)
+        nonsidelobefilterlosses = (1- magnitude_wfilter_wosidelobes/magnitude_wofilter_wosidelobes)
+        sidelobelosses = (1-magnitude_wofilter_wosidelobes/magnitude_wofilter)
+        filteredsidelobelosses = (1-magnitude_wfilter_wosidelobes/magnitude_withfilter)
         
         print('magnitude wo filter: ', magnitude_wofilter)
         print('magnitude w filter: ', magnitude_withfilter)
-        print('magnitude wo sidelobes: ', magnitude_wosidelobes)
+        print('magnitude wo sidelobes: ', magnitude_wfilter_wosidelobes)
+        print('magnitude w filters wo sidelobes: ', magnitude_wfilter_wosidelobes)
         print('filterlosses: ', filterlosses)
+        print('non-sidelobe filterlosses: ', nonsidelobefilterlosses)
         print('sidelobelosses: ', sidelobelosses)
+        print('sidelobelosses in filteres JSI: ', filteredsidelobelosses)
                 
         #
         # plotting
@@ -1488,12 +1499,14 @@ class GUI(QMainWindow):
         pltwnd.layout.removeWidget(pltwnd.canvas)
         pltwnd.layout.removeWidget(pltwnd.toolbar)
         pltwnd.fig = figure(facecolor="white")
-        pltwnd.peplt = pltwnd.fig.add_subplot(131)
-        pltwnd.pmplt = pltwnd.fig.add_subplot(132)
-        pltwnd.jsplt = pltwnd.fig.add_subplot(133)
+        pltwnd.peplt = pltwnd.fig.add_subplot(141)
+        pltwnd.pmplt = pltwnd.fig.add_subplot(142)
+        pltwnd.jsplt = pltwnd.fig.add_subplot(143)
+        pltwnd.jsplt2 = pltwnd.fig.add_subplot(144)
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
         pltwnd.jsplt.set_aspect('equal')
+        pltwnd.jsplt2.set_aspect('equal')
         pltwnd.canvas = FigureCanvas(pltwnd.fig)
         pltwnd.canvas.setParent(pltwnd)
         pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
@@ -1512,25 +1525,29 @@ class GUI(QMainWindow):
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         ppm = pltwnd.pmplt.imshow(JSref, cmap=colormap, vmin=JSref.min(), vmax=JSref.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        pjs = pltwnd.jsplt.imshow(JSwoSL, cmap=colormap, vmin=JSwoSL.min(), vmax=JSwoSL.max(), aspect='auto',
+        pjs = pltwnd.jsplt.imshow(JSwoSLref, cmap=colormap, vmin=JSwoSLref.min(), vmax=JSwoSLref.max(), aspect='auto',
+                                  origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+        pjs2 = pltwnd.jsplt2.imshow(JSwoSL, cmap=colormap, vmin=JSwoSL.min(), vmax=JSwoSL.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')
         #pltwnd.pjs.set_ylabel(r'$\lambda_i$ [nm]')
         # size of axes label
-        for plot in [pltwnd.peplt, pltwnd.pmplt, pltwnd.jsplt]:
+        for plot in [pltwnd.peplt, pltwnd.pmplt, pltwnd.jsplt, pltwnd.jsplt2]:
             plot.tick_params(axis='both', which='major', labelsize='medium')
             plot.tick_params(axis='both', which='minor', labelsize='medium')
         # label plot
         if calcJSA:
-            pltwnd.peplt.set_title('with filters', fontsize=20)
+            pltwnd.peplt.set_title('w filters', fontsize=20)
             pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            pltwnd.jsplt.set_title('wo sidelobes', fontsize=20)
+            pltwnd.jsplt.set_title('wo filters wo SL', fontsize=20)
+            pltwnd.jsplt2.set_title('w filters wo SL', fontsize=20)
             pltwnd.fig.suptitle('Estimating losses', fontsize=24)
         elif calcJSI:
-            pltwnd.peplt.set_title('with filters', fontsize=20)
+            pltwnd.peplt.set_title('w filters', fontsize=20)
             pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            pltwnd.jsplt.set_title('wo sidelobes', fontsize=20)
+            pltwnd.jsplt.set_title('wo filters wo SL', fontsize=20)
+            pltwnd.jsplt2.set_title('w filters wo SL', fontsize=20)
             pltwnd.fig.suptitle('Estimating losses', fontsize=24)
         # create legend
         pltwnd.fig.subplots_adjust(bottom=0.2)
@@ -1541,18 +1558,19 @@ class GUI(QMainWindow):
         parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
             L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
             T) + 'Pulse duration: {0:.2f}ps'.format(tau * 10 ** 12)
-        lossesstring = 'Filter losses: {0:.2f}%\n'.format(filterlosses*100) + 'Sidelobe losses: {0:.2f}%'.format(sidelobelosses*100)
+        lossesstring = 'Filter losses: {0:.2f}%\n'.format(filterlosses*100) + 'non-sidelobe filter losses: {0:.2f}%\n'.format(nonsidelobefilterlosses*100) + 'Sidelobe losses: {0:.2f}%\n'.format(sidelobelosses*100) + 'Sidelobe losses after filtering: {0:.2f}%\n'.format(filteredsidelobelosses*100)
         if calcGaussian:
             parameterstring = parameterstring + '\nGaussian beam shape'
         elif calcSech:
             parameterstring = parameterstring + '\nsech^2 beam shape'
         # state additional paramters on plot
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
-        pltwnd.peplt.annotate(lossesstring, xy=(0.2, 0.9475), xycoords='figure fraction', fontsize=9, color='r')
+        pltwnd.peplt.annotate(lossesstring, xy=(0.2, 0.86), xycoords='figure fraction', fontsize=9, color='r')
 
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
         pltwnd.jsplt.set_aspect('equal')
+        pltwnd.jsplt2.set_aspect('equal')
         pltwnd.fig.set_size_inches(8,3)
         pltwnd.canvas.draw()
         pltwnd.resize(1200,600)

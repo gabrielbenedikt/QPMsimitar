@@ -140,6 +140,7 @@ class GUI(QMainWindow):
         self.ui_pumpShapeCB = QComboBox()
         self.ui_pumpShapeCB.addItem('Gaussian')
         self.ui_pumpShapeCB.addItem('Sech^2')
+        self.ui_pumpShapeCB.addItem('Sinc')
         self.ui_pumpShapeLabel = QLabel()
         self.ui_pumpShapeLabel.setText('Pump pulse shape')
 
@@ -1659,7 +1660,9 @@ class GUI(QMainWindow):
 
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
                                              JSIresolution, pumpshape, delayrange, refidxfunc, spectralfilters)
-
+        
+        np.save('HOM.npy', CoincProb)
+        
         # plot
         # init plot window
         pltwndidx = self.plotwindowcount

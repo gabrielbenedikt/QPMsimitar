@@ -119,6 +119,9 @@ class JSI:
     def PMAsech(self, dk, cl):
         return self.PMA(dk, cl)
 
+    def PMAsinc(self, dk, cl):
+        return self.PMA(dk, cl)
+
     # phase matching intensity
     def PMIsech(self, dk, cl):
         return numpy.square(self.PMA(dk, cl))
@@ -126,6 +129,8 @@ class JSI:
     def PMIgauss(self, dk, cl):
         return numpy.square(self.PMA(dk, cl))
 
+    def PMIsinc(self, dk, cl):
+        return numpy.square(self.PMA(dk, cl))
     ###################
     ###   gaussian  ###
     ###################
@@ -237,6 +242,63 @@ class JSI:
     def PEInPMInJSIsech(self, lp, ls, li, tauac, t, pp, cl):
         [pea, pma, jsa] = self.PEAnPMAnJSAsech(lp, ls, li, tauac, t, pp, cl)
         return [pea ** 2, pma ** 2, jsa ** 2]
+    
+    ###################
+    ###    sinc     ###
+    ###################
+    # pump envelope amplitude for sinc beam
+    def PEAsinc(self, lp, ls, li, B):
+        dl = 1 / ls + 1 / li - 1 / lp
+        wfact = 2 * Constants().pi * Constants().c * (1 / ls + 1 / li - 1 / lp)
+        #argument = wfact * B
+        argument = wfact*B
+        return (numpy.sinc(argument))
+        
+    # pump envelope intensity for sinc beam
+    def PEIsinc(self, lp, ls, li, B):
+        return (self.PEAsinc(lp, ls, li, B)) ** 2
+        
+    # joint spectral amplitude for sinc beam
+    def JSAsinc(self, lp, ls, li, tauac, t, pp, cl):
+        #if self.usetaucf:
+            #tau = tauac * Constants().taucfsech
+        #else:
+            #tau = tauac
+        tau=tauac
+        dw = 2 * Constants().pi * Constants().tbwpsinc / (tau)
+        B = 3.79099 / dw
+        dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
+        jsa = self.PEAsinc(lp, ls, li, B) * self.PMAsinc(dk, cl)
+        if self.useabs:
+            return numpy.absolute(jsa)
+        else:
+            return jsa
+
+    # joint spectral intensity for sinc beam
+    def JSIsinc(self, lp, ls, li, tauac, t, pp, cl):
+        return self.JSAsinc(lp, ls, li, tauac, t, pp, cl) ** 2
+        
+    def PEAnPMAnJSAsinc(self, lp, ls, li, tauac, t, pp, cl):
+        #if self.usetaucf:
+            #tau = tauac * Constants().taucfsech
+        #else:
+            #tau = tauac
+        tau=tauac
+        dw = 2 * Constants().pi * Constants().tbwpsinc / (tau)
+        B = 3.79099 / dw
+        dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
+        pea = self.PEAsinc(lp, ls, li, B)
+        pma = self.PMAsinc(dk, cl)
+        jsa = pea * pma
+        if self.useabs:
+            return [numpy.absolute(pea), numpy.absolute(pma), numpy.absolute(jsa)]
+        else:
+            return [pea, pma, jsa]
+
+    def PEInPMInJSIsinc(self, lp, ls, li, tauac, t, pp, cl):
+        [pea, pma, jsa] = self.PEAnPMAnJSAsinc(lp, ls, li, tauac, t, pp, cl)
+        return [pea ** 2, pma ** 2, jsa ** 2]
+
 
     def filterfunction(self, ls, li):
         # rectangular filter with:
@@ -324,9 +386,15 @@ class JSI:
         if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
+            self.calcSinc = False
+        elif self.pumpshape.casefold() == 'sinc':
+            self.calcGaussian = False
+            self.calcSech = False
+            self.calcSinc = True
         else:
             self.calcGaussian = False
             self.calcSech = True
+            self.calcSinc = False
 
         X, Y = numpy.meshgrid(self.sigrange, self.idrange)
 
@@ -339,6 +407,10 @@ class JSI:
                 [PE, PM, JS] = self.PEAnPMAnJSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 if self.useFilter:
                     JS = JS * self.filtermatrix
+            elif self.calcSinc:
+                [PE, PM, JS] = self.PEAnPMAnJSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
         elif self.calcJSI:
             if self.calcGaussian:
                 [PE, PM, JS] = self.PEInPMInJSIgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
@@ -346,6 +418,10 @@ class JSI:
                     JS = JS * self.filtermatrix
             elif self.calcSech:
                 [PE, PM, JS] = self.PEInPMInJSIsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JS = JS * self.filtermatrix
+            elif self.calcSinc:
+                [PE, PM, JS] = self.PEInPMInJSIsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 if self.useFilter:
                     JS = JS * self.filtermatrix
         else:
@@ -398,12 +474,18 @@ class JSI:
                 filtervector.append(filterval)
             self.filtermatrix.append(filtervector)
 
-        if self.pumpshape.casefold() == 'gaussian':
+        if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
+            self.calcSinc = False
+        elif self.pumpshape.casefold() == 'sinc':
+            self.calcGaussian = False
+            self.calcSech = False
+            self.calcSinc = True
         else:
             self.calcGaussian = False
             self.calcSech = True
+            self.calcSinc = False
 
         X, Y = numpy.meshgrid(self.sigrange, self.idrange)
 
@@ -418,6 +500,10 @@ class JSI:
                     JSA = JSA * self.filtermatrix
             elif self.calcSech:
                 JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+            elif self.calcSinc:
+                JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 if self.useFilter:
                     JSA = JSA * self.filtermatrix
 
@@ -489,9 +575,15 @@ class JSI:
         if self.pumpshape.casefold() == 'gaussian':
             self.calcGaussian = True
             self.calcSech = False
-        else:
+            self.calcSinc = False
+        elif self.pumpshape.casefold() == 'sech':
             self.calcGaussian = False
             self.calcSech = True
+            self.calcSinc = False
+        elif self.pumpshape.casefold() == 'sinc':
+            self.calcGaussian = False
+            self.calcSech = False
+            self.calcSinc = True
 
         X, Y = numpy.meshgrid(self.sigrange, self.idrange)
 
@@ -506,6 +598,10 @@ class JSI:
                     JSA = JSA * self.filtermatrix
             elif self.calcSech:
                 JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+                if self.useFilter:
+                    JSA = JSA * self.filtermatrix
+            elif self.calcSinc:
+                JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 if self.useFilter:
                     JSA = JSA * self.filtermatrix
 
@@ -575,9 +671,15 @@ class JSI:
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
-        else:
+            self.calcSinc = False
+        elif pumpshape.casefold() =='sech':
             self.calcGaussian = False
             self.calcSech = True
+            self.calcSinc = False
+        elif pumpshape.casefold() =='sinc':
+            self.calcGaussian = False
+            self.calcSech = False
+            self.calcSinc = True
 
         self.filtermatrix = []
 
@@ -604,6 +706,10 @@ class JSI:
                 jsi = self.JSIgauss(pwl, X, Y, tau, temp, polingp, cl)
                 jsa = self.JSAgauss(pwl, X, Y, tau, temp, polingp, cl)
                 jsa_cc = numpy.conjugate(self.JSAgauss(pwl, Y, X, tau, temp, polingp, cl))
+            elif self.calcSinc:
+                jsi = self.JSIsinc(pwl, X, Y, tau, temp, polingp, cl)
+                jsa = self.JSAsinc(pwl, X, Y, tau, temp, polingp, cl)
+                jsa_cc = numpy.conjugate(self.JSAsinc(pwl, Y, X, tau, temp, polingp, cl))
             else:
                 print('ERROR: Unknown pump beamshape')
 
@@ -666,9 +772,15 @@ class JSI:
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             self.calcSech = False
-        else:
+            self.calcSinc = False
+        elif pumpshape.casefold() =='sech':
             self.calcGaussian = False
             self.calcSech = True
+            self.calcSinc = False
+        elif pumpshape.casefold() =='sinc':
+            self.calcGaussian = False
+            self.calcSech = False
+            self.calcSinc = True
 
         self.filtermatrix = []
 
@@ -693,6 +805,8 @@ class JSI:
                 result =self.JSIgauss(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
             elif self.calcSech: 
                 result = self.JSIsech(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
+            elif self.calcSinc: 
+                result = self.JSIsinc(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
             else:
                 print('ERROR: Unknown pump beamshape')
             if self.useFilter:

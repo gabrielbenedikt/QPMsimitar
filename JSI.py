@@ -365,18 +365,6 @@ class JSI:
 
         self.pumpshape = pumpshape
 
-        self.filtermatrix = []
-
-        self.useFilter = True
-        self.filtersignalfunction = filter[0]
-        self.filteridlerfunction = filter[1]
-        for i in range(0, len(self.sigrange)):
-            filtervector = []
-            for j in range(0, len(self.idrange)):
-                filterval=self.filteridlerfunction(self.idrange[j])*self.filtersignalfunction(self.sigrange[i])
-                filtervector.append(filterval)
-            self.filtermatrix.append(filtervector)
-
         if plotJSI==False:
             self.calcJSA = True
             self.calcJSI = False
@@ -415,6 +403,16 @@ class JSI:
             return
         
         if self.useFilter:
+            #self.useFilter = True
+            self.filtermatrix = []
+            self.filtersignalfunction = filter[0]
+            self.filteridlerfunction = filter[1]
+            for i in range(0, len(self.sigrange)):
+                filtervector = []
+                for j in range(0, len(self.idrange)):
+                    filterval=self.filteridlerfunction(self.idrange[j])*self.filtersignalfunction(self.sigrange[i])
+                    filtervector.append(filterval)
+                self.filtermatrix.append(filtervector)
             JS = JS * self.filtermatrix
 
         return [PE, PM, JS]

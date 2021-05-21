@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import concurrent.futures
+import multiprocessing as mp
 import numpy
 import scipy
 import scipy.optimize
@@ -393,6 +394,13 @@ class JSI:
                 [PE, PM, JS] = self.PEAnPMAnJSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
         elif self.calcJSI:
             if self.calcGaussian:
+                #arguments=[(self.pwl, swl[0], iwl[0], self.tau, self.T, self.PP, self.L) for swl, iwl in zip(self.sigrange, self.idrange)]
+                #print(arguments[0])
+                #with mp.Pool(processes=8) as pool:
+                    #PE, PM, JS = pool.starmap(self.PEInPMInJSIgauss, arguments)
+                ##PE = np.array(PE)
+                ##PM = np.array(PM)
+                ##JS = np.array(JS)
                 [PE, PM, JS] = self.PEInPMInJSIgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
             elif self.calcSech:
                 [PE, PM, JS] = self.PEInPMInJSIsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)

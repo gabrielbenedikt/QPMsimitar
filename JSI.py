@@ -576,7 +576,7 @@ class JSI:
             self.calcGaussian = True
             self.calcSech = False
             self.calcSinc = False
-        elif self.pumpshape.casefold() == 'sech':
+        elif self.pumpshape.casefold() == 'sech^2':
             self.calcGaussian = False
             self.calcSech = True
             self.calcSinc = False
@@ -672,7 +672,7 @@ class JSI:
             self.calcGaussian = True
             self.calcSech = False
             self.calcSinc = False
-        elif pumpshape.casefold() =='sech':
+        elif pumpshape.casefold() =='sech^2':
             self.calcGaussian = False
             self.calcSech = True
             self.calcSinc = False
@@ -773,7 +773,7 @@ class JSI:
             self.calcGaussian = True
             self.calcSech = False
             self.calcSinc = False
-        elif pumpshape.casefold() =='sech':
+        elif pumpshape.casefold() =='sech^2':
             self.calcGaussian = False
             self.calcSech = True
             self.calcSinc = False

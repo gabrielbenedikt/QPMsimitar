@@ -657,7 +657,7 @@ class JSI:
 
         self.filtermatrix = []
 
-        self.useFilter = True
+        #self.useFilter = True ## TODO: why was this here? Oo
         self.filtersignalfunction = filter[0]
         self.filteridlerfunction = filter[1]
         for i in range(0, len(signalrange)):
@@ -690,24 +690,13 @@ class JSI:
             jsi = jsi*self.filtermatrix
             jsa_cc = jsa_cc*self.filtermatrix
         
-        if 0:
-            for i in range(0,len(delayrange)):
+        def homf(i):
                 phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
                 ProbMX = jsi-phase*jsa*jsa_cc
-                
-                #tmp=0
-                #for i in range(0,len(X)):
-                    #for j in range(0,len(Y)):
-                        #tmp = tmp + ProbMX[i][j]
-                HOMI.append(numpy.sum(ProbMX))
-        else:
-            def homf(i):
-                    phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
-                    ProbMX = jsi-phase*jsa*jsa_cc
-                    return numpy.sum(ProbMX)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-                futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-                HOMI = [f.result() for f in futures]
+                return numpy.sum(ProbMX)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+            HOMI = [f.result() for f in futures]
 
         # omit tiny imaginary parts
         HOMI = numpy.abs(HOMI)

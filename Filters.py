@@ -6,12 +6,13 @@ class Filters:
     def __init__(self):
         self.FilterList = ['None','Rectangular','Gaussian']
 
-    def getFilterFunction(self, type,cwl,fwhm):
-        if type=='None':
-            return self.nofilteronlywl(1,1)
-        elif type=='Rectangular':
+    def getFilterFunction(self, ftype,cwl,fwhm):
+        if ftype=='None':
+            #return self.nofilteronlywl(1,1)
+            return None
+        elif ftype=='Rectangular':
             return self.rectangularfilteronlywl(cwl,fwhm)
-        elif type=='Gaussian':
+        elif ftype=='Gaussian':
             return self.gaussianfilteronlywl(cwl,fwhm)
 
 
@@ -22,7 +23,6 @@ class Filters:
         def func(wl):
             return self.nofilter(wl, cwl, fwhm)
         return func
-
 
     def rectangularfilter(self, wl, cwl, fwhm):
         if (numpy.absolute(cwl-wl)>fwhm/2):

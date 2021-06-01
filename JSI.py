@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import cProfile
 
 import concurrent.futures
 import multiprocessing as mp
@@ -6,6 +7,7 @@ import numpy
 import scipy
 import scipy.optimize
 import scipy.interpolate
+from datetime import datetime
 from Constants import Constants
 #import matplotlib
 #import matplotlib.pyplot as plt
@@ -102,8 +104,7 @@ class JSI:
         return wlgap2
 
     def deltak(self, lp, ls, li, T, PP):
-        tmp = self.pconv(lp, ls, li, T, PP)
-        return 2 * Constants().pi * tmp
+        return 2 * Constants().pi * self.pconv(lp, ls, li, T, PP)
 
     # calculates pumpwavelength out of signal and idler wavelength, using energy conservation
     def lambdap(self, ls, li):
@@ -213,8 +214,10 @@ class JSI:
         # tau=tauac
         dw = 2 * Constants().pi * Constants().tbwpsech / (tau)
         B = 2 * numpy.arccosh(numpy.sqrt(2)) / dw
+        
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         jsa = self.PEAsech(lp, ls, li, B) * self.PMAsech(dk, cl)
+        
         if self.useabs:
             return numpy.absolute(jsa)
         else:
@@ -645,7 +648,8 @@ class JSI:
 
         return Tcp
 
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, refidxfunc, filter):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, refidxfunc, filterfuncs):
+        t0=datetime.now()
         [self.nx, self.ny, self.nz] = refidxfunc
         #
         # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
@@ -661,45 +665,41 @@ class JSI:
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
 
-        self.filtermatrix = []
-
-        #self.useFilter = True ## TODO: why was this here? Oo
-        self.filtersignalfunction = filter[0]
-        self.filteridlerfunction = filter[1]
-        for i in range(0, len(signalrange)):
-            filtervector = []
-            for j in range(0, len(idlerrange)):
-                filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
-                filtervector.append(filterval)
-            self.filtermatrix.append(filtervector)
-
         X, Y = numpy.meshgrid(signalrange, idlerrange)
 
         HOMI = []
 
         if self.calcSech:
-            jsi = self.JSIsech(pwl, X, Y, tau, temp, polingp, cl)
             jsa = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
-            jsa_cc = numpy.conjugate(self.JSAsech(pwl, Y, X, tau, temp, polingp, cl))
         elif self.calcGaussian:
-            jsi = self.JSIgauss(pwl, X, Y, tau, temp, polingp, cl)
             jsa = self.JSAgauss(pwl, X, Y, tau, temp, polingp, cl)
-            jsa_cc = numpy.conjugate(self.JSAgauss(pwl, Y, X, tau, temp, polingp, cl))
         elif self.calcSinc:
-            jsi = self.JSIsinc(pwl, X, Y, tau, temp, polingp, cl)
             jsa = self.JSAsinc(pwl, X, Y, tau, temp, polingp, cl)
-            jsa_cc = numpy.conjugate(self.JSAsinc(pwl, Y, X, tau, temp, polingp, cl))
         else:
             print('ERROR: Unknown pump beamshape')
-        if self.useFilter:
-            jsa = jsa*self.filtermatrix
-            jsi = jsi*self.filtermatrix
-            jsa_cc = jsa_cc*self.filtermatrix
+        jsa_cc = numpy.conjugate(jsa)
+        jsi = jsa ** 2
+        
+        #filters
+        #self.useFilter = True ## TODO: why was this here? Oo
+        self.filtermatrix = []
+        self.filtersignalfunction = filterfuncs[0]
+        self.filteridlerfunction = filterfuncs[1]
+        if not (self.filtersignalfunction==None and self.filteridlerfunction == None):
+            for i in range(0, len(signalrange)):
+                filtervector = []
+                for j in range(0, len(idlerrange)):
+                    filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
+                    filtervector.append(filterval)
+                self.filtermatrix.append(filtervector)
+                jsa = jsa*self.filtermatrix
+                jsi = jsi*self.filtermatrix
+                jsa_cc = jsa_cc*self.filtermatrix
         
         def homf(i):
-                phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
-                ProbMX = jsi-phase*jsa*jsa_cc
-                return numpy.sum(ProbMX)
+            phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
+            ProbMX = jsi-phase*jsa*jsa_cc
+            return numpy.sum(ProbMX)
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
             HOMI = [f.result() for f in futures]
@@ -740,9 +740,11 @@ class JSI:
 
         homfwhm=posroot[0]-negroot[0]
 
+        t1=datetime.now()
+        print('calculating HOM took', (t1-t0).total_seconds(), 's')
         return [HOMI,vis,homfwhm]
-
-    def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filter, JSIresolution, pumpshape, decprec, usetaucf):
+    
+    def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filterfuncs, JSIresolution, pumpshape, decprec, usetaucf):
         [self.nx, self.ny, self.nz] = refidxfunc
         self.usetaucf = usetaucf
         
@@ -759,8 +761,8 @@ class JSI:
         self.filtermatrix = []
 
         self.useFilter = True
-        self.filtersignalfunction = filter[0]
-        self.filteridlerfunction = filter[1]
+        self.filtersignalfunction = filterfuncs[0]
+        self.filteridlerfunction = filterfuncs[1]
         for i in range(0, len(signalrange)):
             filtervector = []
             for j in range(0, len(idlerrange)):

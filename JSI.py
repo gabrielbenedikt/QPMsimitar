@@ -369,11 +369,11 @@ class JSI:
 
         self.pumpshape = pumpshape
 
+        self.calcJSI = False
+        self.calcJSA = False
         if plotJSI==False:
             self.calcJSA = True
-            self.calcJSI = False
         else:
-            self.calcJSA = False
             self.calcJSI = True
             
         self.calcGaussian = False
@@ -428,7 +428,7 @@ class JSI:
 
         return [PE, PM, JS]
 
-    def getpurity_vsTau(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,refidxfunc,qpmorder,filter,pumpshape):
+    def getpurity_vsTau(self,pumpwl,signalrange,idlerrange,taurange,temp,polingp,crystallength,refidxfunc,qpmorder,filterfuncs,pumpshape):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -459,18 +459,6 @@ class JSI:
         self.L = crystallength * self.thermexpfactor(self.T)
 
         self.pumpshape = pumpshape
-
-        self.filtermatrix = []
-
-        self.useFilter = True
-        self.filtersignalfunction = filter[0]
-        self.filteridlerfunction = filter[1]
-        for i in range(0, len(self.sigrange)):
-            filtervector = []
-            for j in range(0, len(self.idrange)):
-                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
-                filtervector.append(filterval)
-            self.filtermatrix.append(filtervector)
             
         self.calcGaussian = False
         self.calcSech = False
@@ -497,7 +485,18 @@ class JSI:
                 JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 
             if self.useFilter:
-                JSA = JSA * self.filtermatrix
+                self.filtersignalfunction = filterfuncs[0]
+                self.filteridlerfunction = filterfuncs[1]
+                if not (self.filtersignalfunction==None and self.filteridlerfunction==None):
+                    self.filtermatrix = []
+                    self.useFilter = True
+                    for i in range(0, len(self.sigrange)):
+                        filtervector = []
+                        for j in range(0, len(self.idrange)):
+                            filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                            filtervector.append(filterval)
+                        self.filtermatrix.append(filtervector)
+                    JSA = JSA * self.filtermatrix
 
             # Purity
             # SDV
@@ -520,7 +519,7 @@ class JSI:
 
         return [purity,max,increased_taurange[maxidx]]
 
-    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,refidxfunc,qpmorder,filter,pumpshape):
+    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,refidxfunc,qpmorder,filterfuncs,pumpshape):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -531,7 +530,7 @@ class JSI:
         # crystallength: Length of crystal
         # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
         # qpmorder: Quasi phase matching order
-        # filter: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
+        # filterfuncs: [string,bool,bool]: [Type of filter to use, True: use filter for signal, True: use filter for idler]
         # pumpshape: string: Shape of pump beam (gaussian, sech^2)
         #
 
@@ -551,18 +550,6 @@ class JSI:
         self.Lrange = crystallengthrange * self.thermexpfactor(self.T)
 
         self.pumpshape = pumpshape
-
-        self.filtermatrix = []
-
-        self.useFilter = True
-        self.filtersignalfunction = filter[0]
-        self.filteridlerfunction = filter[1]
-        for i in range(0, len(self.sigrange)):
-            filtervector = []
-            for j in range(0, len(self.idrange)):
-                filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
-                filtervector.append(filterval)
-            self.filtermatrix.append(filtervector)
 
         self.calcGaussian = False
         self.calcSech = False
@@ -589,7 +576,19 @@ class JSI:
                 JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
                 
             if self.useFilter:
-                JSA = JSA * self.filtermatrix
+                self.filtersignalfunction = filterfuncs[0]
+                self.filteridlerfunction = filterfuncs[1]
+                if not (self.filtersignalfunction==None and self.filteridlerfunction==None):
+                    self.filtermatrix = []
+                    self.useFilter = True
+                    for i in range(0, len(self.sigrange)):
+                        filtervector = []
+                        for j in range(0, len(self.idrange)):
+                            filterval=self.filteridlerfunction(self.sigrange[i])*self.filtersignalfunction(self.idrange[j])
+                            filtervector.append(filterval)
+                    self.filtermatrix.append(filtervector)
+
+                    JSA = JSA * self.filtermatrix
 
             # Purity
             # SDV
@@ -692,9 +691,9 @@ class JSI:
                     filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
                     filtervector.append(filterval)
                 self.filtermatrix.append(filtervector)
-                jsa = jsa*self.filtermatrix
-                jsi = jsi*self.filtermatrix
-                jsa_cc = jsa_cc*self.filtermatrix
+            jsa = jsa*self.filtermatrix
+            jsi = jsi*self.filtermatrix
+            jsa_cc = jsa_cc*self.filtermatrix
         
         def homf(i):
             phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
@@ -758,18 +757,6 @@ class JSI:
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
 
-        self.filtermatrix = []
-
-        self.useFilter = True
-        self.filtersignalfunction = filterfuncs[0]
-        self.filteridlerfunction = filterfuncs[1]
-        for i in range(0, len(signalrange)):
-            filtervector = []
-            for j in range(0, len(idlerrange)):
-                filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
-                filtervector.append(filterval)
-            self.filtermatrix.append(filtervector)
-        
         fwhmsig=[]
         fwhmid=[]
         
@@ -786,7 +773,18 @@ class JSI:
             else:
                 print('ERROR: Unknown pump beamshape')
             if self.useFilter:
-                result = result*self.filtermatrix
+                self.filtersignalfunction = filterfuncs[0]
+                self.filteridlerfunction = filterfuncs[1]
+                if not (self.filtersignalfunction==None and self.filteridlerfunction==None):
+                    self.filtermatrix = []
+                    for i in range(0, len(signalrange)):
+                        filtervector = []
+                        for j in range(0, len(idlerrange)):
+                            filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
+                            filtervector.append(filterval)
+                        self.filtermatrix.append(filtervector)
+                    
+                    result = result*self.filtermatrix
             hmptss=[]
             hmptsi=[]
             hmpts=[]

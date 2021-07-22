@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 
-
 class Crystal:
     def __init(self):
         from enum import Enum
         self.AvailableCrystals = Enum('PPKTP')
 
-    def setCrystalType(self, type):
+    def setCrystalType(self, ctype):
         success=False
         for crystal in self.AvailableCrystals:
-            if (crystal.name==type):
-                self.CrystalType = type
+            if (crystal.name==ctype):
+                self.CrystalType = ctype
                 success=True
                 return 0
         if (success==False):

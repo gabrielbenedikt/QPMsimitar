@@ -15,7 +15,6 @@ class Filters:
         elif ftype=='Gaussian':
             return self.gaussianfilteronlywl(cwl,fwhm)
 
-
     def nofilter(self, wl,cwl,fwhm):
         return 1
 
@@ -34,7 +33,6 @@ class Filters:
         def func(wl):
             return self.rectangularfilter(wl, cwl, fwhm)
         return func
-
 
     def gaussianfilter(self,wl,cwl,fwhm):
         s=fwhm/2*numpy.sqrt(2*numpy.log(2))

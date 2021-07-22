@@ -6,10 +6,12 @@ class Constants:
         # speed of light in m/s
         self.c = 299792458
 
-        # factors to convert pulsewidth between autocorrelator measurement and real pulsewidth
+        # factors to convert pulsewidth between autocorrelator measurement and pulsewidth for various pulseshapes
         self.taucfgauss = 1 / numpy.sqrt(2)  # gaussian shape
         self.taucfsech = 0.647  # sech2 shape
+        self.taucflorentzian = 1/2.0
 
+        #time bandwidth products
         self.tbwpgauss = 0.441
         self.tbwpsech = ((2 * numpy.log(1 + numpy.sqrt(2))) / (self.pi)) ** 2
         self.tbwpsinc = 1

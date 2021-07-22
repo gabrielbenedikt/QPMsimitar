@@ -24,21 +24,3 @@ if __name__ == '__main__':
     MPA = MultiPhotonAnalysis()
     app.exec_()
     MPA.config.saveSettings()
-    #app = QApplication(sys.argv)
-    #MPA=MultiPhotonAnalysis()
-
-    #config = Settings()
-    #config.standardSettings()
-    #config.loadSettings()
-    #cpp=config.get("Crystal Poling Period")[1]
-    #config.set("Crystal Poling Period", cpp+1)
-
-    #refIDX = RefractiveIndex()
-    #[nx, ny, nz] = refIDX.getIDX('PPKTP',['kato', 'könig', 'fradkin'])
-    #g = GUI()
-    #MP = MultiPhotonAnalysis()
-    #MP.showGUI()
-
-    #app.exec_()
-
-    #config.saveSettings()

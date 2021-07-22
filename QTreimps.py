@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import QPushButton
 from PyQt5 import QtCore
 from PyQt5.QtCore import QObject, pyqtSignal
 
-
+#reimplementation of the QPushButton
+#change: emit signal when moush hovers over button
 class QHoverPushButton(QPushButton):
     mouseentersignal = pyqtSignal(str)
     mouseleavesignal = pyqtSignal(str)

@@ -9,12 +9,6 @@ import scipy.optimize
 import scipy.interpolate
 from datetime import datetime
 from Constants import Constants
-#import matplotlib
-#import matplotlib.pyplot as plt
-# import array
-# from matplotlib.offsetbox import AnchoredText
-# import os
-
 
 class JSI:
     def __init__(self):
@@ -717,15 +711,6 @@ class JSI:
         vis = numpy.abs((homimax-homimin)/(homimax))
 
         # calc FWHM
-        #visinterpolf = scipy.interpolate.interp1d(delayrange, HOMI-0.25)
-        #negrootstartest=delayrange[int(numpy.floor(len(delayrange)/3))]
-        #posrootstartest=delayrange[int(numpy.floor(len(delayrange)*2/3))]
-        #print('Estimate for negative root: ', negrootstartest)
-        #print('Estimate for positive root: ', posrootstartest)
-        #negroot = scipy.optimize.fsolve(visinterpolf, negrootstartest)
-        #posroot = scipy.optimize.fsolve(visinterpolf, posrootstartest)
-        
-        #anorther try, maybe more stable=
         delayrangeneg = delayrange[:int(numpy.floor(len(delayrange)/2))]
         delayrangepos = delayrange[int(numpy.floor(len(delayrange)/2)):]
         HOMIneg = HOMI[:int(numpy.floor(len(HOMI)/2))]
@@ -789,20 +774,12 @@ class JSI:
             hmptsi=[]
             hmpts=[]
             
-            #option 1
             result=result.round(decprec)
             idcs=numpy.where(result==0) 
             for i in range(0,len(idcs[0])):
                     hmptss.append(signalrange[idcs[0][i]]*10**9)
                     hmptsi.append(idlerrange[idcs[1][i]]*10**9)
                     
-            #option 2
-            #for i in range(0,len(signalrange)):
-            #    for j in range(0,len(idlerrange)):
-            #        if (numpy.abs(result[i][j])<10**(-decprec)):
-            #            hmptss.append(signalrange[i]*10**9)
-            #            hmptsi.append(idlerrange[j]*10**9)
-            
             if len(hmptss) != 0:
                 if len(hmptsi) !=0:
                     fwhmsig.append(max(hmptss)-min(hmptss))

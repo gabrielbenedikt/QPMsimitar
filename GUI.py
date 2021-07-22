@@ -40,7 +40,7 @@ class GUI(QMainWindow):
         QToolTip.setFont(QFont('SansSerif', 10))
         self.setToolTip('Tooltip!')
 
-        self.setWindowTitle('Multiphoton Analysis GUI')
+        self.setWindowTitle('QPMsimitar')
 
         self.ui_layout = QGridLayout()
 

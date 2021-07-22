@@ -7,7 +7,7 @@ from Settings import Settings
 from PyQt5.QtWidgets import QApplication
 import sys
 
-class MultiPhotonAnalysis:
+class QPMsimitar:
     def __init__(self):
         self.config = Settings()
         self.config.standardSettings()
@@ -21,6 +21,6 @@ class MultiPhotonAnalysis:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    MPA = MultiPhotonAnalysis()
+    MPA = QPMsimitar()
     app.exec_()
     MPA.config.saveSettings()

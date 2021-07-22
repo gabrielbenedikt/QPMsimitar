@@ -3,3 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 TODO
+HOM.npy
+HOMvis.png
+*.kdev4
+nohup.out

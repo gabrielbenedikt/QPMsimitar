@@ -472,6 +472,7 @@ class GUI(QMainWindow):
         self.ui_PlotJSIGroupBox.setTitle('Plot JSI/JSA')
 
         self.ui_PlotJSI_Wlrange_SB = QDoubleSpinBox()
+        self.ui_PlotJSI_Wlrange_SB.setRange(1,500)
         self.ui_PlotJSI_Wlrange_label = QLabel('Wl range [nm]')
 
         self.ui_PlotJSIorJSALayout = QGridLayout()
@@ -1662,6 +1663,7 @@ class GUI(QMainWindow):
                                              JSIresolution, pumpshape, delayrange, refidxfunc, spectralfilters)
         
         np.save('HOM.npy', CoincProb)
+        np.save('HOMdelay.npy', delayrange)
         
         # plot
         # init plot window

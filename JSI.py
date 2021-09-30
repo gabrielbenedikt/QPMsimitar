@@ -671,7 +671,11 @@ class JSI:
         else:
             print('ERROR: Unknown pump beamshape')
         jsa_cc = numpy.conjugate(jsa)
-        jsi = jsa ** 2
+        #jsi = jsa ** 2
+        jsi = jsa * jsa_cc
+        # jsi should integrate to 1
+        jsi_sum = numpy.sum(jsi)
+        jsi = jsi / jsi_sum
         
         #filters
         #self.useFilter = True ## TODO: why was this here? Oo
@@ -691,20 +695,16 @@ class JSI:
         
         def homf(i):
             phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
-            ProbMX = jsi-phase*jsa*jsa_cc
+            ProbMX = 0.5 * (jsi-phase*jsi)
             return numpy.sum(ProbMX)
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
             HOMI = [f.result() for f in futures]
 
         # omit tiny imaginary parts
         HOMI = numpy.abs(HOMI)
-
-        # norm to 1/2
-        max = numpy.max(HOMI)
-        HOMI = HOMI/max
-        HOMI = 0.5*HOMI
-
+        
         # determine visibility
         homimax=numpy.max(HOMI)
         homimin=numpy.min(HOMI)

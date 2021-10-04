@@ -302,15 +302,22 @@ class GUI(QMainWindow):
         self.ui_HOM_Vis_Resolution_Label = QLabel('Resolution')
         self.ui_HOM_Vis_Resolution_SB.setRange(7,10000)
 
+        self.ui_HOM_Vis_Phase_SB = QDoubleSpinBox()
+        self.ui_HOM_Vis_Phase_Label = QLabel('Phase')
+        self.ui_HOM_Vis_Phase_SB.setRange(-100,100)
+        
+
         self.ui_HOM_PlotVis_Btn = QHoverPushButton()
         self.ui_HOM_PlotVis_Btn.setText('PlotHOMVis')
         self.ui_HOM_PlotVis_Btn.setObjectName('Plot HOM Visibility')
 
-        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_Label, 1, 1)
-        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_SB, 1, 2)
-        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_DelayRange_Label, 2, 1)
-        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_DelayRange_SB, 2, 2)
-        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_PlotVis_Btn, 3, 1, 1, -1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_Label,   1, 1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_SB,      1, 2)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_DelayRange_Label,   2, 1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_DelayRange_SB,      2, 2)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Phase_Label,        3, 1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Phase_SB,           3, 2)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_PlotVis_Btn,            4, 1, 1, -1)
 
         self.ui_HOMGroupBox.setLayout(self.ui_layoutHOMGroupBox)
         self.ui_layoutHOM.addWidget(self.ui_HOMGroupBox)
@@ -690,6 +697,7 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.config.get('HOM interference plot resolution')
         self.HOMdelayrange = self.config.get('HOM interference plot range')
+        self.HOMphase = self.config.get('HOM interference plot phase')
         
         self.fwhmres = self.config.get('FWHM plot resolution')
         self.fwhmprecision = self.config.get('FWHM decimal precision')
@@ -736,6 +744,7 @@ class GUI(QMainWindow):
 
         self.ui_HOM_Vis_Resolution_SB.setValue(self.HOMresolution)
         self.ui_HOM_Vis_DelayRange_SB.setValue(self.HOMdelayrange*10**12)
+        self.ui_HOM_Vis_Phase_SB.setValue(self.HOMphase)
         
         self.ui_PlotFWHMresolution_SB.setValue(self.fwhmres)
         self.ui_PlotFWHMprecision_SB.setValue(self.fwhmprecision)
@@ -794,6 +803,7 @@ class GUI(QMainWindow):
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_DelayRange_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_HOM_Vis_Phase_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_Resolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotFWHMresolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotFWHMprecision_SB.valueChanged.connect(self.getVarsFromGUI)
@@ -1642,6 +1652,7 @@ class GUI(QMainWindow):
         cl = self.CrystalLengthSingle
         pumpshape = self.PumpShape
         delayrange = numpy.linspace(-self.HOMdelayrange/2, self.HOMdelayrange/2,self.HOMresolution)
+        homphase = self.HOMphase
         JSIresolution = self.JSIresolution
         JSIwlrange = self.JSIwlRange
 
@@ -1660,10 +1671,11 @@ class GUI(QMainWindow):
         idlerrange = numpy.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, refidxfunc, spectralfilters)
+                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters)
         
-        np.save('HOM.npy', CoincProb)
-        np.save('HOMdelay.npy', delayrange)
+        datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
+        np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
+        np.save('HOMdelay_{0:s}.npy'.format(datestr), delayrange)
         
         # plot
         # init plot window
@@ -1805,6 +1817,7 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.ui_HOM_Vis_Resolution_SB.value()
         self.HOMdelayrange = self.ui_HOM_Vis_DelayRange_SB.value()*10**(-12)
+        self.HOMphase = self.ui_HOM_Vis_Phase_SB.value()
         
         self.fwhmres = self.ui_PlotFWHMresolution_SB.value()
         self.fwhmprecision = self.ui_PlotFWHMprecision_SB.value()
@@ -2044,6 +2057,7 @@ class GUI(QMainWindow):
             self.ui_CrystalLengthsingleSB.setStyleSheet(self.HighlightedDoubleSpinBox)
             self.ui_pumpShapeCB.setStyleSheet(self.HighlightedComboBox)
             self.ui_HOM_Vis_DelayRange_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
+            self.ui_HOM_Vis_Phase_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
             self.ui_HOM_Vis_Resolution_SB.setStyleSheet(self.HighlightedSpinBox)
             self.ui_PlotJSI_WLresolution_SB.setStyleSheet(self.HighlightedSpinBox)
             self.ui_PlotJSI_Wlrange_SB.setStyleSheet(self.HighlightedDoubleSpinBox)
@@ -2142,6 +2156,7 @@ class GUI(QMainWindow):
         self.ui_Purity_WLrange_SB.setStyleSheet("")
         self.ui_layoutPlotRefractiveIndexScrollAreaWidget.setStyleSheet("")
         self.ui_HOM_Vis_DelayRange_SB.setStyleSheet("")
+        self.ui_HOM_Vis_Phase_SB.setStyleSheet("")
         self.ui_HOM_Vis_Resolution_SB.setStyleSheet("")
         self.ui_PlotFWHMresolution_SB.setStyleSheet("")
         self.ui_PlotFWHMprecision_SB.setStyleSheet("")

@@ -9,3 +9,5 @@ HOM.npy
 HOMvis.png
 *.kdev4
 nohup.out
+*.npy
+*.png

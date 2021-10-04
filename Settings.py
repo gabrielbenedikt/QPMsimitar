@@ -66,6 +66,7 @@ class Settings:
         self.config.append(["SI filter Signal FWHM", 3*10**(-9)])
 
         self.config.append(["HOM interference plot resolution", 20])
+        self.config.append(["HOM interference plot phase", 0])
         self.config.append(["HOM interference plot range", 6*10**(-12)])
         
         self.config.append(['FWHM plot resolution',10])

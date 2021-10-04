@@ -641,7 +641,7 @@ class JSI:
 
         return Tcp
 
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, refidxfunc, filterfuncs):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs):
         t0=datetime.now()
         [self.nx, self.ny, self.nz] = refidxfunc
         #
@@ -694,7 +694,7 @@ class JSI:
             jsa_cc = jsa_cc*self.filtermatrix
         
         def homf(i):
-            phase = numpy.exp(1j*2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i])
+            phase = numpy.exp(1j*(2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
             ProbMX = 0.5 * (jsi-phase*jsi)
             return numpy.sum(ProbMX)
         

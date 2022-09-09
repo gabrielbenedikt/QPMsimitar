@@ -14,7 +14,8 @@ import scipy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
-
+import matplotlib
+matplotlib.use('Qt5Agg')
 # noinspection PyAttributeOutsideInit
 class GUI(QMainWindow):
     def __init__(self, config, parent=None):
@@ -534,7 +535,7 @@ class GUI(QMainWindow):
         self.ui_Purity_Tauresolution_Label = QLabel('τ or L resolution')
 
         self.ui_Purity_WLresolution_SB = QSpinBox()
-        self.ui_Purity_WLrange_SB = QSpinBox()
+        self.ui_Purity_WLrange_SB = QDoubleSpinBox()
         self.ui_Purity_Tauresolution_SB = QSpinBox()
 
         self.ui_Purity_WLresolution_SB.setMinimum(2)

@@ -664,19 +664,18 @@ class JSI:
 
         if self.calcSech:
             jsa = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
+            jsa_t = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
         elif self.calcGaussian:
             jsa = self.JSAgauss(pwl, X, Y, tau, temp, polingp, cl)
+            jsa_t = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
         elif self.calcSinc:
             jsa = self.JSAsinc(pwl, X, Y, tau, temp, polingp, cl)
+            jsa_t = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
         else:
             print('ERROR: Unknown pump beamshape')
-        jsa_cc = numpy.conjugate(jsa)
-        #jsi = jsa ** 2
-        jsi = jsa * jsa_cc
-        # jsi should integrate to 1
-        jsi_sum = numpy.sum(jsi)
-        jsi = jsi / jsi_sum
-        
+        jsa_tcc = numpy.conjugate(jsa_t)
+        # jsa should integrate to 1]
+        jsa = jsa / numpy.sum(jsa)
         #filters
         #self.useFilter = True ## TODO: why was this here? Oo
         self.filtermatrix = []
@@ -689,14 +688,15 @@ class JSI:
                     filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
                     filtervector.append(filterval)
                 self.filtermatrix.append(filtervector)
-            jsa = jsa*self.filtermatrix
-            jsi = jsi*self.filtermatrix
-            jsa_cc = jsa_cc*self.filtermatrix
+            jsa = jsa*self.filtermatrix#
+            jsa_tcc = jsa_tcc*numpy.transpose(self.filtermatrix)
         
         def homf(i):
-            phase = numpy.exp(1j*(2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
-            ProbMX = 0.5 * (jsi-phase*jsi)
-            return numpy.sum(ProbMX)
+            phase = numpy.exp(-1j*(2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
+            jj = jsa_tcc*jsa*phase
+            #ProbMX = 0.5 * (1 - numpy.sum(jsa_tcc*jsa*phase))
+            ProbMX = 0.5 * (1 - numpy.sum(jj))
+            return ProbMX
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]

@@ -331,7 +331,7 @@ class JSI:
         self.nz = refidxfunc[2]
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filter,plotJSI,pumpshape):
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape):
         print('start calculating JSA or JSI')
         #
         # pumpwl: Pump wavelength
@@ -343,7 +343,7 @@ class JSI:
         # crystallength: Length of crystal
         # refidxfunc: [nx,ny,nz]: Functions for refractive indices of crystal
         # qpmorder: Quasi phase matching order
-        # filter: [function,function]: [filterfunction for signal, filterfunction for idler]
+        # filterfuncs: [function,function]: [filterfunction for signal, filterfunction for idler]
         # plotJSI: bool: True for JSI, false for JSA
         # pumpshape: string: Shape of pump beam (gaussian, sech^2)
         #
@@ -406,12 +406,16 @@ class JSI:
         else:
             print('Error: Calc neither JSA nor JSI.')
             return
-        
+        if filterfuncs[0]==None and filterfuncs[1]==None:
+            self.useFilter = False
+        else:
+            self.useFilter = True
+        print('self.usefilter: ', self.useFilter)
         if self.useFilter:
             #self.useFilter = True
             self.filtermatrix = []
-            self.filtersignalfunction = filter[0]
-            self.filteridlerfunction = filter[1]
+            self.filtersignalfunction = filterfuncs[0]
+            self.filteridlerfunction = filterfuncs[1]
             for i in range(0, len(self.sigrange)):
                 filtervector = []
                 for j in range(0, len(self.idrange)):

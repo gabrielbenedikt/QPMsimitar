@@ -480,7 +480,7 @@ class GUI(QMainWindow):
         self.ui_PlotJSIGroupBox.setTitle('Plot JSI/JSA')
 
         self.ui_PlotJSI_Wlrange_SB = QDoubleSpinBox()
-        self.ui_PlotJSI_Wlrange_SB.setRange(1,500)
+        self.ui_PlotJSI_Wlrange_SB.setRange(1,5000)
         self.ui_PlotJSI_Wlrange_label = QLabel('Wl range [nm]')
 
         self.ui_PlotJSIorJSALayout = QGridLayout()
@@ -1365,12 +1365,12 @@ class GUI(QMainWindow):
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
         spectralfilters = [ffs, ffi]
-        
+        print(spectralfilters)
         #as reference: no filters:
         ffiref = Filters().getFilterFunction('None', 1, 1) #arguments: filtertype, central wl, bandwidth. only first argument does matter if type is 'None'
         ffsref = Filters().getFilterFunction('None', 1, 1)
         spectralfiltersref = [ffsref, ffiref]
-
+        
         #plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
         plotJSI = True
         if plotJSI==True:
@@ -1429,7 +1429,8 @@ class GUI(QMainWindow):
         wlrangelen=len(signalrange)
         for i in range(1,wlrangelen):
             JSdiagonal.append(JSwoSLref[i,wlrangelen-i])
-        JSdiagonalinterpol=scipy.interpolate.interp1d(numpy.linspace(signalrange[1],signalrange[-1],numpts-1), JSdiagonal, kind='cubic', bounds_error=False)
+        # print(numpy.linspace(signalrange[1],signalrange[-1],numpts-1))
+        JSdiagonalinterpol=scipy.interpolate.interp1d(numpy.linspace(signalrange[1],signalrange[-1],numpts-1).flatten(), JSdiagonal, kind='cubic', bounds_error=False)
         
         #find lowest values along -45° axis
         wlrangehalf=int(len(signalrange)/2)

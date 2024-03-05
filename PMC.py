@@ -36,7 +36,7 @@ class PMC:
                 def epconv(x):
                         #x[0]:lambda_s
                         #x[1]:lambda_i
-                        return [self.econv(x[0],x[1]), self.pconv(x[0],x[1],T,PP)]
+                        return [self.econv(x[0],x[1]), float(self.pconv(x[0],x[1],T,PP))]
                 return epconv
 
         #returns signal and idler wavelengths that satisfy phasematching conditions for a given pumpwavelength, temperature and poling period

@@ -61,7 +61,7 @@ class JSI:
             # x[0]:lambda_p
             # x[0]:lambda_s
             # x[1]:lambda_i
-            return [self.econv(lp, x[0], x[1]), self.pconv(lp, x[0], x[1], T, PP)]
+            return [self.econv(lp, x[0], x[1]), float(self.pconv(lp, x[0], x[1], T, PP))]
 
         return epconv
 

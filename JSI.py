@@ -3,7 +3,7 @@ import cProfile
 
 import concurrent.futures
 import multiprocessing as mp
-import numpy
+import numpy as np
 import scipy
 import scipy.optimize
 import scipy.interpolate
@@ -106,9 +106,9 @@ class JSI:
 
     # phase matching amplitude
     def PMA(self, dk, cl):
-        # note: numpy.sinc(x) evaluates to Sin(pi*x)/(pi*x)
+        # note: np.sinc(x) evaluates to Sin(pi*x)/(pi*x)
         # this really produced some headache.
-        return numpy.sinc(dk * cl / (2 * Constants().pi))  # *numpy.exp(numpy.complex(0,1)*dk*cl/2)
+        return np.sinc(dk * cl / (2 * Constants().pi))  # *np.exp(np.complex(0,1)*dk*cl/2)
 
     def PMAgauss(self, dk, cl):
         return self.PMA(dk, cl)
@@ -121,13 +121,13 @@ class JSI:
 
     # phase matching intensity
     def PMIsech(self, dk, cl):
-        return numpy.square(self.PMA(dk, cl))
+        return np.square(self.PMA(dk, cl))
 
     def PMIgauss(self, dk, cl):
-        return numpy.square(self.PMA(dk, cl))
+        return np.square(self.PMA(dk, cl))
 
     def PMIsinc(self, dk, cl):
-        return numpy.square(self.PMA(dk, cl))
+        return np.square(self.PMA(dk, cl))
     ###################
     ###   gaussian  ###
     ###################
@@ -135,7 +135,7 @@ class JSI:
     # amplitude
     def PEAgauss(self, lp, ls, li, sp):
         dl = 1 / ls + 1 / li - 1 / lp
-        return (numpy.exp(- (Constants().pi * Constants().c * (dl) / (sp)) ** 2))  # note: 2*pi*c/(2*sp)
+        return (np.exp(- (Constants().pi * Constants().c * (dl) / (sp)) ** 2))  # note: 2*pi*c/(2*sp)
 
     # intensity
     def PEIgauss(self, lp, ls, li, sp):
@@ -151,11 +151,11 @@ class JSI:
         # tau=tauac
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
-        sp = dw / (2 * numpy.sqrt(2 * numpy.log(2)))  # gaussian standard deviation from FWHM
+        sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         jsa = self.PEAgauss(lp, ls, li, sp) * self.PMAgauss(dk, cl)
         if self.useabs:
-            return numpy.absolute(jsa)
+            return np.absolute(jsa)
         else:
             return jsa
 
@@ -172,13 +172,13 @@ class JSI:
         # tau=tauac
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
-        sp = dw / (2 * numpy.sqrt(2 * numpy.log(2)))  # gaussian standard deviation from FWHM
+        sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAgauss(lp, ls, li, sp)
         pma = self.PMAgauss(dk, cl)
         jsa = pea * pma
         if self.useabs:
-            return [numpy.absolute(pea), numpy.absolute(pma), numpy.absolute(jsa)]
+            return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
         else:
             return [pea, pma, jsa]
 
@@ -193,7 +193,7 @@ class JSI:
     def PEAsech(self, lp, ls, li, B):
         wfact = 2 * Constants().pi * Constants().c * (1 / ls + 1 / li - 1 / lp)
         argument = wfact * B
-        return (1 / numpy.cosh(argument))
+        return (1 / np.cosh(argument))
 
     # pump envelope intensity for gaussian beam
     def PEIsech(self, lp, ls, li, B):
@@ -207,13 +207,13 @@ class JSI:
             tau = tauac
         # tau=tauac
         dw = 2 * Constants().pi * Constants().tbwpsech / (tau)
-        B = 2 * numpy.arccosh(numpy.sqrt(2)) / dw
+        B = 2 * np.arccosh(np.sqrt(2)) / dw
         
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         jsa = self.PEAsech(lp, ls, li, B) * self.PMAsech(dk, cl)
         
         if self.useabs:
-            return numpy.absolute(jsa)
+            return np.absolute(jsa)
         else:
             return jsa
 
@@ -228,13 +228,13 @@ class JSI:
             tau = tauac
         # tau=tauac
         dw = 2 * Constants().pi * Constants().tbwpsech / (tau)
-        B = 2 * numpy.arccosh(numpy.sqrt(2)) / dw
+        B = 2 * np.arccosh(np.sqrt(2)) / dw
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAsech(lp, ls, li, B)
         pma = self.PMAsech(dk, cl)
         jsa = pea * pma
         if self.useabs:
-            return [numpy.absolute(pea), numpy.absolute(pma), numpy.absolute(jsa)]
+            return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
         else:
             return [pea, pma, jsa]
 
@@ -251,7 +251,7 @@ class JSI:
         wfact = 2 * Constants().pi * Constants().c * (1 / ls + 1 / li - 1 / lp)
         #argument = wfact * B
         argument = wfact*B
-        return (numpy.sinc(argument))
+        return (np.sinc(argument))
         
     # pump envelope intensity for sinc beam
     def PEIsinc(self, lp, ls, li, B):
@@ -269,7 +269,7 @@ class JSI:
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         jsa = self.PEAsinc(lp, ls, li, B) * self.PMAsinc(dk, cl)
         if self.useabs:
-            return numpy.absolute(jsa)
+            return np.absolute(jsa)
         else:
             return jsa
 
@@ -290,7 +290,7 @@ class JSI:
         pma = self.PMAsinc(dk, cl)
         jsa = pea * pma
         if self.useabs:
-            return [numpy.absolute(pea), numpy.absolute(pma), numpy.absolute(jsa)]
+            return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
         else:
             return [pea, pma, jsa]
 
@@ -380,7 +380,7 @@ class JSI:
         else:
             self.calcSech = True
 
-        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+        X, Y = np.meshgrid(self.sigrange, self.idrange)
 
         if self.calcJSA:
             if self.calcGaussian:
@@ -468,7 +468,7 @@ class JSI:
         else:
             self.calcSech = True
 
-        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+        X, Y = np.meshgrid(self.sigrange, self.idrange)
 
         purity = []
 
@@ -502,16 +502,16 @@ class JSI:
             # singular values in s. need to normalize s to get the schmidt magnitudes
             snA = sA / scipy.linalg.norm(sA, 2)
             # sum of squares of schmidt magnitudes is purity
-            purity.append(numpy.sum(snA ** 4))
+            purity.append(np.sum(snA ** 4))
             #infostring = "Pulsewidth: {0:.5f}ps\tpurity: {1:.5f}".format(self.tau * 10 ** (12), purity[i])
             #print(infostring)
 
         # interpolate purity curve
-        increased_taurange = numpy.linspace(self.taurange[0], self.taurange[-1], 100000)
+        increased_taurange = np.linspace(self.taurange[0], self.taurange[-1], 100000)
         interPur = scipy.interpolate.InterpolatedUnivariateSpline(self.taurange, purity)
         interPurvals = interPur(increased_taurange)
-        max = numpy.max(interPurvals)
-        maxidx = numpy.argmax(interPurvals)
+        max = np.max(interPurvals)
+        maxidx = np.argmax(interPurvals)
 
         #print("maximum:\n\t\t\tpurity: {0:.4f}".format(max))
 
@@ -559,7 +559,7 @@ class JSI:
         elif self.pumpshape.casefold() == 'sinc':
             self.calcSinc = True
 
-        X, Y = numpy.meshgrid(self.sigrange, self.idrange)
+        X, Y = np.meshgrid(self.sigrange, self.idrange)
 
         purity = []
 
@@ -594,16 +594,16 @@ class JSI:
             # singular values in s. need to normalize s to get the schmidt magnitudes
             snA = sA / scipy.linalg.norm(sA, 2)
             # sum of squares of schmidt magnitudes is purity
-            purity.append(numpy.sum(snA ** 4))
+            purity.append(np.sum(snA ** 4))
             #infostring = "Crystal length: {0:.5f}ps\tpurity: {1:.5f}".format(self.L * 10 ** (3), purity[i])
             #print(infostring)
 
         # interpolate purity curve
-        increased_Lrange = numpy.linspace(self.Lrange[0], self.Lrange[-1], 100000)
+        increased_Lrange = np.linspace(self.Lrange[0], self.Lrange[-1], 100000)
         interPur = scipy.interpolate.InterpolatedUnivariateSpline(self.Lrange, purity)
         interPurvals = interPur(increased_Lrange)
-        max = numpy.max(interPurvals)
-        maxidx = numpy.argmax(interPurvals)
+        max = np.max(interPurvals)
+        maxidx = np.argmax(interPurvals)
 
         #print("maximum:\n\t\t\tpurity: {0:.4f}".format(max))
 
@@ -662,7 +662,7 @@ class JSI:
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
 
-        X, Y = numpy.meshgrid(signalrange, idlerrange)
+        X, Y = np.meshgrid(signalrange, idlerrange)
 
         HOMI = []
 
@@ -677,9 +677,9 @@ class JSI:
             jsa_t = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
         else:
             print('ERROR: Unknown pump beamshape')
-        jsa_tcc = numpy.conjugate(jsa_t)
+        jsa_tcc = np.conjugate(jsa_t)
         # jsa should integrate to 1]
-        jsa = jsa / numpy.sum(jsa)
+        jsa = jsa / np.sum(jsa)
         #filters
         #self.useFilter = True ## TODO: why was this here? Oo
         self.filtermatrix = []
@@ -693,13 +693,13 @@ class JSI:
                     filtervector.append(filterval)
                 self.filtermatrix.append(filtervector)
             jsa = jsa*self.filtermatrix#
-            jsa_tcc = jsa_tcc*numpy.transpose(self.filtermatrix)
+            jsa_tcc = jsa_tcc*np.transpose(self.filtermatrix)
         
         def homf(i):
-            phase = numpy.exp(-1j*(2*numpy.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
+            phase = np.exp(-1j*(2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
             jj = jsa_tcc*jsa*phase
-            #ProbMX = 0.5 * (1 - numpy.sum(jsa_tcc*jsa*phase))
-            ProbMX = 0.5 * (1 - numpy.sum(jj))
+            #ProbMX = 0.5 * (1 - np.sum(jsa_tcc*jsa*phase))
+            ProbMX = 0.5 * (1 - np.sum(jj))
             return ProbMX
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
@@ -707,22 +707,22 @@ class JSI:
             HOMI = [f.result() for f in futures]
 
         # omit tiny imaginary parts
-        HOMI = numpy.abs(HOMI)
+        HOMI = np.abs(HOMI)
         
         # determine visibility
-        homimax=numpy.max(HOMI)
-        homimin=numpy.min(HOMI)
-        vis = numpy.abs((homimax-homimin)/(homimax))
+        homimax=np.max(HOMI)
+        homimin=np.min(HOMI)
+        vis = np.abs((homimax-homimin)/(homimax))
 
         # calc FWHM
-        delayrangeneg = delayrange[:int(numpy.floor(len(delayrange)/2))]
-        delayrangepos = delayrange[int(numpy.floor(len(delayrange)/2)):]
-        HOMIneg = HOMI[:int(numpy.floor(len(HOMI)/2))]
-        HOMIpos = HOMI[int(numpy.floor(len(HOMI)/2)):]
+        delayrangeneg = delayrange[:int(np.floor(len(delayrange)/2))]
+        delayrangepos = delayrange[int(np.floor(len(delayrange)/2)):]
+        HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
+        HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
         visinterpolfneg = scipy.interpolate.interp1d(delayrangeneg, HOMIneg-0.25, fill_value='extrapolate')
         visinterpolfpos = scipy.interpolate.interp1d(delayrangepos, HOMIpos-0.25, fill_value='extrapolate')
-        negrootstartest=delayrangeneg[int(numpy.floor(len(delayrangeneg)/2))]
-        posrootstartest=delayrangepos[int(numpy.floor(len(delayrangepos)/2))]
+        negrootstartest=delayrangeneg[int(np.floor(len(delayrangeneg)/2))]
+        posrootstartest=delayrangepos[int(np.floor(len(delayrangepos)/2))]
         negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
         posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
 
@@ -779,7 +779,7 @@ class JSI:
             hmpts=[]
             
             result=result.round(decprec)
-            idcs=numpy.where(result==0) 
+            idcs=np.where(result==0) 
             for i in range(0,len(idcs[0])):
                     hmptss.append(signalrange[idcs[0][i]]*10**9)
                     hmptsi.append(idlerrange[idcs[1][i]]*10**9)

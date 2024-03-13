@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import numpy
+import numpy as np
 
 
 class RefractiveIndex:
@@ -153,7 +153,7 @@ class RefractiveIndex:
         # emanueli 2003
         f1 = self.a1y[0] + (1 / l) * (self.a1y[1] + (1 / l) * (self.a1y[2] + (self.a1y[3] / l)))
         f2 = self.a2y[0] + (1 / l) * (self.a2y[1] + (1 / l) * (self.a2y[2] + (self.a2y[3] / l)))
-        f3 = numpy.sqrt(numpy.abs(-0.0138408 * l * l + 0.922683 / (1 - 0.0467695 / (l * l)) + 2.0993))
+        f3 = np.sqrt(np.abs(-0.0138408 * l * l + 0.922683 / (1 - 0.0467695 / (l * l)) + 2.0993))
         return (t - 25) * ( f1 +  (t - 25) * f2 )  + f3
 
     # refractive indices
@@ -164,7 +164,7 @@ class RefractiveIndex:
         # emanueli 2003
         f1 = self.a1z[0] + (1 / l) * (self.a1z[1] + (1 / l) * (self.a1z[2] + (self.a1z[3] / l)))
         f2 = self.a2z[0] + (1 / l) * (self.a2z[1] + (1 / l) * (self.a2z[2] + (self.a2z[3] / l)))
-        f3 = numpy.sqrt(numpy.abs(
+        f3 = np.sqrt(np.abs(
             -0.00968956 * l * l + 1.18431 / (1 - 0.0514852 / (l * l)) + 0.6603 / (1 - 100.005 / (l * l)) + 2.12725))
         return (t - 25) * (f1 + (t - 25)  * f2 ) + f3
 
@@ -174,7 +174,7 @@ class RefractiveIndex:
         l = lin * 10 ** 6
         # kato & takaoka 2002
         # note that this is at 20°C
-        nx = numpy.sqrt(self.fnx[0] + self.fnx[1] / (l * l + self.fnx[2]) + self.fnx[3] / (l * l + self.fnx[4]))
+        nx = np.sqrt(self.fnx[0] + self.fnx[1] / (l * l + self.fnx[2]) + self.fnx[3] / (l * l + self.fnx[4]))
         # change of nx per °C
         dnxdT = (self.ax[0] + self.ax[1] / l + self.ax[2] / (l * l) + self.ax[3] / (l * l * l)) * 10 ** (-5)
         dT = t - 20
@@ -185,7 +185,7 @@ class RefractiveIndex:
         l = lin * 10 ** 6
         # kato & takaoka 2002
         # note that this is at 20°C
-        ny = numpy.sqrt(self.fny[0] + self.fny[1] / (l * l + self.fny[2]) + self.fny[3] / (l * l + self.fny[4]))
+        ny = np.sqrt(self.fny[0] + self.fny[1] / (l * l + self.fny[2]) + self.fny[3] / (l * l + self.fny[4]))
         # change of nx per °C
         dnydT = (self.ay[0] + self.ay[1] / l + self.ay[2] / (l * l) + self.ay[3] / (l * l * l)) * 10 ** (-5)
         dT = t - 20
@@ -196,7 +196,7 @@ class RefractiveIndex:
         l=lin*10**6
         # kato & takaoka 2002
         # note that this is at 20°C
-        nz = numpy.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
+        nz = np.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
         # change of nx per °C
         dnzdT = (self.az[0] + self.az[1] / l + self.az[2] / (l * l) + self.az[3] / (l * l * l)) * 10 ** (-5)
         dT = t - 20
@@ -207,7 +207,7 @@ class RefractiveIndex:
         l=lin*10**6
         # kato & takaoka 2002
         # note that this is at 20°C
-        nz = numpy.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
+        nz = np.sqrt(self.fnz[0] + self.fnz[1] / (l * l + self.fnz[2]) + self.fnz[3] / (l * l + self.fnz[4]))
         # change of nx per °C
         dnzdT = (self.az2[0]/l + self.az2[1] + self.az2[2] * l + self.az2[3] * l * l) * 10 ** (-5)
         dT = t - 20

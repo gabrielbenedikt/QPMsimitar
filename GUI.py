@@ -9,7 +9,7 @@ from JSI import JSI
 from Filters import Filters
 from Constants import Constants
 from QTreimps import QHoverPushButton
-import numpy
+import numpy as np
 import scipy
 from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
@@ -859,7 +859,7 @@ class GUI(QMainWindow):
                     RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
 
         # NOTE: Let num (1000 here) be set in GUI
-        plotrange = numpy.linspace(Tmin, Tmax, 1000)
+        plotrange = np.linspace(Tmin, Tmax, 1000)
 
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
@@ -894,7 +894,7 @@ class GUI(QMainWindow):
                     RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
 
         # NOTE: Let num (1000 here) be set in GUI
-        plotrange = numpy.linspace(wlmin, wlmax, 1000)
+        plotrange = np.linspace(wlmin, wlmax, 1000)
 
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
@@ -926,7 +926,7 @@ class GUI(QMainWindow):
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
         # prepare plotting
-        plotrange = numpy.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
+        plotrange = np.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
 
         [siwl, idwl, Tcp] = PMC().getSI_wl_varT(lp, PP, plotrange, refidxfunc, m)
 
@@ -960,7 +960,7 @@ class GUI(QMainWindow):
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
         # prepare plotting
-        plotrange = numpy.arange(PPmin, PPmax, (PPmax - PPmin) / 250)
+        plotrange = np.arange(PPmin, PPmax, (PPmax - PPmin) / 250)
 
         [siwl, idwl, PPcp] = PMC().getSI_wl_varPP(lp, plotrange, T, refidxfunc, m)
 
@@ -1012,14 +1012,14 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        taurange = numpy.arange(taumin, taumax, (taumax-taumin) / taupts)
+        taurange = np.arange(taumin, taumax, (taumax-taumin) / taupts)
 
-        Tvec = numpy.arange(T, T + 1, 2)
+        Tvec = np.arange(T, T + 1, 2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
 
-        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         [purity, max, maxtau] = JSI().getpurity_vsTau(pwl, signalrange, idlerrange, taurange, T,
                                                       PP, L, refidxfunc, m, spectralfilters, pumpshape)
@@ -1091,14 +1091,14 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Lrange = numpy.arange(Lmin, Lmax, (Lmax- Lmin) / pts)
+        Lrange = np.arange(Lmin, Lmax, (Lmax- Lmin) / pts)
 
-        Tvec = numpy.arange(T, T + 1, 2)
+        Tvec = np.arange(T, T + 1, 2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
 
-        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         [purity, max, maxL] = JSI().getpurity_vsL(pwl, signalrange, idlerrange, tau, T,
                                                   PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
@@ -1168,15 +1168,15 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Lrange = numpy.arange(Lmin, Lmax, (Lmax - Lmin) / pts)
-        Taurange = numpy.arange(taumin, taumax, (taumax - taumin) / pts)
+        Lrange = np.arange(Lmin, Lmax, (Lmax - Lmin) / pts)
+        Taurange = np.arange(taumin, taumax, (taumax - taumin) / pts)
 
-        Tvec = numpy.arange(T, T + 1, 2)
+        Tvec = np.arange(T, T + 1, 2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
 
-        signalrange = numpy.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = numpy.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
+        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
+        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         purity = JSI().getpurity_vsLandTau(pwl, signalrange, idlerrange, Taurange, T,
                                            PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
@@ -1195,10 +1195,10 @@ class GUI(QMainWindow):
 
         # plot
         colormap = matplotlib.cm.jet
-        xmin = numpy.min(Taurange) * 10 ** 12  # *taucfsech
-        xmax = numpy.max(Taurange) * 10 ** 12  # *taucfsech
-        ymin = numpy.min(Lrange) * 10 ** 3
-        ymax = numpy.max(Lrange) * 10 ** 3
+        xmin = np.min(Taurange) * 10 ** 12  # *taucfsech
+        xmax = np.max(Taurange) * 10 ** 12  # *taucfsech
+        ymin = np.min(Lrange) * 10 ** 3
+        ymax = np.max(Lrange) * 10 ** 3
 
         # init plot window
         pltwndidx = self.plotwindowcount
@@ -1258,12 +1258,12 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Tvec=numpy.arange(T,T+1,2)
+        Tvec=np.arange(T,T+1,2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
 
-        signalrange = numpy.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
-        idlerrange = numpy.linspace(li - wlrange/2, li + wlrange/2, numpts)
+        signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
+        idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfilters, plotJSI, pumpshape)
@@ -1298,10 +1298,10 @@ class GUI(QMainWindow):
 
         colormap = matplotlib.cm.jet
         # axes range
-        xmin = numpy.min(signalrange) * 10 ** 9
-        xmax = numpy.max(signalrange) * 10 ** 9
-        ymin = numpy.min(idlerrange) * 10 ** 9
-        ymax = numpy.max(idlerrange) * 10 ** 9
+        xmin = np.min(signalrange) * 10 ** 9
+        xmax = np.max(signalrange) * 10 ** 9
+        ymin = np.min(idlerrange) * 10 ** 9
+        ymax = np.max(idlerrange) * 10 ** 9
         # prepare subplots
         ppe = pltwnd.peplt.imshow(PE, cmap=colormap, vmin=PE.min(), vmax=PE.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
@@ -1395,18 +1395,18 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Tvec=numpy.arange(T,T+1,2)
+        Tvec=np.arange(T,T+1,2)
 
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
         print('***debug***: ls: ', ls)
         print('***debug***: li: ', li)
 
-        signalrange = numpy.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
-        idlerrange = numpy.linspace(li - wlrange/2, li + wlrange/2, numpts)
-        print('***debug***: min(signalrange): ', numpy.min(signalrange))
-        print('***debug***: max(signalrange): ', numpy.max(signalrange))
-        print('***debug***: min(idlerrange):  ', numpy.min(idlerrange))
-        print('***debug***: max(idlerrange):  ', numpy.max(idlerrange))
+        signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
+        idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
+        print('***debug***: min(signalrange): ', np.min(signalrange))
+        print('***debug***: max(signalrange): ', np.max(signalrange))
+        print('***debug***: min(idlerrange):  ', np.min(idlerrange))
+        print('***debug***: max(idlerrange):  ', np.max(idlerrange))
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfilters, plotJSI, pumpshape)
@@ -1429,8 +1429,8 @@ class GUI(QMainWindow):
         wlrangelen=len(signalrange)
         for i in range(1,wlrangelen):
             JSdiagonal.append(JSwoSLref[i,wlrangelen-i])
-        # print(numpy.linspace(signalrange[1],signalrange[-1],numpts-1))
-        JSdiagonalinterpol=scipy.interpolate.interp1d(numpy.linspace(signalrange[1],signalrange[-1],numpts-1).flatten(), JSdiagonal, kind='cubic', bounds_error=False)
+        # print(np.linspace(signalrange[1],signalrange[-1],numpts-1))
+        JSdiagonalinterpol=scipy.interpolate.interp1d(np.linspace(signalrange[1],signalrange[-1],numpts-1).flatten(), JSdiagonal, kind='cubic', bounds_error=False)
         
         #find lowest values along -45° axis
         wlrangehalf=int(len(signalrange)/2)
@@ -1530,10 +1530,10 @@ class GUI(QMainWindow):
 
         colormap = matplotlib.cm.jet
         # axes range
-        xmin = numpy.min(signalrange) * 10 ** 9
-        xmax = numpy.max(signalrange) * 10 ** 9
-        ymin = numpy.min(idlerrange) * 10 ** 9
-        ymax = numpy.max(idlerrange) * 10 ** 9
+        xmin = np.min(signalrange) * 10 ** 9
+        xmax = np.max(signalrange) * 10 ** 9
+        ymin = np.min(idlerrange) * 10 ** 9
+        ymax = np.max(idlerrange) * 10 ** 9
         # prepare subplots
         ppe = pltwnd.peplt.imshow(JS, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
@@ -1591,7 +1591,7 @@ class GUI(QMainWindow):
 
     def plot_Tcp_vs_PP(self):
         numpts = 100
-        PPrange = numpy.linspace(self.CrystalPolingPeriodFrom, self.CrystalPolingPeriodTo, numpts)
+        PPrange = np.linspace(self.CrystalPolingPeriodFrom, self.CrystalPolingPeriodTo, numpts)
         temp = self.CrystalTempSingle
         pwl = self.PumpWlSingle
         qpmorder = self.QPMOrder
@@ -1619,7 +1619,7 @@ class GUI(QMainWindow):
 
     def plot_Tcp_vs_lp(self):
         numpts=100
-        pwlrange=numpy.linspace(self.PumpWlFrom,self.PumpWlTo,numpts)
+        pwlrange=np.linspace(self.PumpWlFrom,self.PumpWlTo,numpts)
         temp = self.CrystalTempSingle
         polingp = self.CrystalPolingPeriodSingle
         qpmorder=self.QPMOrder
@@ -1653,7 +1653,7 @@ class GUI(QMainWindow):
         tau = self.PulsewidthSingle
         cl = self.CrystalLengthSingle
         pumpshape = self.PumpShape
-        delayrange = numpy.linspace(-self.HOMdelayrange/2, self.HOMdelayrange/2,self.HOMresolution)
+        delayrange = np.linspace(-self.HOMdelayrange/2, self.HOMdelayrange/2,self.HOMresolution)
         homphase = self.HOMphase
         JSIresolution = self.JSIresolution
         JSIwlrange = self.JSIwlRange
@@ -1667,10 +1667,10 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Tvec = numpy.arange(T, T + 1, 2)
+        Tvec = np.arange(T, T + 1, 2)
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        signalrange = numpy.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
-        idlerrange = numpy.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
+        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
+        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
                                              JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters)
@@ -1717,15 +1717,15 @@ class GUI(QMainWindow):
         nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
         refidxfunc = [nxfunc, nyfunc, nzfunc]
 
-        Tvec = numpy.arange(T, T + 1, 2)
+        Tvec = np.arange(T, T + 1, 2)
         ls=0
         li=0
         unused=0
         [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        signalrange = numpy.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
-        idlerrange = numpy.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
+        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
+        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
         
-        taurange = numpy.linspace(taumin, taumax, fwhmres)
+        taurange = np.linspace(taumin, taumax, fwhmres)
 
         sigfwhm=[]
         idfwhm=[]

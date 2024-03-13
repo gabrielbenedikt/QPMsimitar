@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import numpy
+import numpy as np
 import scipy
 import scipy.optimize
 
@@ -72,8 +72,8 @@ class PMC:
                 self.ny = refidxfunc[1]
                 self.nz = refidxfunc[2]
 
-                sigwl=numpy.zeros(len(Trange))
-                idwl=numpy.zeros(len(Trange))
+                sigwl=np.zeros(len(Trange))
+                idwl=np.zeros(len(Trange))
                 txf = self.thermexpfactor(Trange)
                 for i in range(0,len(Trange)):
                         [sigwl[i],idwl[i]]=self.SIwls([pumpwl,Trange[i],polingp*txf[i]])
@@ -98,8 +98,8 @@ class PMC:
                 self.nz = refidxfunc[2]
                 self.T = T
 
-                sigwl = numpy.zeros(len(PPrange))
-                idwl = numpy.zeros(len(PPrange))
+                sigwl = np.zeros(len(PPrange))
+                idwl = np.zeros(len(PPrange))
                 txf = self.thermexpfactor(PPrange)
                 for i in range(0, len(PPrange)):
                         [sigwl[i], idwl[i]] = self.SIwls([pumpwl, T, PPrange[i] * txf[i]])

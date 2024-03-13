@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import numpy
+import numpy as np
 
 class Filters:
     def __init__(self):
@@ -24,7 +24,7 @@ class Filters:
         return func
 
     def rectangularfilter(self, wl, cwl, fwhm):
-        if (numpy.absolute(cwl-wl)>fwhm/2):
+        if (np.absolute(cwl-wl)>fwhm/2):
             return 0
         else:
             return 1
@@ -35,8 +35,8 @@ class Filters:
         return func
 
     def gaussianfilter(self,wl,cwl,fwhm):
-        s=fwhm/2*numpy.sqrt(2*numpy.log(2))
-        return numpy.exp(-((wl-cwl)**2)/(2*(s**2)))
+        s=fwhm/2*np.sqrt(2*np.log(2))
+        return np.exp(-((wl-cwl)**2)/(2*(s**2)))
 
     def gaussianfilteronlywl(self, cwl, fwhm):
         def func(wl):

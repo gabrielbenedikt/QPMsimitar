@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import ruamel.yaml as yaml
 from pathlib import Path
@@ -11,7 +11,8 @@ class Settings:
         with open('config.yaml','w') as stream:
             try:
                 print('Writing config file')
-                yaml.safe_dump(self.config, stream)
+                tmpconfig = yaml.YAML(typ='safe', pure=True)
+                tmpconfig.dump(self.config, stream)
             except yaml.YAMLError as exc:
                 print(exc)
 
@@ -77,7 +78,8 @@ class Settings:
             with open('config.yaml') as stream:
                 try:
                     print('Reading config file.')
-                    tmpconfig=yaml.safe_load(stream)
+                    tmpconfig = yaml.YAML(typ='safe', pure=True)
+                    tmpconfig = tmpconfig.load(stream)
                     for i in range(0,len(tmpconfig)):
                         [key,val] = tmpconfig[i]
                         res = self.find(self.config,key)

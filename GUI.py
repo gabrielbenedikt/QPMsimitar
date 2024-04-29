@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
 from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                              QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
                              QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)

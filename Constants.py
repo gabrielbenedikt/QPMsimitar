@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 import numpy as np
+=======
+#!/usr/bin/env python3
+
+import numpy
+>>>>>>> yamlfix
 
 class Constants:
     def __init__(self):

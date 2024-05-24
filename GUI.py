@@ -16,6 +16,8 @@ from pylab import *
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                 NavigationToolbar2QT as NavigationToolbar)
 import matplotlib
+
+from colorsys import hls_to_rgb
 matplotlib.use('Qt5Agg')
 # noinspection PyAttributeOutsideInit
 class GUI(QMainWindow):
@@ -135,9 +137,9 @@ class GUI(QMainWindow):
         self.ui_pulsewidthLabel = QLabel()
         self.ui_pulsewidthLabel.setText('Pulsewidth [ps]')
 
-        self.ui_pulsewidthsingleSB.setRange(0, 1000)
-        self.ui_pulsewidthfromSB.setRange(0, 1000)
-        self.ui_pulsewidthtoSB.setRange(0, 1000)
+        self.ui_pulsewidthsingleSB.setRange(0, 10000)
+        self.ui_pulsewidthfromSB.setRange(0, 10000)
+        self.ui_pulsewidthtoSB.setRange(0, 10000)
 
         self.ui_pumpShapeCB = QComboBox()
         self.ui_pumpShapeCB.addItem('Gaussian')
@@ -1304,11 +1306,15 @@ class GUI(QMainWindow):
         ymin = np.min(idlerrange) * 10 ** 9
         ymax = np.max(idlerrange) * 10 ** 9
         # prepare subplots
+        
+        PM_abs = np.abs(PM)
+        JS_abs = np.abs(JS)
+
         ppe = pltwnd.peplt.imshow(PE, cmap=colormap, vmin=PE.min(), vmax=PE.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        ppm = pltwnd.pmplt.imshow(PM, cmap=colormap, vmin=PM.min(), vmax=PM.max(), aspect='auto',
+        ppm = pltwnd.pmplt.imshow(PM_abs, cmap=colormap, vmin=PM_abs.min(), vmax=PM_abs.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
-        pjs = pltwnd.jsplt.imshow(JS, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
+        pjs = pltwnd.jsplt.imshow(JS_abs, cmap=colormap, vmin=JS_abs.min(), vmax=JS_abs.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')

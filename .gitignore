@@ -5,6 +5,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 TODO
+HOM*
+core*
 HOM.npy
 HOMvis.png
 *.kdev4

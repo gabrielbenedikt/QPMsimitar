@@ -119,6 +119,9 @@ class JSI:
     def PMAgauss(self, dk, cl):
         return self.PMA(dk, cl)
 
+    def PMAcwgauss(self, dk, cl):
+        return self.PMA(dk, cl)
+
     def PMAsech(self, dk, cl):
         return self.PMA(dk, cl)
 
@@ -132,8 +135,59 @@ class JSI:
     def PMIgauss(self, dk, cl):
         return np.square(self.PMA(dk, cl))
 
+    def PMIcwgauss(self, dk, cl):
+        return np.square(self.PMA(dk, cl))
+
     def PMIsinc(self, dk, cl):
         return np.square(self.PMA(dk, cl))
+
+    ###################
+    ###  cw(gauss)  ###
+    ###################
+    def PEAcwgauss(self, lp, ls, li, bw):
+        dnu = (1 / ls + 1 / li - 1 / lp) # /c
+        snu = bw/(lp**2) # /c
+        return (np.exp(- ( (dnu) / (2*snu)) ** 2))  # note: 2*pi*c/(2*sp)
+        # return (np.exp(- (2*Constants().pi * Constants().c * (dl) / (2*2*Constants().pi * Constants().c*bw)) ** 2))  # note: 2*pi*c/(2*sp)
+
+    # joint spectral amplitude for gaussian beam
+    def JSAcwgauss(self, lp, ls, li, bw, t, pp, cl):
+        sp = bw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
+        dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
+        jsa = self.PEAcwgauss(lp, ls, li, sp) * self.PMAcwgauss(dk, cl)
+        if self.useabs:
+            return np.absolute(jsa)
+        else:
+            return jsa
+
+    def PEIcwgauss(self, lp, ls, li, sp):
+        return self.PEAcwgauss(lp, ls, li, sp) ** 2
+
+    # joint spectral intensity for gaussian beam
+    def JSIcwgauss(self, lp, ls, li, bw, t, pp, cl):
+        return (self.JSAcwgauss(lp, ls, li, bw, t, pp, cl)) ** 2
+
+    def PEAnPMAnJSAcwgauss(self, lp, ls, li, bw, t, pp, cl):
+        print(f"{lp=}")
+        print(f"{ls=}")
+        print(f"{li=}")
+        print(f"{bw=}")
+        print(f"{t=}")
+        print(f"{pp=}")
+        print(f"{cl=}")
+        sp = bw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
+        dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
+        pea = self.PEAcwgauss(lp, ls, li, sp)
+        pma = self.PMAcwgauss(dk, cl)
+        jsa = pea * pma
+        if self.useabs:
+            return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
+        else:
+            return [pea, pma, jsa]
+
+    def PEInPMInJSIcwgauss(self, lp, ls, li, bw, t, pp, cl):
+        [pei, pea, jsa] = self.PEAnPMAnJSAcwgauss(lp, ls, li, bw, t, pp, cl)
+        return [pei ** 2, pea ** 2, jsa ** 2]
     ###################
     ###   gaussian  ###
     ###################
@@ -141,6 +195,9 @@ class JSI:
     # amplitude
     def PEAgauss(self, lp, ls, li, sp):
         dl = 1 / ls + 1 / li - 1 / lp
+        print(f"{dl=}")
+        print(f"{sp=}")
+        print(f"{Constants().pi * Constants().c * (dl)/sp=}")
         return (np.exp(- (Constants().pi * Constants().c * (dl) / (sp)) ** 2))  # note: 2*pi*c/(2*sp)
 
     # intensity
@@ -179,6 +236,16 @@ class JSI:
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
         sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
+        print(f"{lp=}")
+        print(f"{ls=}")
+        print(f"{li=}")
+        print(f"{tauac=}")
+        print(f"{t=}")
+        print(f"{pp=}")
+        print(f"{cl=}")
+        print(f"{dnu=}")
+        print(f"{dw=}")
+        print(f"{sp=}")
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAgauss(lp, ls, li, sp)
         pma = self.PMAgauss(dk, cl)
@@ -337,7 +404,7 @@ class JSI:
         self.nz = refidxfunc[2]
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape):
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw):
         print('start calculating JSA or JSI')
         #
         # pumpwl: Pump wavelength
@@ -362,6 +429,7 @@ class JSI:
 
         self.pwl = pumpwl
         self.tau = tau
+        self.pumpcwbw = pumpcwbw
         self.m = qpmorder
         self.T = temp
         self.PP = polingp * self.thermexpfactor(self.T)
@@ -379,10 +447,13 @@ class JSI:
         self.calcGaussian = False
         self.calcSech = False
         self.calcSinc = False
+        self.calcCWGauss = False
         if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
         elif self.pumpshape.casefold() == 'sinc':
             self.calcSinc = True
+        elif self.pumpshape.casefold() == 'cw':
+            self.calcCWGauss = True
         else:
             self.calcSech = True
 
@@ -395,6 +466,8 @@ class JSI:
                 [PE, PM, JS] = self.PEAnPMAnJSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
             elif self.calcSinc:
                 [PE, PM, JS] = self.PEAnPMAnJSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+            elif self.calcCWGauss:
+                [PE, PM, JS] = self.PEAnPMAnJSAcwgauss(self.pwl, X, Y, self.pumpcwbw, self.T, self.PP, self.L)
         elif self.calcJSI:
             if self.calcGaussian:
                 #arguments=[(self.pwl, swl[0], iwl[0], self.tau, self.T, self.PP, self.L) for swl, iwl in zip(self.sigrange, self.idrange)]
@@ -409,6 +482,8 @@ class JSI:
                 [PE, PM, JS] = self.PEInPMInJSIsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
             elif self.calcSinc:
                 [PE, PM, JS] = self.PEInPMInJSIsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+            elif self.calcCWGauss:
+                [PE, PM, JS] = self.PEInPMInJSIcwgauss(self.pwl, X, Y, self.pumpcwbw, self.T, self.PP, self.L)
         else:
             print('Error: Calc neither JSA nor JSI.')
             return
@@ -523,7 +598,7 @@ class JSI:
 
         return [purity,max,increased_taurange[maxidx]]
 
-    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,refidxfunc,qpmorder,filterfuncs,pumpshape):
+    def getpurity_vsL(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallengthrange,refidxfunc,qpmorder,filterfuncs,pumpshape,pumpcwbw):
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
@@ -548,6 +623,7 @@ class JSI:
 
         self.pwl = pumpwl
         self.tau = tau
+        self.pumpcwbw = pumpcwbw
         self.m = qpmorder
         self.T = temp
         self.PP = polingp * self.thermexpfactor(self.T)
@@ -578,6 +654,8 @@ class JSI:
                 JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
             elif self.calcSinc:
                 JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+            elif self.calcGaussian:
+                JSA = self.JSAcwgauss(self.pwl, X, Y, self.pumpcwbw, self.T, self.PP, self.L)
                 
             if self.useFilter:
                 self.filtersignalfunction = filterfuncs[0]
@@ -816,30 +894,68 @@ class JSI:
 #         return [HOMI,vis,homfwhm]
     
     #by numerical integration
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw):
         t0=datetime.now()
+        self.m = qpmorder
         [self.nx, self.ny, self.nz] = refidxfunc
         #
         # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
         # Ansari, 2013 msc thesis
         #
+
         X, Y = np.meshgrid(signalrange, idlerrange)
-        
-        jsa1 = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
-        jsa2 = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
+
+        self.calcGaussian, self.calcSech, self.calcSinc, self.calcCW = False, False, False, False
+        if pumpshape.casefold() =='gaussian':
+            self.calcGaussian = True
+            jsafunc = self.JSAgauss
+            tau=tau
+        elif pumpshape.casefold() =='sech^2':
+            self.calcSech = True
+            jsafunc = self.JSAsech
+            tau=tau
+        elif pumpshape.casefold() =='sinc':
+            self.calcSinc = True
+            jsafunc = self.JSAsinc
+            tau=tau
+        elif pumpshape.casefold() == 'cw':
+            self.calcCW = True
+            jsafunc = self.JSAcwgauss
+            tau=pumpcwbw
+
+        jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+        jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
         jsa2 = np.conjugate(jsa2[::-1,::-1].T)
         #jsa2 = np.conjugate(jsa2)
         jsi = jsa1*np.conjugate(jsa1)
         norm = np.sum(jsi)
-    
-        def homf(i):
-            return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-            futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-            HOMI = [f.result() for f in futures]
 
-        HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-        
+        if 0:#seems to work for sech^2 773nm pulsed
+            def homf(i):
+                return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+                futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+                HOMI = [f.result() for f in futures]
+
+            HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+
+        else:#seems to work for sech^2 773nm pulsed
+            def homf(i):
+                jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+                jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
+                jsa2 = np.conjugate(jsa2)
+                return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i]))**2))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+                futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+                HOMI = np.array([f.result() for f in futures])
+
+            jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+            jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
+            jsi = jsa1*np.conjugate(jsa1)
+            norm = np.sum(jsi)
+            HOMI = np.abs(HOMI/norm)
+            print(f"{norm=}")
+
         # determine visibility
         vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
 
@@ -860,7 +976,97 @@ class JSI:
         t1=datetime.now()
         print('calculating HOM took', (t1-t0).total_seconds(), 's')
         return [HOMI,vis,homfwhm]
-    
+
+    def getHOMinterferenceT(self, pwl, polingp, qpmorder, tau, cl, signalrange, idlerrange, JSIresolution, pumpshape, temprange, homphase, refidxfunc, filterfuncs, pumpcwbw):
+        t0=datetime.now()
+        self.m = qpmorder
+        [self.nx, self.ny, self.nz] = refidxfunc
+        #
+        # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
+        # Ansari, 2013 msc thesis
+        #
+        X, Y = np.meshgrid(signalrange, idlerrange)
+
+        self.calcGaussian, self.calcSech, self.calcSinc, self.calcCW = False, False, False, False
+        if pumpshape.casefold() =='gaussian':
+            self.calcGaussian = True
+            jsafunc = self.JSAgauss
+            tau=tau
+        elif pumpshape.casefold() =='sech^2':
+            self.calcSech = True
+            jsafunc = self.JSAsech
+            tau=tau
+        elif pumpshape.casefold() =='sinc':
+            self.calcSinc = True
+            jsafunc = self.JSAsinc
+            tau=tau
+        elif pumpshape.casefold() == 'cw':
+            self.calcCW = True
+            jsafunc = self.JSAcwgauss
+            tau=pumpcwbw
+
+
+        if 0:
+            jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
+            jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
+            jsa2 = np.conjugate(jsa2[::-1,::-1].T)
+            #jsa2 = np.conjugate(jsa2)
+            jsi = jsa1*np.conjugate(jsa1)
+            norm = np.sum(jsi)
+
+            def homf(i):
+                jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
+                jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
+                #jsa2 = np.conjugate(jsa2)
+                return  np.sum(scipy.integrate.simpson(jsa1*jsa2))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+                futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
+                HOMI = [f.result() for f in futures]
+
+            HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+
+            # determine visibility
+            vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+        else: #this seems to work for sech^2, 773nm
+            jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
+            jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
+            jsa2 = np.conjugate(jsa2[::-1,::-1].T)
+            #jsa2 = np.conjugate(jsa2)
+            jsi = jsa1*np.conjugate(jsa1)
+            norm = np.sum(jsi)
+
+            def homf(i):
+                jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
+                jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
+                jsa2 = np.conjugate(jsa2)
+                return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2)**2))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+                futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
+                HOMI = np.array([f.result() for f in futures])
+
+            #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+            # determine visibility
+            HOMI = HOMI/np.max(HOMI)
+            vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+
+        # calc FWHM
+        temprangeneg = temprange[:int(np.floor(len(temprange)/2))]
+        temprangepos = temprange[int(np.floor(len(temprange)/2)):]
+        HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
+        HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
+        visinterpolfneg = scipy.interpolate.interp1d(temprangeneg, HOMIneg-0.25, fill_value='extrapolate')
+        visinterpolfpos = scipy.interpolate.interp1d(temprangepos, HOMIpos-0.25, fill_value='extrapolate')
+        negrootstartest=temprangeneg[int(np.floor(len(temprangeneg)/2))]
+        posrootstartest=temprangepos[int(np.floor(len(temprangepos)/2))]
+        negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
+        posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
+
+        homfwhm=posroot[0]-negroot[0]
+
+        t1=datetime.now()
+        print('calculating HOM took', (t1-t0).total_seconds(), 's')
+        return [HOMI,vis,homfwhm]
+
     def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filterfuncs, JSIresolution, pumpshape, decprec, usetaucf):
         [self.nx, self.ny, self.nz] = refidxfunc
         self.usetaucf = usetaucf

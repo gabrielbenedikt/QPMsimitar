@@ -3,6 +3,10 @@
 import ruamel.yaml as yaml
 from pathlib import Path
 
+class ValueNotFoundError(Exception):
+    pass
+
+
 class Settings:
     def __init__(self):
         pass
@@ -44,6 +48,11 @@ class Settings:
         self.config.append(["Pump pulse shape", 'Sech^2'])
         self.config.append(["Pump pulsewidth apply deconvolution factor", True])
 
+        self.config.append(["Pump cw bandwidth from", 90*10**(-12)])
+        self.config.append(["Pump cw bandwidth single", 100*10**(-12)])
+        self.config.append(["Pump cw bandwidth to", 100*10**(-12)])
+
+
         self.config.append(["Crystal Temperature from", 20])
         self.config.append(["Crystal Temperature single", 35])
         self.config.append(["Crystal Temperature to", 50])
@@ -69,6 +78,7 @@ class Settings:
         self.config.append(["HOM interference plot resolution", 20])
         self.config.append(["HOM interference plot phase", 0])
         self.config.append(["HOM interference plot range", 6*10**(-12)])
+        self.config.append(["HOM interference plot temperature range", 20])
         
         self.config.append(['FWHM plot resolution',10])
         self.config.append(['FWHM decimal precision',3])
@@ -96,8 +106,11 @@ class Settings:
         self.config[idx][1]=val
         #print('set config value: ', self.config[idx])
 
-    def get(self, key):
-        idx,unused=self.find(self.config,key)
+    def get(self, key, default=None):
+        try:
+            idx,unused=self.find(self.config,key)
+        except ValueNotFoundError:
+            return default
         return self.config[idx][1]
 
     def find(self, l, elem):
@@ -107,4 +120,4 @@ class Settings:
             except ValueError:
                 continue
             return row, column
-        return -1
+        raise ValueNotFoundError

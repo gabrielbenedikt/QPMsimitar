@@ -141,10 +141,21 @@ class GUI(QMainWindow):
         self.ui_pulsewidthfromSB.setRange(0, 10000)
         self.ui_pulsewidthtoSB.setRange(0, 10000)
 
+        self.ui_pumpcwwlwidthsingleSB = QDoubleSpinBox()
+        self.ui_pumpcwwlwidthfromSB = QDoubleSpinBox()
+        self.ui_pumpcwwlwidthtoSB = QDoubleSpinBox()
+        self.ui_pumpcwwlwidthLabel = QLabel()
+        self.ui_pumpcwwlwidthLabel.setText('cw Pump width [pm]')
+
+        self.ui_pumpcwwlwidthsingleSB.setRange(0, 2000)
+        self.ui_pumpcwwlwidthfromSB.setRange(0, 2000)
+        self.ui_pumpcwwlwidthtoSB.setRange(0, 2000)
+
         self.ui_pumpShapeCB = QComboBox()
         self.ui_pumpShapeCB.addItem('Gaussian')
         self.ui_pumpShapeCB.addItem('Sech^2')
         self.ui_pumpShapeCB.addItem('Sinc')
+        self.ui_pumpShapeCB.addItem('CW')
         self.ui_pumpShapeLabel = QLabel()
         self.ui_pumpShapeLabel.setText('Pump pulse shape')
 
@@ -168,6 +179,10 @@ class GUI(QMainWindow):
         self.ui_layoutUpper.addWidget(self.ui_pulsewidthfromSB, 4, 2)
         self.ui_layoutUpper.addWidget(self.ui_pulsewidthsingleSB, 4, 3)
         self.ui_layoutUpper.addWidget(self.ui_pulsewidthtoSB, 4, 4)
+        self.ui_layoutUpper.addWidget(self.ui_pumpcwwlwidthLabel, 5, 1)
+        self.ui_layoutUpper.addWidget(self.ui_pumpcwwlwidthfromSB, 5, 2)
+        self.ui_layoutUpper.addWidget(self.ui_pumpcwwlwidthsingleSB, 5, 3)
+        self.ui_layoutUpper.addWidget(self.ui_pumpcwwlwidthtoSB, 5, 4)
 
         self.ui_layoutLower.addWidget(self.ui_pumpShapeLabel, 1, 1)
         self.ui_layoutLower.addWidget(self.ui_pumpShapeCB, 1, 2)
@@ -309,11 +324,18 @@ class GUI(QMainWindow):
         self.ui_HOM_Vis_Phase_SB = QDoubleSpinBox()
         self.ui_HOM_Vis_Phase_Label = QLabel('Phase')
         self.ui_HOM_Vis_Phase_SB.setRange(-100,100)
-        
 
         self.ui_HOM_PlotVis_Btn = QHoverPushButton()
-        self.ui_HOM_PlotVis_Btn.setText('PlotHOMVis')
+        self.ui_HOM_PlotVis_Btn.setText('PlotHOMVis path')
         self.ui_HOM_PlotVis_Btn.setObjectName('Plot HOM Visibility')
+
+        self.ui_HOM_Vis_TempRange_SB = QDoubleSpinBox()
+        self.ui_HOM_Vis_TempRange_SB.setRange(1,999)
+        self.ui_HOM_Vis_TempRange_Label = QLabel('Temp range [K]')
+
+        self.ui_HOM_PlotVisT_Btn = QHoverPushButton()
+        self.ui_HOM_PlotVisT_Btn.setText('PlotHOMVis temp')
+        self.ui_HOM_PlotVisT_Btn.setObjectName('Plot HOM Visibility T')
 
         self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_Label,   1, 1)
         self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Resolution_SB,      1, 2)
@@ -322,6 +344,9 @@ class GUI(QMainWindow):
         self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Phase_Label,        3, 1)
         self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_Phase_SB,           3, 2)
         self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_PlotVis_Btn,            4, 1, 1, -1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_TempRange_Label,    5, 1)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_Vis_TempRange_SB,       5, 2)
+        self.ui_layoutHOMGroupBox.addWidget(self.ui_HOM_PlotVisT_Btn,           6, 1, 1, -1)
 
         self.ui_HOMGroupBox.setLayout(self.ui_layoutHOMGroupBox)
         self.ui_layoutHOM.addWidget(self.ui_HOMGroupBox)
@@ -675,6 +700,9 @@ class GUI(QMainWindow):
         self.PulsewidthFrom = self.config.get("Pump pulsewidth from")
         self.PulsewidthSingle = self.config.get("Pump pulsewidth single")
         self.PulsewidthTo = self.config.get("Pump pulsewidth to")
+        self.PumpCWbwFrom = self.config.get("Pump cw bandwidth from", 0)
+        self.PumpCWbwSingle = self.config.get("Pump cw bandwidth single", 0)
+        self.PumpCWbwTo = self.config.get("Pump cw bandwidth to", 0)
         self.PumpShape = self.config.get("Pump pulse shape")
         self.PumpShapeApplyDeconvolutionFactor = self.config.get("Pump pulsewidth apply deconvolution factor")
         self.CrystalTempFrom = self.config.get("Crystal Temperature from")
@@ -701,6 +729,7 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.config.get('HOM interference plot resolution')
         self.HOMdelayrange = self.config.get('HOM interference plot range')
+        self.HOMtemprange = self.config.get('HOM interference plot temperature range')
         self.HOMphase = self.config.get('HOM interference plot phase')
         
         self.fwhmres = self.config.get('FWHM plot resolution')
@@ -719,6 +748,9 @@ class GUI(QMainWindow):
         self.ui_pulsewidthfromSB.setValue(self.PulsewidthFrom * 10 ** 12)
         self.ui_pulsewidthsingleSB.setValue(self.PulsewidthSingle * 10 ** 12)
         self.ui_pulsewidthtoSB.setValue(self.PulsewidthTo * 10 ** 12)
+        self.ui_pumpcwwlwidthfromSB.setValue(self.PumpCWbwFrom * 10 ** 12)
+        self.ui_pumpcwwlwidthsingleSB.setValue(self.PumpCWbwSingle * 10 ** 12)
+        self.ui_pumpcwwlwidthtoSB.setValue(self.PumpCWbwTo * 10 ** 12)
         idx = 0  # Fallback
         idx = self.ui_pumpShapeCB.findText(self.PumpShape)
         self.ui_pumpShapeCB.setCurrentIndex(idx)
@@ -748,6 +780,7 @@ class GUI(QMainWindow):
 
         self.ui_HOM_Vis_Resolution_SB.setValue(self.HOMresolution)
         self.ui_HOM_Vis_DelayRange_SB.setValue(self.HOMdelayrange*10**12)
+        self.ui_HOM_Vis_TempRange_SB.setValue(self.HOMtemprange)
         self.ui_HOM_Vis_Phase_SB.setValue(self.HOMphase)
         
         self.ui_PlotFWHMresolution_SB.setValue(self.fwhmres)
@@ -768,6 +801,7 @@ class GUI(QMainWindow):
         self.ui_Tcp_vslp_Btn.pressed.connect(self.plot_Tcp_vs_lp)
         self.ui_Tcp_vsPP_Btn.pressed.connect(self.plot_Tcp_vs_PP)
         self.ui_HOM_PlotVis_Btn.pressed.connect(self.plot_HOM_vis)
+        self.ui_HOM_PlotVisT_Btn.pressed.connect(self.plot_HOM_vis_temp)
         self.ui_PlotFWHMvstau_Btn.pressed.connect(self.plot_FWHM_vs_tau)
         self.ui_pumpShapeCorrectionFactorCheckBox.stateChanged.connect(self.getVarsFromGUI)
         
@@ -787,6 +821,9 @@ class GUI(QMainWindow):
         self.ui_pulsewidthsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pulsewidthfromSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pulsewidthtoSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpcwwlwidthfromSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpcwwlwidthsingleSB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_pumpcwwlwidthtoSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_pumpShapeCB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTsingleSB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_CrystalTfromSB.valueChanged.connect(self.getVarsFromGUI)
@@ -807,6 +844,7 @@ class GUI(QMainWindow):
         self.ui_SIfilterIdlerFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalFWHM_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_DelayRange_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_HOM_Vis_TempRange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_Phase_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_HOM_Vis_Resolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_PlotFWHMresolution_SB.valueChanged.connect(self.getVarsFromGUI)
@@ -943,7 +981,7 @@ class GUI(QMainWindow):
         pltwnd.ax.set_xlabel('Temperature [°C]')
         pltwnd.ax.set_ylabel('S/I Wavelength [nm]')
         pltwnd.ax.set_title('Quasi Phase Matching Temperature Tuning Curve')
-        pltwnd.ax.annotate('Crossing point temperature: {0:.1f}°C'.format(Tcp), xy=(0.55, 0.01),
+        pltwnd.ax.annotate('Crossing point temperature: {0:.3f}°C'.format(Tcp), xy=(0.55, 0.01),
                            xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
@@ -1073,6 +1111,7 @@ class GUI(QMainWindow):
         T = self.CrystalTempSingle
         m = self.QPMOrder
         tau = self.PulsewidthSingle
+        pumpcwbw = self.PumpCWbwSingle
         wlrange = self.PurityWLrange
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
@@ -1104,7 +1143,7 @@ class GUI(QMainWindow):
         idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
 
         [purity, max, maxL] = JSI().getpurity_vsL(pwl, signalrange, idlerrange, tau, T,
-                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
+                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape,pumpcwbw)
 
         AnnotateString = ''
         AnnotateString = AnnotateString + \
@@ -1233,6 +1272,7 @@ class GUI(QMainWindow):
         T=self.CrystalTempSingle
         m=self.QPMOrder
         tau=self.PulsewidthSingle
+        pumpcwbw=self.PumpCWbwSingle
         wlrange=self.JSIwlRange
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
@@ -1249,10 +1289,13 @@ class GUI(QMainWindow):
         pumpshape = self.PumpShape
         calcGaussian=False
         calcSech=False
+        calcCW=False
         if pumpshape == 'Gaussian':
             calcGaussian=True
         elif pumpshape == 'Sech^2':
             calcSech=True
+        elif pumpshape == 'CW':
+            calcCW=True
         else:
             print('Error: pump shape unknown to JSA/JSI plot routine')
 
@@ -1269,7 +1312,7 @@ class GUI(QMainWindow):
         idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape)
+                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw)
 
         #
         # plotting
@@ -1346,6 +1389,8 @@ class GUI(QMainWindow):
             parameterstring = parameterstring + '\nGaussian beam shape'
         elif calcSech:
             parameterstring = parameterstring + '\nsech^2 beam shape'
+        elif calcCW:
+            parameterstring = parameterstring + '\nCW pump'
         # state additional paramters on plot
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
 
@@ -1368,6 +1413,7 @@ class GUI(QMainWindow):
         T=self.CrystalTempSingle
         m=self.QPMOrder
         tau=self.PulsewidthSingle
+        pumpcwbw = self.PumpCWbwSingle
         wlrange=self.JSIwlRange
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
@@ -1416,13 +1462,13 @@ class GUI(QMainWindow):
         print('***debug***: max(idlerrange):  ', np.max(idlerrange))
 
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape)
+                                      m, spectralfilters, plotJSI, pumpshape,pumpcwbw)
         [PEwoSL, PMwoSL, JSwoSL] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape)
+                                      m, spectralfilters, plotJSI, pumpshape,pumpcwbw)
         [PEref,PMref,JSref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfiltersref, plotJSI, pumpshape)
+                                      m, spectralfiltersref, plotJSI, pumpshape,pumpcwbw)
         [PEwoSLref,PMwoSLref,JSwoSLref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfiltersref, plotJSI, pumpshape)
+                                      m, spectralfiltersref, plotJSI, pumpshape,pumpcwbw)
         
         #Sidelobeless JSI
         #what is done here:
@@ -1584,6 +1630,8 @@ class GUI(QMainWindow):
             parameterstring = parameterstring + '\nGaussian beam shape'
         elif calcSech:
             parameterstring = parameterstring + '\nsech^2 beam shape'
+        elif calcCW:
+            parameterstring = parameterstring + '\nCW pump'
         # state additional paramters on plot
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
         pltwnd.peplt.annotate(lossesstring, xy=(0.2, 0.86), xycoords='figure fraction', fontsize=9, color='r')
@@ -1658,6 +1706,7 @@ class GUI(QMainWindow):
         PP = self.CrystalPolingPeriodSingle
         m = self.QPMOrder
         tau = self.PulsewidthSingle
+        pumpcwbw = self.PumpCWbwSingle
         cl = self.CrystalLengthSingle
         pumpshape = self.PumpShape
         delayrange = np.linspace(-self.HOMdelayrange/2, self.HOMdelayrange/2,self.HOMresolution)
@@ -1680,12 +1729,12 @@ class GUI(QMainWindow):
         idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters)
-        
+                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+
         datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
         np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
         np.save('HOMdelay_{0:s}.npy'.format(datestr), delayrange)
-        
+
         # plot
         # init plot window
         pltwndidx = self.plotwindowcount
@@ -1693,6 +1742,64 @@ class GUI(QMainWindow):
         pltwnd = self.pltwindowlist[pltwndidx]
         pltwnd.ax.plot(delayrange * 10 ** 12, CoincProb, lw=2)
         pltwnd.ax.set_xlabel('Delay [ps]')
+        pltwnd.ax.set_ylabel('Coincidence probability')
+        pltwnd.ax.set_title('Hong-Ou-Mandel interference')
+        pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
+                           xycoords='axes fraction')
+        pltwnd.ax.legend()
+        pltwnd.canvas.draw()
+
+    def plot_HOM_vis_temp(self):
+        pwl = self.PumpWlSingle
+        T = self.CrystalTempSingle
+        PP = self.CrystalPolingPeriodSingle
+        m = self.QPMOrder
+        tau = self.PulsewidthSingle
+        pumpcwbw = self.PumpCWbwSingle
+        cl = self.CrystalLengthSingle
+        pumpshape = self.PumpShape
+
+        ##calculate crossing point temperature
+        Tmin = self.CrystalTempFrom
+        Tmax = self.CrystalTempTo
+
+        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
+        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
+        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
+        refidxfunc = [nxfunc, nyfunc, nzfunc]
+
+        plotrange = np.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
+        [siwl, idwl, Tcp] = PMC().getSI_wl_varT(pwl, PP, plotrange, refidxfunc, m)
+        # /calculate crossing point temperature
+
+        temprange = np.linspace(Tcp-self.HOMtemprange/2, Tcp+self.HOMtemprange/2, self.HOMresolution)
+        homphase = self.HOMphase
+        JSIresolution = self.JSIresolution
+        JSIwlrange = self.JSIwlRange
+
+        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
+        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
+        spectralfilters = [ffs, ffi]
+
+        Tvec = np.arange(T, T + 1, 2)
+        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
+        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
+        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
+
+        [CoincProb,vis,fwhm] = JSI().getHOMinterferenceT(pwl, PP, m, tau, cl, signalrange, idlerrange,
+                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+
+        datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
+        np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
+        np.save('HOMdelay_{0:s}.npy'.format(datestr), temprange)
+
+        # plot
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+        pltwnd.ax.plot(temprange, CoincProb, lw=2)
+        pltwnd.ax.set_xlabel('Temperature [°C]')
         pltwnd.ax.set_ylabel('Coincidence probability')
         pltwnd.ax.set_title('Hong-Ou-Mandel interference')
         pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
@@ -1801,6 +1908,9 @@ class GUI(QMainWindow):
         self.PulsewidthSingle = self.ui_pulsewidthsingleSB.value() * 10 ** (-12)
         self.PulsewidthFrom = self.ui_pulsewidthfromSB.value() * 10 ** (-12)
         self.PulsewidthTo = self.ui_pulsewidthtoSB.value() * 10 ** (-12)
+        self.PumpCWbwFrom = self.ui_pumpcwwlwidthfromSB.value() * 10 ** (-12)
+        self.PumpCWbwTo = self.ui_pumpcwwlwidthtoSB.value() * 10 ** (-12)
+        self.PumpCWbwSingle = self.ui_pumpcwwlwidthsingleSB.value() * 10 ** (-12)
         self.PumpShape = self.ui_pumpShapeCB.currentText()
         self.PumpShapeApplyDeconvolutionFactor = self.ui_pumpShapeCorrectionFactorCheckBox.isChecked()
 
@@ -1826,6 +1936,7 @@ class GUI(QMainWindow):
 
         self.HOMresolution = self.ui_HOM_Vis_Resolution_SB.value()
         self.HOMdelayrange = self.ui_HOM_Vis_DelayRange_SB.value()*10**(-12)
+        self.HOMtemprange = self.ui_HOM_Vis_TempRange_SB.value()
         self.HOMphase = self.ui_HOM_Vis_Phase_SB.value()
         
         self.fwhmres = self.ui_PlotFWHMresolution_SB.value()
@@ -1857,6 +1968,10 @@ class GUI(QMainWindow):
         self.config.set("Pump pulsewidth to", self.PulsewidthTo)
         self.config.set("Pump pulse shape", self.PumpShape)
         self.config.set("Pump pulsewidth apply deconvolution factor", self.PumpShapeApplyDeconvolutionFactor)
+
+        self.config.set("Pump cw bandwidth from", self.PumpCWbwFrom)
+        self.config.set("Pump cw bandwidth single", self.PumpCWbwSingle)
+        self.config.set("Pump cw bandwidth to", self.PumpCWbwTo)
 
         self.config.set("Crystal Temperature from", self.CrystalTempFrom)
         self.config.set("Crystal Temperature single", self.CrystalTempSingle)

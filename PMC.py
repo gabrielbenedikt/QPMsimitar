@@ -37,7 +37,13 @@ class PMC:
                 def epconv(x):
                         #x[0]:lambda_s
                         #x[1]:lambda_i
-                        return [self.econv(x[0],x[1]), float(self.pconv(x[0],x[1],T,PP))]
+                        ec = self.econv(x[0],x[1])
+                        pc = self.pconv(x[0],x[1],T,PP)
+                        print(type(pc))
+                        if isinstance(pc, list) or isinstance(pc,np.ndarray):
+                                return [ec, float(pc[0])]
+                        else:
+                                return [ec, float(pc)]
                 return epconv
 
         #returns signal and idler wavelengths that satisfy phasematching conditions for a given pumpwavelength, temperature and poling period
@@ -46,6 +52,9 @@ class PMC:
                 #x[1]: Temperature
                 #x[2]: Poling period
                 #return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*x[0],2*x[0]],f_tol=1e-6) #slower!
+                if isinstance(x[1],list):
+                        print("hi")
+                        x[1]=x[1][0]
                 return scipy.optimize.fsolve(self.epconvonlywl(x[1], x[2]), [2 * x[0], 2 * x[0]], xtol=1e-6)
 
         #returns a function that only depends on the poling period
@@ -83,7 +92,7 @@ class PMC:
                 Tcp=0
                 Tcpguess=50
                 Tcp=scipy.optimize.fsolve(self.wlgaponlyT(polingp,pumpwl),Tcpguess)
-
+                
                 #return:
                 #signal wavelength, idler wavelength, crossing point temperature
                 return [sigwl,idwl,Tcp[0]]

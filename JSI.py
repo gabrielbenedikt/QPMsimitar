@@ -2,6 +2,7 @@
 
 import cProfile
 import numba
+import os
 
 import concurrent.futures
 import multiprocessing as mp
@@ -781,7 +782,7 @@ class JSI:
 #             ProbMX = 0.5 * (1 - np.sum(jj))
 #             return ProbMX
 #         
-#         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+#         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
 #             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
 #             HOMI = [f.result() for f in futures]
 # 
@@ -848,7 +849,7 @@ class JSI:
 #             ProbMX = 0.25 * np.sum(val)
 #             return ProbMX
 #         
-#         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+#         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
 #             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
 #             HOMI = [f.result() for f in futures]
 # 
@@ -916,7 +917,7 @@ class JSI:
         if 0:#seems to work for sech^2 773nm pulsed
             def homf(i):
                 return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
                 futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
                 HOMI = [f.result() for f in futures]
 
@@ -928,7 +929,7 @@ class JSI:
                 jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
                 jsa2 = np.conjugate(jsa2)
                 return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i]))**2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
                 futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
                 HOMI = np.array([f.result() for f in futures])
 
@@ -1001,7 +1002,7 @@ class JSI:
                 jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
                 #jsa2 = np.conjugate(jsa2)
                 return  np.sum(scipy.integrate.simpson(jsa1*jsa2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
                 futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
                 HOMI = [f.result() for f in futures]
 
@@ -1022,7 +1023,7 @@ class JSI:
                 jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
                 jsa2 = np.conjugate(jsa2)
                 return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2)**2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
                 futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
                 HOMI = np.array([f.result() for f in futures])
 

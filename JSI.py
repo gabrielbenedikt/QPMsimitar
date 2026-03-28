@@ -168,13 +168,6 @@ class JSI:
         return (self.JSAcwgauss(lp, ls, li, bw, t, pp, cl)) ** 2
 
     def PEAnPMAnJSAcwgauss(self, lp, ls, li, bw, t, pp, cl):
-        print(f"{lp=}")
-        print(f"{ls=}")
-        print(f"{li=}")
-        print(f"{bw=}")
-        print(f"{t=}")
-        print(f"{pp=}")
-        print(f"{cl=}")
         sp = bw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAcwgauss(lp, ls, li, sp)
@@ -195,9 +188,6 @@ class JSI:
     # amplitude
     def PEAgauss(self, lp, ls, li, sp):
         dl = 1 / ls + 1 / li - 1 / lp
-        print(f"{dl=}")
-        print(f"{sp=}")
-        print(f"{Constants().pi * Constants().c * (dl)/sp=}")
         return (np.exp(- (Constants().pi * Constants().c * (dl) / (sp)) ** 2))  # note: 2*pi*c/(2*sp)
 
     # intensity
@@ -236,16 +226,6 @@ class JSI:
         dnu = Constants().tbwpgauss / tau  # FWHM in frequency
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
         sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
-        print(f"{lp=}")
-        print(f"{ls=}")
-        print(f"{li=}")
-        print(f"{tauac=}")
-        print(f"{t=}")
-        print(f"{pp=}")
-        print(f"{cl=}")
-        print(f"{dnu=}")
-        print(f"{dw=}")
-        print(f"{sp=}")
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAgauss(lp, ls, li, sp)
         pma = self.PMAgauss(dk, cl)
@@ -954,7 +934,6 @@ class JSI:
             jsi = jsa1*np.conjugate(jsa1)
             norm = np.sum(jsi)
             HOMI = np.abs(HOMI/norm)
-            print(f"{norm=}")
 
         # determine visibility
         vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))

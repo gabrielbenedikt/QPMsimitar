@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cProfile
+import numba
 
 import concurrent.futures
 import multiprocessing as mp
@@ -104,16 +105,18 @@ class JSI:
 
     # calculates pumpwavelength out of signal and idler wavelength, using energy conservation
     def lambdap(self, ls, li):
+        return self.lamdap_numba(ls, li)
+    @staticmethod
+    @numba.njit
+    def lamdap_numba(ls, li):
         return 1 / (1 / ls + 1 / li)
 
     # phase matching amplitude
     def PMA(self, dk, cl):
         # note: np.sinc(x) evaluates to Sin(pi*x)/(pi*x)
         # this really produced some headache.
-        
         arg = cl * dk / 2
         return cl * np.sinc(arg/np.pi ) * np.exp( 1j * arg )
-        
         #return np.sinc(dk * cl / (2 * Constants().pi)) #* cl * np.exp(1j*dk*cl/2)
 
     def PMAgauss(self, dk, cl):

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import cProfile
+import pstats
+PROFILE=False
+
 try:
     from PyQt6.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                                 QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
@@ -975,9 +979,12 @@ class GUI(QMainWindow):
 
         # prepare plotting
         plotrange = np.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
-
+        if PROFILE:
+            profile = cProfile.Profile()
+            profile.runcall(PMC().getSI_wl_varT, lp, PP, plotrange, refidxfunc, m)
+            ps = pstats.Stats(profile)
+            ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [siwl, idwl, Tcp] = PMC().getSI_wl_varT(lp, PP, plotrange, refidxfunc, m)
-
         # plot
         # init plot window
         pltwndidx = self.plotwindowcount
@@ -1318,6 +1325,13 @@ class GUI(QMainWindow):
         signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
         idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
 
+
+        if PROFILE:
+            profile = cProfile.Profile()
+            profile.runcall(JSI().getplots, pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
+                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw)
+            ps = pstats.Stats(profile)
+            ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
                                       m, spectralfilters, plotJSI, pumpshape, pumpcwbw)
 
@@ -1735,6 +1749,12 @@ class GUI(QMainWindow):
         signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
         idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
+        if PROFILE:
+            profile = cProfile.Profile()
+            profile.runcall(JSI().getHOMinterference, pwl, T, PP, m, tau, cl, signalrange, idlerrange,
+                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+            ps = pstats.Stats(profile)
+            ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
                                              JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw)
 

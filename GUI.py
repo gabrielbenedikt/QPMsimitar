@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 
-from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
-                             QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
-                             QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
-from PyQt5.QtGui import (QFont, QMouseEvent)
+try:
+    from PyQt6.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
+                                QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
+                                QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
+    from PyQt6.QtGui import (QFont, QMouseEvent)
+except ModuleNotFoundError:
+    from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
+                                 QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
+                                 QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
+    from PyQt5.QtGui import (QFont, QMouseEvent)
+
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
 from JSI import JSI

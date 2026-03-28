@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
+has_qt6 = False
+try:
+    from PyQt6.QtWidgets import QApplication
+    has_qt6 = True
+except ModuleNotFoundError:
+    prrint("Qt6 not found. Usingg Qt5 fallback")
+    from PyQt5.QtWidgets import QApplication
 from GUI import GUI
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
 from Constants import Constants
 from Settings import Settings
-from PyQt5.QtWidgets import QApplication
 import sys
 
 class QPMsimitar:
@@ -23,5 +29,8 @@ class QPMsimitar:
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MPA = QPMsimitar()
-    app.exec_()
+    if has_qt6:
+        app.exec()
+    else:
+        app.exec_()
     MPA.config.saveSettings()

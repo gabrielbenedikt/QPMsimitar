@@ -39,7 +39,6 @@ class PMC:
                         #x[1]:lambda_i
                         ec = self.econv(x[0],x[1])
                         pc = self.pconv(x[0],x[1],T,PP)
-                        print(type(pc))
                         if isinstance(pc, list) or isinstance(pc,np.ndarray):
                                 return [ec, float(pc[0])]
                         else:

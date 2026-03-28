@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
-from PyQt5.QtWidgets import QPushButton
-from PyQt5 import QtCore
-from PyQt5.QtCore import QObject, pyqtSignal
+try:
+    from PyQt6.QtWidgets import QPushButton
+    from PyQt6 import QtCore
+    from PyQt6.QtCore import QObject, pyqtSignal
+except ModuleNotFoundError:
+    from PyQt5.QtWidgets import QPushButton
+    from PyQt5 import QtCore
+    from PyQt5.QtCore import QObject, pyqtSignal
 
 #reimplementation of the QPushButton
 #change: emit signal when moush hovers over button

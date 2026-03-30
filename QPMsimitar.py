@@ -5,7 +5,7 @@ try:
     from PyQt6.QtWidgets import QApplication
     has_qt6 = True
 except ModuleNotFoundError:
-    prrint("Qt6 not found. Usingg Qt5 fallback")
+    print("Qt6 not found. Usingg Qt5 fallback")
     from PyQt5.QtWidgets import QApplication
 from GUI import GUI
 from RefractiveIndex import RefractiveIndex

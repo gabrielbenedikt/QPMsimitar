@@ -6,4 +6,9 @@ QPM SIMulatIon Tool with grAphical inteRface
 
 
 # Getting started
+```
+virtualenv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
 ./QPMsimitar
+```

@@ -9,11 +9,15 @@ try:
                                 QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
                                 QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
     from PyQt6.QtGui import (QFont, QMouseEvent)
+    from matplotlib.backends.backend_qtagg import (FigureCanvasQTAgg as FigureCanvas,
+                                                    NavigationToolbar2QT as NavigationToolbar)
 except ModuleNotFoundError:
     from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                                  QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
                                  QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
     from PyQt5.QtGui import (QFont, QMouseEvent)
+    from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
+                                                    NavigationToolbar2QT as NavigationToolbar)
 
 from RefractiveIndex import RefractiveIndex
 from PMC import PMC
@@ -23,10 +27,10 @@ from Constants import Constants
 from QTreimps import QHoverPushButton
 import numpy as np
 import scipy
-from pylab import *
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
-                                                NavigationToolbar2QT as NavigationToolbar)
+# from pylab import *
+import matplotlib.pyplot as plt
 import matplotlib
+import datetime
 
 from colorsys import hls_to_rgb
 matplotlib.use('Qt5Agg')
@@ -1349,7 +1353,7 @@ class GUI(QMainWindow):
         # need customization for 3 plots in 1 window
         pltwnd.layout.removeWidget(pltwnd.canvas)
         pltwnd.layout.removeWidget(pltwnd.toolbar)
-        pltwnd.fig = figure(facecolor="white")
+        pltwnd.fig = plt.figure(facecolor="white")
         pltwnd.peplt = pltwnd.fig.add_subplot(131)
         pltwnd.pmplt = pltwnd.fig.add_subplot(132)
         pltwnd.jsplt = pltwnd.fig.add_subplot(133)
@@ -1586,7 +1590,7 @@ class GUI(QMainWindow):
         # need customization for 3 plots in 1 window
         pltwnd.layout.removeWidget(pltwnd.canvas)
         pltwnd.layout.removeWidget(pltwnd.toolbar)
-        pltwnd.fig = figure(facecolor="white")
+        pltwnd.fig = plt.figure(facecolor="white")
         pltwnd.peplt = pltwnd.fig.add_subplot(141)
         pltwnd.pmplt = pltwnd.fig.add_subplot(142)
         pltwnd.jsplt = pltwnd.fig.add_subplot(143)
@@ -2318,7 +2322,7 @@ class PlotWindow(QWidget):
         # self.layout = QGridLayout()
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-        self.fig = figure(facecolor="white", figsize=(8.75 * 1.2, 5 * 1.2))
+        self.fig = plt.figure(facecolor="white", figsize=(8.75 * 1.2, 5 * 1.2))
         self.ax = self.fig.add_subplot(111)
         self.ax.grid()
         self.canvas = FigureCanvas(self.fig)

@@ -13,4 +13,5 @@ HOMvis.png
 nohup.out
 *.npy
 *.png
+!doc/*.png
 *.ipynb

@@ -232,7 +232,7 @@ class RefractiveIndex:
         return (nz + dT * dnzdT)
 
     def PPKTP_nz2_kato(self, lin, t):
-        return PPKTP_nz2_kato_numba(lin, t, self.fnz, self.az2)
+        return self.PPKTP_nz2_kato_numba(lin, t, self.fnz, self.az2)
     @staticmethod
     @numba.njit(parallel=True)
     def PPKTP_nz2_kato_numba(lin, t, fnz, az2):

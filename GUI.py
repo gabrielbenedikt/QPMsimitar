@@ -1894,6 +1894,16 @@ class GUI(QMainWindow):
         cl = self.CrystalLengthSingle
         pumpshape = self.PumpShape
 
+        focusing_enable = self.Focusing_enable
+        fibre_coupling_enable = self.Fibrecoupling_enable
+        focallength_pump = self.Focallength_pump
+        focallength_signal = self.Focallength_signal
+        focallength_idler = self.Focallength_idler
+        beamdiameter_pump = self.Beamdiameter_pump
+        beamdiameter_signal = self.Beamdiameter_signal
+        beamdiameter_idler = self.Beamdiameter_idler
+
+
         ##calculate crossing point temperature
         Tmin = self.CrystalTempFrom
         Tmax = self.CrystalTempTo
@@ -1922,7 +1932,7 @@ class GUI(QMainWindow):
         idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
         [CoincProb,vis,fwhm] = JSI().getHOMinterferenceT(pwl, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
 
         datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
         np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)

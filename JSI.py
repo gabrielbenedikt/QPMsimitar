@@ -42,6 +42,268 @@ class JSI:
         
         self.usetaucf = False
 
+        # Spatial parameters for tight focusing and fiber coupling
+        self.fibre_coupling_enable = False
+        self.focusing_enable = False
+        
+        # Collimated beam diameters
+        self.Beamdiameter_pump = 1.0 * 10 ** (-3)
+        self.Beamdiameter_signal = 1.0 * 10 ** (-3)
+        self.Beamdiameter_idler = 1.0 * 10 ** (-3)
+        
+        # Focal lengths
+        self.focallength_pump = 10.0 * 10 ** (-3)
+        self.focallength_signal = 10.0 * 10 ** (-3)
+        self.focallength_idler = 10.0 * 10 ** (-3)
+
+        # Spatial walk-off
+        self.walkoff_enable = True
+
+        # Number of z-samples used by batched spatial overlap integration.
+        # Use an odd value for Simpson integration.
+        self.spatial_z_points = 129
+
+    def calculate_focused_waists(self, lp, ls, li):
+        """
+        Calculate the focused beam waists at the crystal.
+        w_0 = \lambda f / (\pi w_collimated)
+        spot size = spot diameter = 2x waist
+        """
+        w_col_p = self.Beamdiameter_pump / 2.0
+        w_col_s = self.Beamdiameter_signal / 2.0
+        w_col_i = self.Beamdiameter_idler / 2.0
+
+        w0_p = (lp * self.focallength_pump) / (np.pi * w_col_p)
+        w0_s = (ls * self.focallength_signal) / (np.pi * w_col_s)
+        w0_i = (li * self.focallength_idler) / (np.pi * w_col_i)
+
+        return w0_p, w0_s, w0_i
+
+    def walkoff_angle(self, wavelength, T):
+        """
+        Calculate spatial walk-off angle for extraordinary (z-polarized) ray
+        in KTP propagating along x-axis.
+
+        For a biaxial crystal with propagation along x and z-polarization,
+        the walk-off angle is approximately:
+        rho ≈ (1/2) * (1/n_y^2 - 1/n_z^2) * n_z
+
+        Returns angle in radians.
+        """
+        ny = self.ny(wavelength, T)
+        nz = self.nz(wavelength, T)
+        # Walk-off for e-ray in biaxial crystal (propagation along x, z-polarized)
+        rho = 0.5 * (1.0 / ny**2 - 1.0 / nz**2) * nz
+        return rho
+
+    
+    #def spatial_overlap(self, dk, cl, lp, ls, li):
+    #    return self.spatial_overlap_numba(dk, cl, lp, ls, li, self.ny, self.nz, self.T, self.walkoff_enable, Beamdiameter_pump=self.Beamdiameter_pump, Beamdiameter_signal=self.Beamdiameter_signal, Beamdiameter_idler=self.Beamdiameter_idler, focallength_pump=self.focallength_pump, focallength_signal=self.focallength_signal, focallength_idler=self.focallength_idler)
+    #@staticmethod
+    #@numba.njit
+    #def spatial_overlap_numba(dk, cl, lp, ls, li, ny, nz, T, walkoff_enable, Beamdiameter_pump, Beamdiameter_signal, Beamdiameter_idler, focallength_pump, focallength_signal, focallength_idler):
+    #    """
+    #    Spatial overlap integral for the biphoton amplitude including
+    #    tight focusing, fiber coupling, and spatial walk-off.
+    #    Performs rigorous numerical integration over the crystal length.
+    #    """
+    #    w_col_p = Beamdiameter_pump / 2.0
+    #    w_col_s = Beamdiameter_signal / 2.0
+    #    w_col_i = Beamdiameter_idler / 2.0#
+
+  #      w0_p = (lp * focallength_pump) / (np.pi * w_col_p)
+    #    w0_s = (ls * focallength_signal) / (np.pi * w_col_s)
+    #    w0_i = (li * focallength_idler) / (np.pi * w_col_i)
+  #
+  #      # Rayleigh ranges including refractive index
+  #      zr_p = ny(lp, T) * np.pi * w0_p**2 / lp
+  #      zr_s = ny(ls, T) * np.pi * w0_s**2 / ls
+  #      zr_i = nz(li, T) * np.pi * w0_i**2 / li
+#
+#        # Walk-off angle for idler (extraordinary beam)
+#        if walkoff_enable:
+#            rho_i = 0.5 * (1.0 / ny(li, T)**2 - 1.0 / nz(li, T)**2) * nz(li, T)
+#        else:
+#            rho_i = 0.0
+#
+#        def _spatial_integrand( z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i=0.0):
+#
+#            # Gaussian complex beam parameters
+#            q_p = 1.0 + 1j * z / zr_p
+#            q_s_conj = 1.0 - 1j * z / zr_s
+#            q_i_conj = 1.0 - 1j * z / zr_i
+#
+#            # Inverse beam size parameters
+#            a_p = 1.0 / (w0_p**2 * q_p)
+#            a_s = 1.0 / (w0_s**2 * q_s_conj)
+#            a_i = 1.0 / (w0_i**2 * q_i_conj)
+#
+#            # Sum of non-displaced beams (pump + signal)
+#            A_prime = a_p + a_s
+#            # Total including idler
+#            A = A_prime + a_i
+#
+#            # Transverse displacement of idler beam center due to walk-off
+#            d = rho_i * z
+#
+#            # Overlap integral with displaced Gaussian
+#            # For three Gaussians where idler is displaced by distance d:
+#            # int exp(-r^2*A_prime - |r-d|^2*a_i) d^2r = (pi/A) * exp(-d^2 * a_i * A_prime / A)
+#            displacement_factor = np.exp(-d**2 * a_i * A_prime / A)
+#
+#            # Gouy phase, normalization, displacement, and longitudinal phase matching
+#            amplitude = (1.0 / (q_p * q_s_conj * q_i_conj)) * (np.pi / A) * displacement_factor * np.exp(1j * dk * z)
+#
+#            return amplitude
+#
+#        def integrand_real(z):
+#            return _spatial_integrand(z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i).real
+#
+#        def integrand_imag(z):
+#            return _spatial_integrand(z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i).imag
+#
+#        # Integrate over crystal length from -cl/2 to cl/2
+#        integral_real, _ = scipy.integrate.quad(integrand_real, -cl / 2, cl / 2)
+#        integral_imag, _ = scipy.integrate.quad(integrand_imag, -cl / 2, cl / 2)
+#
+#        return integral_real + 1j * integral_imag
+    
+    def spatial_overlap(self, dk, cl, lp, ls, li, temp=None):
+        """
+        Spatial overlap integral for the biphoton amplitude including
+        tight focusing, fiber coupling, and spatial walk-off.
+        Performs rigorous numerical integration over the crystal length.
+        """
+        w0_p, w0_s, w0_i = self.calculate_focused_waists(lp, ls, li)#
+
+        # Rayleigh ranges including refractive index
+        t_eval = self.T if temp is None else temp
+        zr_p = self.ny(lp, t_eval) * np.pi * w0_p**2 / lp
+        zr_s = self.ny(ls, t_eval) * np.pi * w0_s**2 / ls
+        zr_i = self.nz(li, t_eval) * np.pi * w0_i**2 / li
+
+        # Walk-off angle for idler (extraordinary beam)
+        rho_i = self.walkoff_angle(li, t_eval) if self.walkoff_enable else 0.0
+
+        def integrand_real(z):
+            return self._spatial_integrand(z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i).real
+
+        def integrand_imag(z):
+            return self._spatial_integrand(z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i).imag
+
+        # Integrate over crystal length from -cl/2 to cl/2
+        integral_real, _ = scipy.integrate.quad(integrand_real, -cl / 2, cl / 2)
+        integral_imag, _ = scipy.integrate.quad(integrand_imag, -cl / 2, cl / 2)
+
+        return integral_real + 1j * integral_imag
+
+    def _spatial_overlap_grid(self, dk, cl, lp, ls, li, temp=None):
+        """
+        Batched spatial overlap integration on a shared z-grid.
+
+        This avoids per-point scipy.quad calls and is substantially faster for
+        evaluating large wavelength grids.
+        """
+        dk_arr, lp_arr, ls_arr, li_arr = np.broadcast_arrays(
+            np.asarray(dk),
+            np.asarray(lp),
+            np.asarray(ls),
+            np.asarray(li),
+        )
+        cl_val = float(np.asarray(cl).reshape(-1)[0])
+
+        w0_p, w0_s, w0_i = self.calculate_focused_waists(lp_arr, ls_arr, li_arr)
+
+        t_eval = self.T if temp is None else temp
+        zr_p = self.ny(lp_arr, t_eval) * np.pi * w0_p ** 2 / lp_arr
+        zr_s = self.ny(ls_arr, t_eval) * np.pi * w0_s ** 2 / ls_arr
+        zr_i = self.nz(li_arr, t_eval) * np.pi * w0_i ** 2 / li_arr
+
+        rho_i = self.walkoff_angle(li_arr, t_eval) if self.walkoff_enable else 0.0
+
+        npts = int(self.spatial_z_points)
+        if npts < 3:
+            npts = 3
+        if npts % 2 == 0:
+            npts += 1
+
+        z = np.linspace(-cl_val / 2, cl_val / 2, npts)
+        dz = z[1] - z[0]
+
+        # Memory-efficient Simpson integration: avoid storing a full (..., z) cube.
+        weights = np.ones(npts)
+        weights[1:-1:2] = 4.0
+        weights[2:-1:2] = 2.0
+
+        integral = np.zeros_like(dk_arr, dtype=np.complex128)
+
+        for k, zk in enumerate(z):
+            q_p = 1.0 + 1j * zk / zr_p
+            q_s_conj = 1.0 - 1j * zk / zr_s
+            q_i_conj = 1.0 - 1j * zk / zr_i
+
+            a_p = 1.0 / (w0_p ** 2 * q_p)
+            a_s = 1.0 / (w0_s ** 2 * q_s_conj)
+            a_i = 1.0 / (w0_i ** 2 * q_i_conj)
+
+            A_prime = a_p + a_s
+            A = A_prime + a_i
+
+            d = rho_i * zk
+            displacement_factor = np.exp(-d ** 2 * a_i * A_prime / A)
+
+            amplitude = (
+                (1.0 / (q_p * q_s_conj * q_i_conj))
+                * (np.pi / A)
+                * displacement_factor
+                * np.exp(1j * dk_arr * zk)
+            )
+            integral += weights[k] * amplitude
+
+        return integral * (dz / 3.0)
+
+    def _spatial_integrand(self, z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i=0.0):
+        """
+        Integrand for spatial overlap calculation with walk-off.
+
+        Args:
+            z: Longitudinal position in crystal (m)
+            dk: Phase mismatch (1/m)
+            w0_p, w0_s, w0_i: Beam waists (m)
+            zr_p, zr_s, zr_i: Rayleigh ranges (m)
+            rho_i: Walk-off angle of idler beam (radians)
+
+        Returns:
+            Complex amplitude contribution at position z
+        """
+        # Gaussian complex beam parameters
+        q_p = 1.0 + 1j * z / zr_p
+        q_s_conj = 1.0 - 1j * z / zr_s
+        q_i_conj = 1.0 - 1j * z / zr_i
+
+        # Inverse beam size parameters
+        a_p = 1.0 / (w0_p**2 * q_p)
+        a_s = 1.0 / (w0_s**2 * q_s_conj)
+        a_i = 1.0 / (w0_i**2 * q_i_conj)
+
+        # Sum of non-displaced beams (pump + signal)
+        A_prime = a_p + a_s
+        # Total including idler
+        A = A_prime + a_i
+
+        # Transverse displacement of idler beam center due to walk-off
+        d = rho_i * z
+
+        # Overlap integral with displaced Gaussian
+        # For three Gaussians where idler is displaced by distance d:
+        # int exp(-r^2*A_prime - |r-d|^2*a_i) d^2r = (pi/A) * exp(-d^2 * a_i * A_prime / A)
+        displacement_factor = np.exp(-d**2 * a_i * A_prime / A)
+
+        # Gouy phase, normalization, displacement, and longitudinal phase matching
+        amplitude = (1.0 / (q_p * q_s_conj * q_i_conj)) * (np.pi / A) * displacement_factor * np.exp(1j * dk * z)
+
+        return amplitude
+
     # thermal expansion factor
     def thermexpfactor(self, T):
         return (1 + self.TXCa * (T - self.TXrefT) + self.TXCb * (T - self.TXrefT) * (T - self.TXrefT))
@@ -113,37 +375,39 @@ class JSI:
         return 1 / (1 / ls + 1 / li)
 
     # phase matching amplitude
-    def PMA(self, dk, cl):
+    def PMA(self, dk, cl, lp=None, ls=None, li=None, temp=None):
+        if (self.focusing_enable or self.fibre_coupling_enable) and lp is not None and ls is not None and li is not None:
+            return self._spatial_overlap_grid(dk, cl, lp, ls, li, temp=temp)
         # note: np.sinc(x) evaluates to Sin(pi*x)/(pi*x)
         # this really produced some headache.
         arg = cl * dk / 2
         return cl * np.sinc(arg/np.pi ) * np.exp( 1j * arg )
         #return np.sinc(dk * cl / (2 * Constants().pi)) #* cl * np.exp(1j*dk*cl/2)
 
-    def PMAgauss(self, dk, cl):
-        return self.PMA(dk, cl)
+    def PMAgauss(self, dk, cl, lp=None, ls=None, li=None, temp=None):
+        return self.PMA(dk, cl, lp, ls, li, temp=temp)
 
-    def PMAcwgauss(self, dk, cl):
-        return self.PMA(dk, cl)
+    def PMAcwgauss(self, dk, cl, lp=None, ls=None, li=None, temp=None):
+        return self.PMA(dk, cl, lp, ls, li, temp=temp)
 
-    def PMAsech(self, dk, cl):
-        return self.PMA(dk, cl)
+    def PMAsech(self, dk, cl, lp=None, ls=None, li=None, temp=None):
+        return self.PMA(dk, cl, lp, ls, li, temp=temp)
 
-    def PMAsinc(self, dk, cl):
-        return self.PMA(dk, cl)
+    def PMAsinc(self, dk, cl, lp=None, ls=None, li=None, temp=None):
+        return self.PMA(dk, cl, lp, ls, li, temp=temp)
 
     # phase matching intensity
-    def PMIsech(self, dk, cl):
-        return np.square(self.PMA(dk, cl))
+    def PMIsech(self, dk, cl, lp=None, ls=None, li=None):
+        return np.square(np.abs(self.PMA(dk, cl, lp, ls, li)))
 
-    def PMIgauss(self, dk, cl):
-        return np.square(self.PMA(dk, cl))
+    def PMIgauss(self, dk, cl, lp=None, ls=None, li=None):
+        return np.square(np.abs(self.PMA(dk, cl, lp, ls, li)))
 
-    def PMIcwgauss(self, dk, cl):
-        return np.square(self.PMA(dk, cl))
+    def PMIcwgauss(self, dk, cl, lp=None, ls=None, li=None):
+        return np.square(np.abs(self.PMA(dk, cl, lp, ls, li)))
 
-    def PMIsinc(self, dk, cl):
-        return np.square(self.PMA(dk, cl))
+    def PMIsinc(self, dk, cl, lp=None, ls=None, li=None):
+        return np.square(np.abs(self.PMA(dk, cl, lp, ls, li)))
 
     ###################
     ###  cw(gauss)  ###
@@ -158,24 +422,24 @@ class JSI:
     def JSAcwgauss(self, lp, ls, li, bw, t, pp, cl):
         sp = bw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
-        jsa = self.PEAcwgauss(lp, ls, li, sp) * self.PMAcwgauss(dk, cl)
+        jsa = self.PEAcwgauss(lp, ls, li, sp) * self.PMAcwgauss(dk, cl, lp, ls, li, temp=t)
         if self.useabs:
             return np.absolute(jsa)
         else:
             return jsa
 
     def PEIcwgauss(self, lp, ls, li, sp):
-        return self.PEAcwgauss(lp, ls, li, sp) ** 2
+        return np.abs(self.PEAcwgauss(lp, ls, li, sp)) ** 2
 
     # joint spectral intensity for gaussian beam
     def JSIcwgauss(self, lp, ls, li, bw, t, pp, cl):
-        return (self.JSAcwgauss(lp, ls, li, bw, t, pp, cl)) ** 2
+        return np.abs(self.JSAcwgauss(lp, ls, li, bw, t, pp, cl)) ** 2
 
     def PEAnPMAnJSAcwgauss(self, lp, ls, li, bw, t, pp, cl):
         sp = bw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAcwgauss(lp, ls, li, sp)
-        pma = self.PMAcwgauss(dk, cl)
+        pma = self.PMAcwgauss(dk, cl, lp, ls, li, temp=t)
         jsa = pea * pma
         if self.useabs:
             return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
@@ -183,8 +447,8 @@ class JSI:
             return [pea, pma, jsa]
 
     def PEInPMInJSIcwgauss(self, lp, ls, li, bw, t, pp, cl):
-        [pei, pea, jsa] = self.PEAnPMAnJSAcwgauss(lp, ls, li, bw, t, pp, cl)
-        return [pei ** 2, pea ** 2, jsa ** 2]
+        [pea, pma, jsa] = self.PEAnPMAnJSAcwgauss(lp, ls, li, bw, t, pp, cl)
+        return [np.abs(pea) ** 2, np.abs(pma) ** 2, np.abs(jsa) ** 2]
     ###################
     ###   gaussian  ###
     ###################
@@ -196,7 +460,7 @@ class JSI:
 
     # intensity
     def PEIgauss(self, lp, ls, li, sp):
-        return self.PEAgauss(lp, ls, li, sp) ** 2
+        return np.abs(self.PEAgauss(lp, ls, li, sp)) ** 2
 
     # joint spectral amplitude for gaussian beam
     def JSAgauss(self, lp, ls, li, tauac, t, pp, cl):
@@ -210,7 +474,7 @@ class JSI:
         dw = 2 * Constants().pi * dnu  # FWHM in angular frequency
         sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
-        jsa = self.PEAgauss(lp, ls, li, sp) * self.PMAgauss(dk, cl)
+        jsa = self.PEAgauss(lp, ls, li, sp) * self.PMAgauss(dk, cl, lp, ls, li, temp=t)
         if self.useabs:
             return np.absolute(jsa)
         else:
@@ -218,7 +482,7 @@ class JSI:
 
     # joint spectral intensity for gaussian beam
     def JSIgauss(self, lp, ls, li, tauac, t, pp, cl):
-        return (self.JSAgauss(lp, ls, li, tauac, t, pp, cl)) ** 2
+        return np.abs(self.JSAgauss(lp, ls, li, tauac, t, pp, cl)) ** 2
 
     def PEAnPMAnJSAgauss(self, lp, ls, li, tauac, t, pp, cl):
         # tauac: autocorrelator measured pulsewidth
@@ -232,7 +496,7 @@ class JSI:
         sp = dw / (2 * np.sqrt(2 * np.log(2)))  # gaussian standard deviation from FWHM
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAgauss(lp, ls, li, sp)
-        pma = self.PMAgauss(dk, cl)
+        pma = self.PMAgauss(dk, cl, lp, ls, li, temp=t)
         jsa = pea * pma
         if self.useabs:
             return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
@@ -240,8 +504,8 @@ class JSI:
             return [pea, pma, jsa]
 
     def PEInPMInJSIgauss(self, lp, ls, li, tauac, t, pp, cl):
-        [pei, pea, jsa] = self.PEAnPMAnJSAgauss(lp, ls, li, tauac, t, pp, cl)
-        return [pei ** 2, pea ** 2, jsa ** 2]
+        [pea, pma, jsa] = self.PEAnPMAnJSAgauss(lp, ls, li, tauac, t, pp, cl)
+        return [np.abs(pea) ** 2, np.abs(pma) ** 2, np.abs(jsa) ** 2]
 
     ###################
     ###   sech^2    ###
@@ -254,7 +518,7 @@ class JSI:
 
     # pump envelope intensity for gaussian beam
     def PEIsech(self, lp, ls, li, B):
-        return (self.PEAsech(lp, ls, li, B)) ** 2
+        return np.abs(self.PEAsech(lp, ls, li, B)) ** 2
 
     # joint spectral amplitude for sech^2 beam
     def JSAsech(self, lp, ls, li, tauac, t, pp, cl):
@@ -267,7 +531,7 @@ class JSI:
         B = 2 * np.arccosh(np.sqrt(2)) / dw
         
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
-        jsa = self.PEAsech(lp, ls, li, B) * self.PMAsech(dk, cl)
+        jsa = self.PEAsech(lp, ls, li, B) * self.PMAsech(dk, cl, lp, ls, li, temp=t)
         
         if self.useabs:
             return np.absolute(jsa)
@@ -276,7 +540,7 @@ class JSI:
 
     # joint spectral intensity for sech^2 beam
     def JSIsech(self, lp, ls, li, tauac, t, pp, cl):
-        return self.JSAsech(lp, ls, li, tauac, t, pp, cl) ** 2
+        return np.abs(self.JSAsech(lp, ls, li, tauac, t, pp, cl)) ** 2
 
     def PEAnPMAnJSAsech(self, lp, ls, li, tauac, t, pp, cl):
         if self.usetaucf:
@@ -288,7 +552,7 @@ class JSI:
         B = 2 * np.arccosh(np.sqrt(2)) / dw
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAsech(lp, ls, li, B)
-        pma = self.PMAsech(dk, cl)
+        pma = self.PMAsech(dk, cl, lp, ls, li, temp=t)
         jsa = pea * pma
         if self.useabs:
             return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
@@ -297,7 +561,7 @@ class JSI:
 
     def PEInPMInJSIsech(self, lp, ls, li, tauac, t, pp, cl):
         [pea, pma, jsa] = self.PEAnPMAnJSAsech(lp, ls, li, tauac, t, pp, cl)
-        return [pea ** 2, pma ** 2, jsa ** 2]
+        return [np.abs(pea) ** 2, np.abs(pma) ** 2, np.abs(jsa) ** 2]
     
     ###################
     ###    sinc     ###
@@ -307,12 +571,12 @@ class JSI:
         dl = 1 / ls + 1 / li - 1 / lp
         wfact = 2 * Constants().pi * Constants().c * (1 / ls + 1 / li - 1 / lp)
         #argument = wfact * B
-        argument = wfact*B
+        argument = wfact*B / Constants().pi #/pi to counteract np.sincs spurious pi: np.sinc(x) = sin(pi*x)/(pi*x)
         return (np.sinc(argument))
         
     # pump envelope intensity for sinc beam
     def PEIsinc(self, lp, ls, li, B):
-        return (self.PEAsinc(lp, ls, li, B)) ** 2
+        return np.abs(self.PEAsinc(lp, ls, li, B)) ** 2
         
     # joint spectral amplitude for sinc beam
     def JSAsinc(self, lp, ls, li, tauac, t, pp, cl):
@@ -324,7 +588,7 @@ class JSI:
         dw = 2 * Constants().pi * Constants().tbwpsinc / (tau)
         B = 3.79099 / dw
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
-        jsa = self.PEAsinc(lp, ls, li, B) * self.PMAsinc(dk, cl)
+        jsa = self.PEAsinc(lp, ls, li, B) * self.PMAsinc(dk, cl, lp, ls, li, temp=t)
         if self.useabs:
             return np.absolute(jsa)
         else:
@@ -332,7 +596,7 @@ class JSI:
 
     # joint spectral intensity for sinc beam
     def JSIsinc(self, lp, ls, li, tauac, t, pp, cl):
-        return self.JSAsinc(lp, ls, li, tauac, t, pp, cl) ** 2
+        return np.abs(self.JSAsinc(lp, ls, li, tauac, t, pp, cl)) ** 2
         
     def PEAnPMAnJSAsinc(self, lp, ls, li, tauac, t, pp, cl):
         #if self.usetaucf:
@@ -344,7 +608,7 @@ class JSI:
         B = 3.79099 / dw
         dk = self.deltak(self.lambdap(ls, li), ls, li, t, pp)
         pea = self.PEAsinc(lp, ls, li, B)
-        pma = self.PMAsinc(dk, cl)
+        pma = self.PMAsinc(dk, cl, lp, ls, li, temp=t)
         jsa = pea * pma
         if self.useabs:
             return [np.absolute(pea), np.absolute(pma), np.absolute(jsa)]
@@ -353,34 +617,7 @@ class JSI:
 
     def PEInPMInJSIsinc(self, lp, ls, li, tauac, t, pp, cl):
         [pea, pma, jsa] = self.PEAnPMAnJSAsinc(lp, ls, li, tauac, t, pp, cl)
-        return [pea ** 2, pma ** 2, jsa ** 2]
-
-
-    def filterfunction(self, ls, li):
-        # rectangular filter with:
-        # lc......central wavelength
-        # bwh..half bandwidth (such that transmittivity=1 in the range (lc-bwh,lc+bwh) ).
-        lc = 1546.2 * 10 ** -(9)
-        bwh = 1.5 * 10 ** (-9)
-
-        # rectangular filter on both signal and idler
-        if 0:
-            if (ls < (lc - bwh) or ls > (lc + bwh) or li < (lc - bwh) or li > (lc + bwh)):
-                return (0)
-            else:
-                return (1)
-        # rectangular filter only on signal
-        if 1:
-            if (ls < (lc - bwh) or ls > (lc + bwh)):
-                return (0)
-            else:
-                return (1)
-        # rectangular filter only on idler
-        if 0:
-            if (li < (lc - bwh) or li > (lc + bwh)):
-                return (0)
-            else:
-                return (1)
+        return [np.abs(pea) ** 2, np.abs(pma) ** 2, np.abs(jsa) ** 2]
 
     def GetEffectivePP(self, m, Tcp, PPguess, lp, refidxfunc):
         self.nx = refidxfunc[0]
@@ -388,7 +625,7 @@ class JSI:
         self.nz = refidxfunc[2]
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw):
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
         print('start calculating JSA or JSI')
         #
         # pumpwl: Pump wavelength
@@ -407,9 +644,7 @@ class JSI:
 
         self.sigrange = signalrange
         self.idrange = idlerrange
-        self.nx = refidxfunc[0]
-        self.ny = refidxfunc[1]
-        self.nz = refidxfunc[2]
+        self.nx, self.ny, self.nz = refidxfunc
 
         self.pwl = pumpwl
         self.tau = tau
@@ -421,12 +656,17 @@ class JSI:
 
         self.pumpshape = pumpshape
 
-        self.calcJSI = False
-        self.calcJSA = False
-        if plotJSI==False:
-            self.calcJSA = True
-        else:
-            self.calcJSI = True
+        self.focusing_enable = focusing_enable
+        self.fibre_coupling_enable = fibre_coupling_enable
+        self.focallength_pump = focallength_pump
+        self.focallength_signal = focallength_signal
+        self.focallength_idler = focallength_idler
+        self.Beamdiameter_pump = beamdiameter_pump
+        self.Beamdiameter_signal = beamdiameter_signal
+        self.Beamdiameter_idler = beamdiameter_idler
+
+        self.calcJSI = plotJSI
+        self.calcJSA = not plotJSI
             
         self.calcGaussian = False
         self.calcSech = False
@@ -434,43 +674,27 @@ class JSI:
         self.calcCWGauss = False
         if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
+            trifunc = self.PEAnPMAnJSAgauss if self.calcJSA else self.PEInPMInJSIgauss
+            tau = self.tau
         elif self.pumpshape.casefold() == 'sinc':
             self.calcSinc = True
+            trifunc = self.PEAnPMAnJSAsinc if self.calcJSA else self.PEInPMInJSIsinc
+            tau = self.tau
+        elif self.pumpshape.casefold() == 'sech^2':
+            self.calcSech = True
+            trifunc = self.PEAnPMAnJSAsech if self.calcJSA else self.PEInPMInJSIsech
+            tau = self.tau
         elif self.pumpshape.casefold() == 'cw':
             self.calcCWGauss = True
+            trifunc = self.PEAnPMAnJSAcwgauss if self.calcJSA else self.PEInPMInJSIcwgauss
+            tau = self.pumpcwbw
         else:
-            self.calcSech = True
+            print('Error: No valid pump shape specified. Please choose between "gaussian", "sech^2", "sinc" and "cw".')
 
         X, Y = np.meshgrid(self.sigrange, self.idrange)
 
-        if self.calcJSA:
-            if self.calcGaussian:
-                [PE, PM, JS] = self.PEAnPMAnJSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSech:
-                [PE, PM, JS] = self.PEAnPMAnJSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSinc:
-                [PE, PM, JS] = self.PEAnPMAnJSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcCWGauss:
-                [PE, PM, JS] = self.PEAnPMAnJSAcwgauss(self.pwl, X, Y, self.pumpcwbw, self.T, self.PP, self.L)
-        elif self.calcJSI:
-            if self.calcGaussian:
-                #arguments=[(self.pwl, swl[0], iwl[0], self.tau, self.T, self.PP, self.L) for swl, iwl in zip(self.sigrange, self.idrange)]
-                #print(arguments[0])
-                #with mp.Pool(processes=8) as pool:
-                    #PE, PM, JS = pool.starmap(self.PEInPMInJSIgauss, arguments)
-                ##PE = np.array(PE)
-                ##PM = np.array(PM)
-                ##JS = np.array(JS)
-                [PE, PM, JS] = self.PEInPMInJSIgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSech:
-                [PE, PM, JS] = self.PEInPMInJSIsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSinc:
-                [PE, PM, JS] = self.PEInPMInJSIsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcCWGauss:
-                [PE, PM, JS] = self.PEInPMInJSIcwgauss(self.pwl, X, Y, self.pumpcwbw, self.T, self.PP, self.L)
-        else:
-            print('Error: Calc neither JSA nor JSI.')
-            return
+        [PE, PM, JS] = trifunc(self.pwl, X, Y, tau, self.T, self.PP, self.L)
+        
         if filterfuncs[0]==None and filterfuncs[1]==None:
             self.useFilter = False
         else:
@@ -878,7 +1102,7 @@ class JSI:
 #         return [HOMI,vis,homfwhm]
     
     #by numerical integration
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
         t0=datetime.now()
         self.m = qpmorder
         [self.nx, self.ny, self.nz] = refidxfunc
@@ -887,57 +1111,101 @@ class JSI:
         # Ansari, 2013 msc thesis
         #
 
+        self.focusing_enable = focusing_enable
+        self.fibre_coupling_enable = fibre_coupling_enable
+        self.focallength_pump = focallength_pump
+        self.focallength_signal = focallength_signal
+        self.focallength_idler = focallength_idler
+        self.Beamdiameter_pump = beamdiameter_pump
+        self.Beamdiameter_signal = beamdiameter_signal
+        self.Beamdiameter_idler = beamdiameter_idler
+
         X, Y = np.meshgrid(signalrange, idlerrange)
 
         self.calcGaussian, self.calcSech, self.calcSinc, self.calcCW = False, False, False, False
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             jsafunc = self.JSAgauss
+            peafunc = self.PEAgauss
+            pmafunc = self.PMAgauss
             tau=tau
         elif pumpshape.casefold() =='sech^2':
             self.calcSech = True
             jsafunc = self.JSAsech
+            peafunc = self.PEAsech
+            pmafunc = self.PMAsech
             tau=tau
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
             jsafunc = self.JSAsinc
+            peafunc = self.PEAsinc
+            pmafunc = self.PMAsinc
             tau=tau
         elif pumpshape.casefold() == 'cw':
             self.calcCW = True
             jsafunc = self.JSAcwgauss
+            peafunc = self.PEAcwgauss
+            pmafunc = self.PMAcwgauss
             tau=pumpcwbw
+
+        cl = self.thermexpfactor(temp)*cl
+        # print(refidx_delay )
+        # print(type(refidx_delay))
+        # print(f"{ns=}")
+        # print(f"{ni=}")
+        # print(f"{refidx_delay=}")
+
+        # jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+        # jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
+        # jsa2 = np.conjugate(jsa2[::-1,::-1].T)
+        # #jsa2 = np.conjugate(jsa2)
+        # jsi = jsa1*np.conjugate(jsa1)
+        # norm = np.sum(jsi)
+
+        # if 0:#seems to work for sech^2 773nm pulsed
+        #     def homf(i):
+        #         return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
+        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
+        #         futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+        #         HOMI = [f.result() for f in futures]
+        #
+        #     HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+        #
+        # elif 0:#seems to work for sech^2 773nm pulsed
+        #     def homf(i):
+        #         jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+        #         jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
+        #         #jsa2 = np.conjugate(jsa2)
+        #         return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-np.conjugate(jsa1)*np.exp(-1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i]))**2))
+        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
+        #         futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+        #         HOMI = np.array([f.result() for f in futures])
+        #
+        #
+        #
+        #
+        #
+        #
+        # jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+        # jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
+        # jsi = jsa1*np.conjugate(jsa1)
+        # #norm = np.sum(jsi)
+        # HOMI = np.abs(HOMI/norm)
 
         jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
         jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-        jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-        #jsa2 = np.conjugate(jsa2)
-        jsi = jsa1*np.conjugate(jsa1)
-        norm = np.sum(jsi)
+        jsa2c = np.conjugate(jsa2)
 
-        if 0:#seems to work for sech^2 773nm pulsed
-            def homf(i):
-                return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-                futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-                HOMI = [f.result() for f in futures]
+        norm = np.sum(scipy.integrate.simpson( ( np.abs(jsa1)**2)))
+        def homf(i):
+            return  np.sum(scipy.integrate.simpson( np.abs(jsa1)**2 \
+                   - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i])   ))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
+            futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
+            HOMI = np.array([f.result() for f in futures])
 
-            HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
 
-        else:#seems to work for sech^2 773nm pulsed
-            def homf(i):
-                jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
-                jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-                jsa2 = np.conjugate(jsa2)
-                return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i]))**2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-                futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-                HOMI = np.array([f.result() for f in futures])
-
-            jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
-            jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-            jsi = jsa1*np.conjugate(jsa1)
-            norm = np.sum(jsi)
-            HOMI = np.abs(HOMI/norm)
+        HOMI = np.real(HOMI/norm)
 
         # determine visibility
         vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
@@ -960,8 +1228,17 @@ class JSI:
         print('calculating HOM took', (t1-t0).total_seconds(), 's')
         return [HOMI,vis,homfwhm]
 
-    def getHOMinterferenceT(self, pwl, polingp, qpmorder, tau, cl, signalrange, idlerrange, JSIresolution, pumpshape, temprange, homphase, refidxfunc, filterfuncs, pumpcwbw):
+    def getHOMinterferenceT(self, pwl, polingp, qpmorder, tau, cl, signalrange, idlerrange, JSIresolution, pumpshape, temprange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
         t0=datetime.now()
+        self.focusing_enable = focusing_enable
+        self.fibre_coupling_enable = fibre_coupling_enable
+        self.focallength_pump = focallength_pump
+        self.focallength_signal = focallength_signal
+        self.focallength_idler = focallength_idler
+        self.Beamdiameter_pump = beamdiameter_pump
+        self.Beamdiameter_signal = beamdiameter_signal
+        self.Beamdiameter_idler = beamdiameter_idler
+        
         self.m = qpmorder
         [self.nx, self.ny, self.nz] = refidxfunc
         #
@@ -974,80 +1251,143 @@ class JSI:
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
             jsafunc = self.JSAgauss
+            peafunc = self.PEAgauss
+            pmafunc = self.PMAgauss
             tau=tau
         elif pumpshape.casefold() =='sech^2':
             self.calcSech = True
             jsafunc = self.JSAsech
+            peafunc = self.PEAsech
+            pmafunc = self.PMAsech
             tau=tau
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
             jsafunc = self.JSAsinc
+            peafunc = self.PEAsinc
+            pmafunc = self.PMAsinc
             tau=tau
         elif pumpshape.casefold() == 'cw':
             self.calcCW = True
             jsafunc = self.JSAcwgauss
+            peafunc = self.PEAcwgauss
+            pmafunc = self.PMAcwgauss
             tau=pumpcwbw
 
+        # if 0:
+        #     jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
+        #     jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
+        #     jsa2 = np.conjugate(jsa2[::-1,::-1].T)
+        #     #jsa2 = np.conjugate(jsa2)
+        #     jsi = jsa1*np.conjugate(jsa1)
+        #     norm = np.sum(jsi)
+        #
+        #     def homf(i):
+        #         jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
+        #         jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
+        #         #jsa2 = np.conjugate(jsa2)
+        #         return  np.sum(scipy.integrate.simpson(jsa1*jsa2))
+        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
+        #         futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
+        #         HOMI = [f.result() for f in futures]
+        #
+        #     HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+        #
+        #     # determine visibility
+        #     vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+        # elif 0: #this seems to work for sech^2, 773nm
+        #     jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
+        #     jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
+        #     jsa2 = np.conjugate(jsa2[::-1,::-1].T)
+        #     #jsa2 = np.conjugate(jsa2)
+        #     jsi = jsa1*np.conjugate(jsa1)
+        #     norm = np.sum(jsi)
+        #
+        #     def homf(i):
+        #         jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
+        #         jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
+        #         jsa2 = np.conjugate(jsa2)
+        #         return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2)**2))
+        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
+        #         futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
+        #         HOMI = np.array([f.result() for f in futures])
+        #
+        #     #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+        #     # determine visibility
+        #     HOMI = HOMI/np.max(HOMI)
+        #     vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+        #
+            # #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+            # # determine visibility
+            # HOMI = HOMI/np.max(HOMI)
+            # vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+        # else:
 
-        if 0:
-            jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
-            jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
-            jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-            #jsa2 = np.conjugate(jsa2)
-            jsi = jsa1*np.conjugate(jsa1)
-            norm = np.sum(jsi)
 
-            def homf(i):
-                jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
-                jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
-                #jsa2 = np.conjugate(jsa2)
-                return  np.sum(scipy.integrate.simpson(jsa1*jsa2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-                futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
-                HOMI = [f.result() for f in futures]
+        if 1:
+            delay = 1.7523 * 10 ** (-12)
+        else:
+            if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
+                delay=(1.47+0.28)*10**(-12) #404.87 source
+                print("warning: custom delay applied")
+            elif (pwl>770*10**(-9)) and (pwl<780*10**(-9)):
+                delay=(4.1+0.32)*10**(-12) #773 source
+                print("warning: custom delay applied")
+            else:
+                print("warning: custom delay NOT applied")
 
-            HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
+        def homf(i):
+            clt = self.thermexpfactor(temprange[i])*cl
+            jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, clt)
+            jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, clt)
+            jsa2c = np.conjugate(jsa2)
+            # integrand_norm = pea_abssqu * (  np.abs(jsa1)**2)
+            # norm = scipy.integrate.simpson(
+            #         scipy.integrate.simpson(
+            #             integrand_norm,
+            #             x=idlerrange, axis=-1  ),
+            #         x=signalrange, axis=0  )
+            #
+            # integrand = pea_abssqu * (
+            #                     np.abs(jsa1)**2 \
+            #                         - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delay)   )
+            # return  scipy.integrate.simpson(
+            #         scipy.integrate.simpson(
+            #             integrand,
+            #             x=signalrange, axis=-1  ),
+            #         x=idlerrange, axis=0  ) /norm
+            norm = np.sum(scipy.integrate.simpson(  np.abs(jsa1)**2  )  )
 
-            # determine visibility
-            vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-        else: #this seems to work for sech^2, 773nm
-            jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
-            jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
-            jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-            #jsa2 = np.conjugate(jsa2)
-            jsi = jsa1*np.conjugate(jsa1)
-            norm = np.sum(jsi)
+            return  np.sum(scipy.integrate.simpson( np.abs(jsa1)**2 \
+                                    - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delay)   )) / norm
+        max_workers = len(os.sched_getaffinity(0))
+        if self.focusing_enable or self.fibre_coupling_enable:
+            # Spatial mode is memory-heavy; cap workers to limit peak RAM.
+            max_workers = max_workers//2
 
-            def homf(i):
-                jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
-                jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
-                jsa2 = np.conjugate(jsa2)
-                return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2)**2))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-                futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
-                HOMI = np.array([f.result() for f in futures])
-
-            #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-            # determine visibility
-            HOMI = HOMI/np.max(HOMI)
-            vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
+            HOMI = np.array([f.result() for f in futures])
 
         # calc FWHM
-        temprangeneg = temprange[:int(np.floor(len(temprange)/2))]
-        temprangepos = temprange[int(np.floor(len(temprange)/2)):]
-        HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
-        HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
-        visinterpolfneg = scipy.interpolate.interp1d(temprangeneg, HOMIneg-0.25, fill_value='extrapolate')
-        visinterpolfpos = scipy.interpolate.interp1d(temprangepos, HOMIpos-0.25, fill_value='extrapolate')
-        negrootstartest=temprangeneg[int(np.floor(len(temprangeneg)/2))]
-        posrootstartest=temprangepos[int(np.floor(len(temprangepos)/2))]
-        negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
-        posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
+        if 0:
+            temprangeneg = temprange[:int(np.floor(len(temprange)/2))]
+            temprangepos = temprange[int(np.floor(len(temprange)/2)):]
+            HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
+            HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
+            visinterpolfneg = scipy.interpolate.interp1d(temprangeneg, HOMIneg-0.25, fill_value='extrapolate')
+            visinterpolfpos = scipy.interpolate.interp1d(temprangepos, HOMIpos-0.25, fill_value='extrapolate')
+            negrootstartest=temprangeneg[int(np.floor(len(temprangeneg)/2))]
+            posrootstartest=temprangepos[int(np.floor(len(temprangepos)/2))]
+            negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
+            posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
 
-        homfwhm=posroot[0]-negroot[0]
+            homfwhm=posroot[0]-negroot[0]
 
-        t1=datetime.now()
-        print('calculating HOM took', (t1-t0).total_seconds(), 's')
+            t1=datetime.now()
+            print('calculating HOM took', (t1-t0).total_seconds(), 's')
+        else:
+            homfwhm=0
+            vis=0
         return [HOMI,vis,homfwhm]
 
     def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filterfuncs, JSIresolution, pumpshape, decprec, usetaucf):
@@ -1057,28 +1397,34 @@ class JSI:
         self.calcGaussian = False
         self.calcSech = False
         self.calcSinc = False
+        self.calcCWGauss = False
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
+            jsifunc = self.JSIgauss
         elif pumpshape.casefold() =='sech^2':
             self.calcSech = True
+            jsifunc = self.JSIsech
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
+            jsifunc = self.JSIsinc
+        elif pumpshape.casefold() =='cw':
+            self.calcCWGauss = True
+            jsifunc = self.JSIcwgauss
+        else:
+            print('ERROR: Unknown pump beamshape')
 
         fwhmsig=[]
         fwhmid=[]
-        
+
         #TMP
         self.useFilter=False
-        
+
         for h in range(0,len(taurange)):
-            if self.calcGaussian:
-                result =self.JSIgauss(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
-            elif self.calcSech: 
-                result = self.JSIsech(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
-            elif self.calcSinc: 
-                result = self.JSIsinc(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)-0.5
-            else:
-                print('ERROR: Unknown pump beamshape')
+            result =jsifunc(pwl, signalrange[:,None], idlerrange[None,:], taurange[h], temp, polingp*self.thermexpfactor(temp), cl)
+            maximum = np.max(result)
+            result = result/maximum-0.5
+
+            print(f"{result=}")
             if self.useFilter:
                 self.filtersignalfunction = filterfuncs[0]
                 self.filteridlerfunction = filterfuncs[1]
@@ -1098,13 +1444,14 @@ class JSI:
             
             result=result.round(decprec)
             idcs=np.where(result==0) 
+            print(f"{idcs=}")
+            print(f"{result=}")
             for i in range(0,len(idcs[0])):
                     hmptss.append(signalrange[idcs[0][i]]*10**9)
                     hmptsi.append(idlerrange[idcs[1][i]]*10**9)
-                    
+            print(f"{hmptss=}")
             if len(hmptss) != 0:
                 if len(hmptsi) !=0:
                     fwhmsig.append(max(hmptss)-min(hmptss))
                     fwhmid.append(max(hmptsi)-min(hmptsi))
-            
         return [fwhmsig,fwhmid]

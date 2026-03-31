@@ -83,6 +83,15 @@ class Settings:
         self.config.append(['FWHM plot resolution',10])
         self.config.append(['FWHM decimal precision',3])
 
+        self.config.append(["Enable Fibre Coupling", False])
+        self.config.append(["Enable Focusing", False])
+        self.config.append(["Beamdiameter Pump", 1.0])
+        self.config.append(["Beamdiameter Signal", 1.0])
+        self.config.append(["Beamdiameter Idler", 1.0])
+        self.config.append(["Focallength Pump", 10.0])
+        self.config.append(["Focallength Signal", 10.0])
+        self.config.append(["Focallength Idler", 10.0])
+
     def loadSettings(self):
         if Path('config.yaml').is_file():
             with open('config.yaml') as stream:
@@ -92,8 +101,9 @@ class Settings:
                     tmpconfig = tmpconfig.load(stream)
                     for i in range(0,len(tmpconfig)):
                         [key,val] = tmpconfig[i]
-                        res = self.find(self.config,key)
-                        if (res==-1):
+                        try:
+                            res = self.find(self.config,key)
+                        except ValueNotFoundError:
                             pass
                         else:
                             self.set(key,val)
@@ -110,7 +120,7 @@ class Settings:
         try:
             idx,unused=self.find(self.config,key)
         except ValueNotFoundError:
-            return default
+            return None
         return self.config[idx][1]
 
     def find(self, l, elem):

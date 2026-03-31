@@ -72,6 +72,7 @@ class GUI(QMainWindow):
         self.ui_layoutPlotPMC = self.initLayoutPlotPMC()
         self.ui_layoutPlotJSI = self.initLayoutPlotJSI()
         self.ui_layoutPurity = self.initLayoutPurity()
+        self.ui_layoutFocusing = self.initLayoutFocusing()
         self.ui_layoutGetEffPP = self.initLayoutGetEffPP()
         self.ui_layoutTcp = self.initLayoutTcp()
         self.ui_layoutHOM = self.initLayoutHOM()
@@ -95,6 +96,8 @@ class GUI(QMainWindow):
         self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3)
         # Group: Crossing point temperature vs different variables
         self.ui_layout.addLayout(self.ui_layoutTcp, 3, 3)
+        # Group: Focusing
+        self.ui_layout.addLayout(self.ui_layoutFocusing, 1, 4)
         # Group: HOM
         self.ui_layout.addLayout(self.ui_layoutHOM, 2, 4)
         #Group: Plot FWHM of marginal spectral
@@ -604,6 +607,63 @@ class GUI(QMainWindow):
         self.ui_layoutPurity.addWidget(self.ui_PurityGroupBox)
 
         return self.ui_layoutPurity
+    
+    def initLayoutFocusing(self):
+        self.ui_layoutFocusing = QGridLayout()
+        self.ui_FocusingGroupBox = QGroupBox()
+        self.ui_layoutFocusingGroupBox = QGridLayout()
+
+        self.ui_FocusingGroupBox.setTitle('Focusing')
+
+        self.ui_Focusing_FiberCoupling_CB = QCheckBox('Enable Fibre Coupling')
+        self.ui_Focusing_FocusingEnable_CB = QCheckBox('Enable Focusing')
+        self.ui_Focusing_Focallength_Pump_Label = QLabel('Pump Lens f [mm]')
+        self.ui_Focusing_Focallength_Pump_SB = QDoubleSpinBox()
+        self.ui_Focusing_Focallength_Pump_SB.setMinimum(0)
+        self.ui_Focusing_Focallength_Pump_SB.setMaximum(1000)
+        self.ui_Focusing_Focallength_Signal_Label = QLabel('Signal Lens f [mm]')
+        self.ui_Focusing_Focallength_Signal_SB = QDoubleSpinBox()
+        self.ui_Focusing_Focallength_Signal_SB.setMinimum(0)
+        self.ui_Focusing_Focallength_Signal_SB.setMaximum(1000)
+        self.ui_Focusing_Focallength_Idler_Label = QLabel('Idler Lens f [mm]')
+        self.ui_Focusing_Focallength_Idler_SB = QDoubleSpinBox()
+        self.ui_Focusing_Focallength_Idler_SB.setMinimum(0)
+        self.ui_Focusing_Focallength_Idler_SB.setMaximum(1000)
+
+        self.ui_Focusing_Beamdiameter_Pump_Label = QLabel('Pump diameter [mm]')
+        self.ui_Focusing_Beamdiameter_Pump_SB = QDoubleSpinBox()
+        self.ui_Focusing_Beamdiameter_Pump_SB.setMinimum(0)
+        self.ui_Focusing_Beamdiameter_Pump_SB.setMaximum(100)
+        self.ui_Focusing_Beamdiameter_Signal_Label = QLabel('Signal diameter [mm]')
+        self.ui_Focusing_Beamdiameter_Signal_SB = QDoubleSpinBox()
+        self.ui_Focusing_Beamdiameter_Signal_SB.setMinimum(0)
+        self.ui_Focusing_Beamdiameter_Signal_SB.setMaximum(100)
+        self.ui_Focusing_Beamdiameter_Idler_Label = QLabel('Idler diameter [mm]')
+        self.ui_Focusing_Beamdiameter_Idler_SB = QDoubleSpinBox()
+        self.ui_Focusing_Beamdiameter_Idler_SB.setMinimum(0)
+        self.ui_Focusing_Beamdiameter_Idler_SB.setMaximum(100)
+
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FiberCoupling_CB, 1, 1, 1, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FocusingEnable_CB, 2, 1, 1, 2)
+
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Pump_Label, 3, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Pump_SB, 3, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Signal_Label, 4, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Signal_SB, 4, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Idler_Label, 5, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Idler_SB, 5, 2)
+
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Pump_Label, 6, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Pump_SB, 6, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Signal_Label, 7, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Signal_SB, 7, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Idler_Label, 8, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Idler_SB, 8, 2)
+
+        self.ui_FocusingGroupBox.setLayout(self.ui_layoutFocusingGroupBox)
+        self.ui_layoutFocusing.addWidget(self.ui_FocusingGroupBox)
+
+        return self.ui_layoutFocusing
 
     def initLayoutGetEffPP(self):
         self.ui_layoutGetEffPP = QGridLayout()
@@ -734,6 +794,15 @@ class GUI(QMainWindow):
         self.PurityTauresolution = self.config.get("Purity tau resolution")
         self.PurityWLrange = self.config.get("Purity wavelength range")
 
+        self.Focusing_enable = self.config.get("Enable Focusing")
+        self.Fibrecoupling_enable = self.config.get("Enable Fibre Coupling")
+        self.Focallength_pump = self.config.get("Focallength Pump")
+        self.Focallength_signal  = self.config.get("Focallength Signal")
+        self.Focallength_idler  = self.config.get("Focallength Idler")
+        self.Beamdiameter_pump  = self.config.get("Beamdiameter Pump")
+        self.Beamdiameter_signal  = self.config.get("Beamdiameter Signal")
+        self.Beamdiameter_idler  = self.config.get("Beamdiameter Idler")
+
         self.SIfilterIdlerType = self.config.get("SI filter Idler Type")
         self.SIfilterSignalType = self.config.get("SI filter Signal Type")
         self.SIfilterIdlerCenterWL = self.config.get("SI filter Idler center wavelength")
@@ -782,6 +851,14 @@ class GUI(QMainWindow):
         self.ui_Purity_WLresolution_SB.setValue(self.PurityWLresolution)
         self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange * 10 ** 9)
         self.ui_Purity_Tauresolution_SB.setValue(self.PurityTauresolution)
+        self.ui_Focusing_FocusingEnable_CB.setChecked(self.Focusing_enable)
+        self.ui_Focusing_FiberCoupling_CB.setChecked(self.Fibrecoupling_enable)
+        self.ui_Focusing_Focallength_Pump_SB.setValue(self.Focallength_pump*10**3)
+        self.ui_Focusing_Focallength_Signal_SB.setValue(self.Focallength_signal*10**3)
+        self.ui_Focusing_Focallength_Idler_SB.setValue(self.Focallength_idler*10**3)
+        self.ui_Focusing_Beamdiameter_Pump_SB.setValue(self.Beamdiameter_pump*10**3)
+        self.ui_Focusing_Beamdiameter_Signal_SB.setValue(self.Beamdiameter_signal*10**3)
+        self.ui_Focusing_Beamdiameter_Idler_SB.setValue(self.Beamdiameter_idler*10**3)
         idx = 0
         idx = self.ui_SIfilterIdlerType_CB.findText(self.SIfilterIdlerType)
         self.ui_SIfilterIdlerType_CB.setCurrentIndex(idx)
@@ -852,6 +929,14 @@ class GUI(QMainWindow):
         self.ui_Purity_WLresolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_WLrange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_Tauresolution_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_FocusingEnable_CB.stateChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_FiberCoupling_CB.stateChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Focallength_Pump_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Focallength_Signal_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Focallength_Idler_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Beamdiameter_Pump_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Beamdiameter_Signal_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_Beamdiameter_Idler_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
@@ -1958,6 +2043,15 @@ class GUI(QMainWindow):
         self.PurityWLrange = self.ui_Purity_WLrange_SB.value() * 10 ** (-9)
         self.PurityTauresolution = self.ui_Purity_Tauresolution_SB.value()
 
+        self.Focallength_idler = self.ui_Focusing_Focallength_Idler_SB.value() * 10 ** (-3)
+        self.Focallength_signal = self.ui_Focusing_Focallength_Signal_SB.value() * 10 ** (-3)
+        self.Focallength_pump = self.ui_Focusing_Focallength_Pump_SB.value() * 10 ** (-3)
+        self.Beamdiameter_idler = self.ui_Focusing_Beamdiameter_Idler_SB.value() * 10 ** (-3)
+        self.Beamdiameter_signal = self.ui_Focusing_Beamdiameter_Signal_SB.value() * 10 ** (-3)
+        self.Beamdiameter_pump = self.ui_Focusing_Beamdiameter_Pump_SB.value() * 10 ** (-3)
+        self.Focusing_enabled = self.ui_Focusing_FocusingEnable_CB.isChecked()
+        self.Fibrecoupling_enabled = self.ui_Focusing_FiberCoupling_CB.isChecked()
+
         self.SIfilterIdlerType = self.ui_SIfilterIdlerType_CB.currentText()
         self.SIfilterSignalType = self.ui_SIfilterSignalType_CB.currentText()
         self.SIfilterIdlerCenterWL = self.ui_SIfilterIdlerCenterWL_SB.value() * 10 ** (-9)
@@ -2018,6 +2112,16 @@ class GUI(QMainWindow):
         self.config.set("Purity wavelength resolution", self.PurityWLresolution)
         self.config.set("Purity wavelength range", self.PurityWLrange)
         self.config.set("Purity tau resolution", self.PurityTauresolution)
+
+        self.config.set("Focallength Idler", self.Focallength_idler)
+        self.config.set("Focallength Signal", self.Focallength_signal)
+        self.config.set("Focallength Pump", self.Focallength_pump)
+        self.config.set("Beamdiameter Idler", self.Beamdiameter_idler)
+        self.config.set("Beamdiameter Signal", self.Beamdiameter_signal)
+        self.config.set("Beamdiameter Pump", self.Beamdiameter_pump)
+        self.config.set("Enable Focusing", self.Focusing_enabled)
+        self.config.set("Enable Fibre Coupling", self.Fibrecoupling_enabled)
+
 
         self.config.set("SI filter Idler Type", self.SIfilterIdlerType)
         self.config.set("SI filter Signal Type", self.SIfilterSignalType)

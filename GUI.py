@@ -615,7 +615,7 @@ class GUI(QMainWindow):
 
         self.ui_FocusingGroupBox.setTitle('Focusing')
 
-        self.ui_Focusing_FiberCoupling_CB = QCheckBox('Enable Fibre Coupling')
+        self.ui_Focusing_FibreCoupling_CB = QCheckBox('Enable Fibre Coupling')
         self.ui_Focusing_FocusingEnable_CB = QCheckBox('Enable Focusing')
         self.ui_Focusing_Focallength_Pump_Label = QLabel('Pump Lens f [mm]')
         self.ui_Focusing_Focallength_Pump_SB = QDoubleSpinBox()
@@ -643,7 +643,7 @@ class GUI(QMainWindow):
         self.ui_Focusing_Beamdiameter_Idler_SB.setMinimum(0)
         self.ui_Focusing_Beamdiameter_Idler_SB.setMaximum(100)
 
-        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FiberCoupling_CB, 1, 1, 1, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FibreCoupling_CB, 1, 1, 1, 2)
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FocusingEnable_CB, 2, 1, 1, 2)
 
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Focallength_Pump_Label, 3, 1)
@@ -852,7 +852,7 @@ class GUI(QMainWindow):
         self.ui_Purity_WLrange_SB.setValue(self.PurityWLrange * 10 ** 9)
         self.ui_Purity_Tauresolution_SB.setValue(self.PurityTauresolution)
         self.ui_Focusing_FocusingEnable_CB.setChecked(self.Focusing_enable)
-        self.ui_Focusing_FiberCoupling_CB.setChecked(self.Fibrecoupling_enable)
+        self.ui_Focusing_FibreCoupling_CB.setChecked(self.Fibrecoupling_enable)
         self.ui_Focusing_Focallength_Pump_SB.setValue(self.Focallength_pump*10**3)
         self.ui_Focusing_Focallength_Signal_SB.setValue(self.Focallength_signal*10**3)
         self.ui_Focusing_Focallength_Idler_SB.setValue(self.Focallength_idler*10**3)
@@ -930,7 +930,7 @@ class GUI(QMainWindow):
         self.ui_Purity_WLrange_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Purity_Tauresolution_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_FocusingEnable_CB.stateChanged.connect(self.getVarsFromGUI)
-        self.ui_Focusing_FiberCoupling_CB.stateChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_FibreCoupling_CB.stateChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_Focallength_Pump_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_Focallength_Signal_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_Focallength_Idler_SB.valueChanged.connect(self.getVarsFromGUI)
@@ -1380,6 +1380,14 @@ class GUI(QMainWindow):
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
         spectralfilters = [ffs, ffi]
+        focusing_enable=self.Focusing_enable
+        fibre_coupling_enable=self.Fibrecoupling_enable
+        focallength_pump=self.Focallength_pump
+        focallength_signal=self.Focallength_signal
+        focallength_idler=self.Focallength_idler
+        beamdiameter_pump=self.Beamdiameter_pump
+        beamdiameter_signal=self.Beamdiameter_signal
+        beamdiameter_idler=self.Beamdiameter_idler
 
         plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
         if plotJSI==True:
@@ -1393,11 +1401,14 @@ class GUI(QMainWindow):
         calcGaussian=False
         calcSech=False
         calcCW=False
-        if pumpshape == 'Gaussian':
+        calcSinc=False
+        if pumpshape.casefold() == 'gaussian':
             calcGaussian=True
-        elif pumpshape == 'Sech^2':
+        elif pumpshape.casefold() == 'sech^2':
             calcSech=True
-        elif pumpshape == 'CW':
+        elif pumpshape.casefold() == 'sinc':
+            calcSinc=True
+        elif pumpshape.casefold() == 'cw':
             calcCW=True
         else:
             print('Error: pump shape unknown to JSA/JSI plot routine')
@@ -1414,15 +1425,14 @@ class GUI(QMainWindow):
         signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
         idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
 
-
         if PROFILE:
             profile = cProfile.Profile()
             profile.runcall(JSI().getplots, pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw)
+                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
             ps = pstats.Stats(profile)
             ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw)
+                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw, focusing_enable,fibre_coupling_enable,focallength_pump,focallength_signal,focallength_idler,beamdiameter_pump,beamdiameter_signal,beamdiameter_idler)
 
         #
         # plotting
@@ -1824,6 +1834,15 @@ class GUI(QMainWindow):
         JSIresolution = self.JSIresolution
         JSIwlrange = self.JSIwlRange
 
+        focusing_enable=self.Focusing_enable
+        fibre_coupling_enable=self.Fibrecoupling_enable
+        focallength_pump=self.Focallength_pump
+        focallength_signal=self.Focallength_signal
+        focallength_idler=self.Focallength_idler
+        beamdiameter_pump=self.Beamdiameter_pump
+        beamdiameter_signal=self.Beamdiameter_signal
+        beamdiameter_idler=self.Beamdiameter_idler
+
         ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
         ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
         spectralfilters = [ffs, ffi]
@@ -1841,11 +1860,11 @@ class GUI(QMainWindow):
         if PROFILE:
             profile = cProfile.Profile()
             profile.runcall(JSI().getHOMinterference, pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
             ps = pstats.Stats(profile)
             ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw)
+                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler )
 
         datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
         np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
@@ -2049,8 +2068,8 @@ class GUI(QMainWindow):
         self.Beamdiameter_idler = self.ui_Focusing_Beamdiameter_Idler_SB.value() * 10 ** (-3)
         self.Beamdiameter_signal = self.ui_Focusing_Beamdiameter_Signal_SB.value() * 10 ** (-3)
         self.Beamdiameter_pump = self.ui_Focusing_Beamdiameter_Pump_SB.value() * 10 ** (-3)
-        self.Focusing_enabled = self.ui_Focusing_FocusingEnable_CB.isChecked()
-        self.Fibrecoupling_enabled = self.ui_Focusing_FiberCoupling_CB.isChecked()
+        self.Focusing_enable = self.ui_Focusing_FocusingEnable_CB.isChecked()
+        self.Fibrecoupling_enable = self.ui_Focusing_FibreCoupling_CB.isChecked()
 
         self.SIfilterIdlerType = self.ui_SIfilterIdlerType_CB.currentText()
         self.SIfilterSignalType = self.ui_SIfilterSignalType_CB.currentText()
@@ -2119,8 +2138,8 @@ class GUI(QMainWindow):
         self.config.set("Beamdiameter Idler", self.Beamdiameter_idler)
         self.config.set("Beamdiameter Signal", self.Beamdiameter_signal)
         self.config.set("Beamdiameter Pump", self.Beamdiameter_pump)
-        self.config.set("Enable Focusing", self.Focusing_enabled)
-        self.config.set("Enable Fibre Coupling", self.Fibrecoupling_enabled)
+        self.config.set("Enable Focusing", self.Focusing_enable)
+        self.config.set("Enable Fibre Coupling", self.Fibrecoupling_enable)
 
 
         self.config.set("SI filter Idler Type", self.SIfilterIdlerType)

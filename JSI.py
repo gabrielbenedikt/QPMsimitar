@@ -198,12 +198,6 @@ class JSI:
         return integral_real + 1j * integral_imag
 
     def _spatial_overlap_grid(self, dk, cl, lp, ls, li, temp=None):
-        """
-        Batched spatial overlap integration on a shared z-grid.
-
-        This avoids per-point scipy.quad calls and is substantially faster for
-        evaluating large wavelength grids.
-        """
         dk_arr, lp_arr, ls_arr, li_arr = np.broadcast_arrays(
             np.asarray(dk),
             np.asarray(lp),
@@ -230,7 +224,6 @@ class JSI:
         z = np.linspace(-cl_val / 2, cl_val / 2, npts)
         dz = z[1] - z[0]
 
-        # Memory-efficient Simpson integration: avoid storing a full (..., z) cube.
         weights = np.ones(npts)
         weights[1:-1:2] = 4.0
         weights[2:-1:2] = 2.0
@@ -752,8 +745,21 @@ class JSI:
         self.calcSinc = False
         if self.pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
+            pmafunc=self.PMAgauss
+            peafunc=self.PEAgauss
+        elif self.pumpshape.casefold() == 'sech^2':
+            self.calcSech = True
+            pmafunc=self.PMAsech
+            peafunc=self.PEAsech
         elif self.pumpshape.casefold() == 'sinc':
             self.calcSinc = True
+            pmafunc=self.PMAsinc
+            peafunc=self.PEAsinc
+        elif self.pumpshape.casefold() == 'cw':
+            self.calcCWGauss = True
+            pmafunc=self.PMAcwgauss
+            peafunc=self.PEAcwgauss
+
         else:
             self.calcSech = True
 
@@ -761,15 +767,11 @@ class JSI:
 
         purity = []
 
+        pma = pmafunc(self.deltak(self.lambdap(X, Y), X, Y, self.T, self.PP), self.L, self.pwl, X, Y, temp=self.T)
+
         for i in range(0, len(self.taurange)):
             self.tau = self.taurange[i]
-            # JSA
-            if self.calcGaussian:
-                JSA = self.JSAgauss(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSech:
-                JSA = self.JSAsech(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
-            elif self.calcSinc:
-                JSA = self.JSAsinc(self.pwl, X, Y, self.tau, self.T, self.PP, self.L)
+            JSA = pma * peafunc(self.pwl, X, Y, self.tau)
                 
             if self.useFilter:
                 self.filtersignalfunction = filterfuncs[0]
@@ -810,6 +812,7 @@ class JSI:
         #
         # pumpwl: Pump wavelength
         # signalrange: [double,double]: Signal wavelength range
+
         # idlerrange: [double,double]: Idler wavelength range
         # taurange: range of pump pulse durations
         # temp: Temperature
@@ -956,8 +959,6 @@ class JSI:
         self.Beamdiameter_signal = beamdiameter_signal
         self.Beamdiameter_idler = beamdiameter_idler
 
-        
-
         X, Y = np.meshgrid(signalrange, idlerrange)
 
         self.calcGaussian, self.calcSech, self.calcSinc, self.calcCW = False, False, False, False
@@ -993,17 +994,17 @@ class JSI:
 
 
         jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
+        jsi1 = np.abs(jsa1)**2
         jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-        jsa2c = np.conjugate(jsa2)
-
-        norm = np.sum(scipy.integrate.simpson( ( np.abs(jsa1)**2)))
+        jsa1t2c = jsa1 * np.conjugate(jsa2)
+        exp_prefac = -1j*2*np.pi*Constants().c*(1/X-1/Y)
+        norm = np.sum(scipy.integrate.simpson( jsi1 ))
         def homf(i):
-            return  scipy.integrate.simpson(scipy.integrate.simpson( np.abs(jsa1)**2 \
-                   - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i])   ))
+            return  scipy.integrate.simpson(scipy.integrate.simpson( jsi1 \
+                   - jsa1t2c * np.exp(exp_prefac*delayrange[i])   ))
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
             HOMI = np.array([f.result() for f in futures])
-
 
         HOMI = np.real(HOMI/norm)
 
@@ -1048,30 +1049,27 @@ class JSI:
         X, Y = np.meshgrid(signalrange, idlerrange)
 
         self.calcGaussian, self.calcSech, self.calcSinc, self.calcCW = False, False, False, False
+        pump_param = tau
         if pumpshape.casefold() =='gaussian':
             self.calcGaussian = True
-            jsafunc = self.JSAgauss
             peafunc = self.PEAgauss
             pmafunc = self.PMAgauss
-            tau=tau
         elif pumpshape.casefold() =='sech^2':
             self.calcSech = True
-            jsafunc = self.JSAsech
             peafunc = self.PEAsech
             pmafunc = self.PMAsech
-            tau=tau
         elif pumpshape.casefold() =='sinc':
             self.calcSinc = True
-            jsafunc = self.JSAsinc
             peafunc = self.PEAsinc
             pmafunc = self.PMAsinc
-            tau=tau
+            
         elif pumpshape.casefold() == 'cw':
             self.calcCW = True
-            jsafunc = self.JSAcwgauss
             peafunc = self.PEAcwgauss
             pmafunc = self.PMAcwgauss
-            tau=pumpcwbw
+            pump_param = pumpcwbw
+        else:
+            raise ValueError('Unknown pump shape')
 
         if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
             delay=(1.47+0.28)*10**(-12) #404.87 source
@@ -1082,14 +1080,43 @@ class JSI:
         else:
             print("warning: custom delay NOT applied")
 
+
+
+        const = Constants()
+        two_pi = 2 * np.pi
+        invX = 1.0 / X
+        invY = 1.0 / Y
+        lp_xy = self.lambdap(X, Y)
+        pea = peafunc(pwl, X, Y, pump_param)
+        exponential = np.exp(-1j * two_pi * const.c * (invX - invY) * delay)
+
+
         def homf(i):
             clt = self.thermexpfactor(temprange[i])*cl
-            jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, clt)
-            jsa2c = np.conjugate(jsafunc(pwl, Y, X, tau, temprange[i], polingp, clt))
-            norm = scipy.integrate.simpson(scipy.integrate.simpson(  np.abs(jsa1)**2  )  )
 
-            return  scipy.integrate.simpson(scipy.integrate.simpson( np.abs(jsa1)**2 \
-                                    - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delay)   )) / norm
+            # Build dk for both (X,Y) and (Y,X) using shared refractive-index evaluations.
+            ny_lp = self.ny(lp_xy, temprange[i])
+            ny_x = self.ny(X, temprange[i])
+            ny_y = self.ny(Y, temprange[i])
+            nz_x = self.nz(X, temprange[i])
+            nz_y = self.nz(Y, temprange[i])
+            pc = self.m / polingp
+
+            dk_xy = two_pi * (ny_lp / lp_xy - ny_x * invX - nz_y * invY - pc)
+            dk_yx = two_pi * (ny_lp / lp_xy - ny_y * invY - nz_x * invX - pc)
+
+            pma_xy = pmafunc(dk_xy, clt, pwl, X, Y, temp=temprange[i])
+            pma_yx = pmafunc(dk_yx, clt, pwl, Y, X, temp=temprange[i])
+
+            jsa1 = pea * pma_xy
+            jsi1 = np.abs(jsa1)**2
+            jsa2c = np.conjugate(pea * pma_yx)
+            norm = scipy.integrate.simpson(scipy.integrate.simpson( jsi1  )  )
+
+            return  scipy.integrate.simpson(scipy.integrate.simpson( jsi1 \
+                                    - jsa1 * jsa2c * exponential   )) / norm
+        
+
         max_workers = len(os.sched_getaffinity(0))
         if self.focusing_enable or self.fibre_coupling_enable:
             max_workers = max_workers//2
@@ -1113,11 +1140,13 @@ class JSI:
 
             homfwhm=posroot[0]-negroot[0]
 
-            t1=datetime.now()
-            print('calculating HOM took', (t1-t0).total_seconds(), 's')
+            
         else:
             homfwhm=0
             vis=0
+        t1=datetime.now()
+        print('calculating HOM took', (t1-t0).total_seconds(), 's')
+
         return [HOMI,vis,homfwhm]
 
     def getFWHMvstau(self, pwl, signalrange, idlerrange, temp, polingp, qpmorder, cl, taurange, refidxfunc, filterfuncs, JSIresolution, pumpshape, decprec, usetaucf):

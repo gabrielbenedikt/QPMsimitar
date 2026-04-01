@@ -937,170 +937,6 @@ class JSI:
 
         return Tcp
 
-#     #
-#     # "original" method that didn's work as expected
-#     #
-#     def getHOMinterference_orig(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs):
-#         t0=datetime.now()
-#         [self.nx, self.ny, self.nz] = refidxfunc
-#         #
-#         # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
-#         # Ansari, 2013 msc thesis
-#         #
-#         self.calcGaussian = False
-#         self.calcSech = False
-#         self.calcSinc = False
-#         if pumpshape.casefold() =='gaussian':
-#             self.calcGaussian = True
-#         elif pumpshape.casefold() =='sech^2':
-#             self.calcSech = True
-#         elif pumpshape.casefold() =='sinc':
-#             self.calcSinc = True
-# 
-#         X, Y = np.meshgrid(signalrange, idlerrange)
-# 
-#         HOMI = []
-# 
-#         if self.calcSech:
-#             jsa = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
-#             jsa_t = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
-#         elif self.calcGaussian:
-#             jsa = self.JSAgauss(pwl, X, Y, tau, temp, polingp, cl)
-#             jsa_t = self.JSAgauss(pwl, Y, X, tau, temp, polingp, cl)
-#         elif self.calcSinc:
-#             jsa = self.JSAsinc(pwl, X, Y, tau, temp, polingp, cl)
-#             jsa_t = self.JSAsinc(pwl, Y, X, tau, temp, polingp, cl)
-#         else:
-#             print('ERROR: Unknown pump beamshape')
-#         #jsa_t = jsa_t / np.sum(jsa_t)
-#         jsa_tcc = np.conjugate(jsa_t)
-#         # jsa should integrate to 1]
-#         np.save('jsa.npy', jsa)
-#         np.save('jsa_t.npy', jsa_t)
-#         np.save('X.npy', X)
-#         np.save('Y.npy', Y)
-#         jsa = jsa / np.sum(jsa)
-#         jsa_tcc = jsa_tcc / np.sum(jsa_tcc)
-#         
-#         #filters
-#         #self.useFilter = True ## TODO: why was this here? Oo
-#         self.filtermatrix = []
-#         self.filtersignalfunction = filterfuncs[0]
-#         self.filteridlerfunction = filterfuncs[1]
-#         if not (self.filtersignalfunction==None and self.filteridlerfunction == None):
-#             for i in range(0, len(signalrange)):
-#                 filtervector = []
-#                 for j in range(0, len(idlerrange)):
-#                     filterval = self.filteridlerfunction(signalrange[i]) * self.filtersignalfunction(idlerrange[j])
-#                     filtervector.append(filterval)
-#                 self.filtermatrix.append(filtervector)
-#             jsa = jsa*self.filtermatrix#
-#             jsa_tcc = jsa_tcc*np.transpose(self.filtermatrix)
-#         
-#         
-#         def homf(i):
-#             #phase = np.exp(1j*(2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i]+homphase))
-#             phase = np.exp(1j*(2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i]))
-#             jj = jsa*jsa_tcc*phase
-#             #ProbMX = 0.5 * (1 - np.sum(jsa_tcc*jsa*phase))
-#             ProbMX = 0.5 * (1 - np.sum(jj))
-#             return ProbMX
-#         
-#         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-#             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-#             HOMI = [f.result() for f in futures]
-# 
-#         # omit tiny imaginary parts
-#         HOMI = np.abs(HOMI)
-#         
-#         # determine visibility
-#         vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-# 
-#         # calc FWHM
-#         delayrangeneg = delayrange[:int(np.floor(len(delayrange)/2))]
-#         delayrangepos = delayrange[int(np.floor(len(delayrange)/2)):]
-#         HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
-#         HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
-#         visinterpolfneg = scipy.interpolate.interp1d(delayrangeneg, HOMIneg-0.25, fill_value='extrapolate')
-#         visinterpolfpos = scipy.interpolate.interp1d(delayrangepos, HOMIpos-0.25, fill_value='extrapolate')
-#         negrootstartest=delayrangeneg[int(np.floor(len(delayrangeneg)/2))]
-#         posrootstartest=delayrangepos[int(np.floor(len(delayrangepos)/2))]
-#         negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
-#         posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
-# 
-#         homfwhm=posroot[0]-negroot[0]
-# 
-#         t1=datetime.now()
-#         print('calculating HOM took', (t1-t0).total_seconds(), 's')
-#         return [HOMI,vis,homfwhm]
-    
-#     #adaptation of SPDCalc.org
-#     def getHOMinterference_new2(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs):
-#         t0=datetime.now()
-#         [self.nx, self.ny, self.nz] = refidxfunc
-#         #
-#         # https://arxiv.org/pdf/1211.0120.pdf (On the Purity and Indistinguishability of Down-Converted Photons. Osorio, Sangouard, thew 2012)
-#         # Ansari, 2013 msc thesis
-#         #
-#         self.calcSech = False
-#         self.calcSech = True
-# 
-#         X, Y = np.meshgrid(signalrange, idlerrange)
-# 
-#         HOMI = []
-#         
-#         jsa1 = self.JSAsech(pwl, X, Y, tau, temp, polingp, cl)
-#         jsa2 = self.JSAsech(pwl, Y, X, tau, temp, polingp, cl)
-#  
-#         jsi = self.JSIsech(pwl, X, Y, tau, temp, polingp, cl)
-#         norm = np.sum(jsi)
-# 
-#         jsa1_r = np.real(jsa1)
-#         jsa1_i = np.imag(jsa1)
-#         jsa2_r = np.real(jsa2[::-1,::-1].T)
-#         jsa2_i = np.imag(jsa2[::-1,::-1].T)
-#         
-#         def homf(i):
-#             ProbMX = 0;
-#             phase = 2*np.pi*Constants().c *(1/signalrange - 1/idlerrange.T)*delayrange[i]
-#             Tosc_real = np.cos(phase)
-#             Tosc_imag = np.sin(phase)
-#             arg2_real = Tosc_real*jsa2_r - Tosc_imag*jsa2_i
-#             arg2_imag = Tosc_real*jsa2_i + Tosc_imag*jsa2_r
-#             PM_real = (jsa1_r - arg2_real)
-#             PM_imag = (jsa1_i - arg2_imag)
-#             val =  PM_real**2 + PM_imag**2
-#             ProbMX = 0.25 * np.sum(val)
-#             return ProbMX
-#         
-#         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-#             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-#             HOMI = [f.result() for f in futures]
-# 
-# 
-#         HOMI = HOMI/norm
-# 
-#         # determine visibility
-#         vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-# 
-#         # calc FWHM
-#         delayrangeneg = delayrange[:int(np.floor(len(delayrange)/2))]
-#         delayrangepos = delayrange[int(np.floor(len(delayrange)/2)):]
-#         HOMIneg = HOMI[:int(np.floor(len(HOMI)/2))]
-#         HOMIpos = HOMI[int(np.floor(len(HOMI)/2)):]
-#         visinterpolfneg = scipy.interpolate.interp1d(delayrangeneg, HOMIneg-0.25, fill_value='extrapolate')
-#         visinterpolfpos = scipy.interpolate.interp1d(delayrangepos, HOMIpos-0.25, fill_value='extrapolate')
-#         negrootstartest=delayrangeneg[int(np.floor(len(delayrangeneg)/2))]
-#         posrootstartest=delayrangepos[int(np.floor(len(delayrangepos)/2))]
-#         negroot=scipy.optimize.fsolve(visinterpolfneg, negrootstartest)
-#         posroot=scipy.optimize.fsolve(visinterpolfpos, posrootstartest)
-# 
-#         homfwhm=posroot[0]-negroot[0]
-# 
-#         t1=datetime.now()
-#         print('calculating HOM took', (t1-t0).total_seconds(), 's')
-#         return [HOMI,vis,homfwhm]
-    
     #by numerical integration
     def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
         t0=datetime.now()
@@ -1119,6 +955,8 @@ class JSI:
         self.Beamdiameter_pump = beamdiameter_pump
         self.Beamdiameter_signal = beamdiameter_signal
         self.Beamdiameter_idler = beamdiameter_idler
+
+        
 
         X, Y = np.meshgrid(signalrange, idlerrange)
 
@@ -1149,48 +987,10 @@ class JSI:
             tau=pumpcwbw
 
         cl = self.thermexpfactor(temp)*cl
-        # print(refidx_delay )
-        # print(type(refidx_delay))
-        # print(f"{ns=}")
-        # print(f"{ni=}")
-        # print(f"{refidx_delay=}")
+        polingp = self.thermexpfactor(temp)*polingp
+        self.PP = polingp * self.thermexpfactor(temp)
+        self.L = cl * self.thermexpfactor(temp)
 
-        # jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
-        # jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-        # jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-        # #jsa2 = np.conjugate(jsa2)
-        # jsi = jsa1*np.conjugate(jsa1)
-        # norm = np.sum(jsi)
-
-        # if 0:#seems to work for sech^2 773nm pulsed
-        #     def homf(i):
-        #         return  np.sum(scipy.integrate.simpson(jsa1*jsa2*np.exp(1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i])))
-        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-        #         futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-        #         HOMI = [f.result() for f in futures]
-        #
-        #     HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-        #
-        # elif 0:#seems to work for sech^2 773nm pulsed
-        #     def homf(i):
-        #         jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
-        #         jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-        #         #jsa2 = np.conjugate(jsa2)
-        #         return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-np.conjugate(jsa1)*np.exp(-1j*2*np.pi*Constants().c*(1/signalrange-1/idlerrange.T)*delayrange[i]))**2))
-        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-        #         futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
-        #         HOMI = np.array([f.result() for f in futures])
-        #
-        #
-        #
-        #
-        #
-        #
-        # jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
-        # jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
-        # jsi = jsa1*np.conjugate(jsa1)
-        # #norm = np.sum(jsi)
-        # HOMI = np.abs(HOMI/norm)
 
         jsa1 = jsafunc(pwl, X, Y, tau, temp, polingp, cl)
         jsa2 = jsafunc(pwl, Y, X, tau, temp, polingp, cl)
@@ -1198,7 +998,7 @@ class JSI:
 
         norm = np.sum(scipy.integrate.simpson( ( np.abs(jsa1)**2)))
         def homf(i):
-            return  np.sum(scipy.integrate.simpson( np.abs(jsa1)**2 \
+            return  scipy.integrate.simpson(scipy.integrate.simpson( np.abs(jsa1)**2 \
                    - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delayrange[i])   ))
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
             futures = [ex.submit(homf, i) for i in range(0,len(delayrange))]
@@ -1273,95 +1073,25 @@ class JSI:
             pmafunc = self.PMAcwgauss
             tau=pumpcwbw
 
-        # if 0:
-        #     jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
-        #     jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
-        #     jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-        #     #jsa2 = np.conjugate(jsa2)
-        #     jsi = jsa1*np.conjugate(jsa1)
-        #     norm = np.sum(jsi)
-        #
-        #     def homf(i):
-        #         jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
-        #         jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
-        #         #jsa2 = np.conjugate(jsa2)
-        #         return  np.sum(scipy.integrate.simpson(jsa1*jsa2))
-        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-        #         futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
-        #         HOMI = [f.result() for f in futures]
-        #
-        #     HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-        #
-        #     # determine visibility
-        #     vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-        # elif 0: #this seems to work for sech^2, 773nm
-        #     jsa1 = jsafunc(pwl, X, Y, tau, temprange[len(temprange)//2], polingp, cl)
-        #     jsa2 = jsafunc(pwl, Y, X, tau, temprange[len(temprange)//2], polingp, cl)
-        #     jsa2 = np.conjugate(jsa2[::-1,::-1].T)
-        #     #jsa2 = np.conjugate(jsa2)
-        #     jsi = jsa1*np.conjugate(jsa1)
-        #     norm = np.sum(jsi)
-        #
-        #     def homf(i):
-        #         jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, cl)
-        #         jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, cl)
-        #         jsa2 = np.conjugate(jsa2)
-        #         return  1/4 * np.sum(scipy.integrate.simpson(np.abs(jsa1-jsa2)**2))
-        #     with concurrent.futures.ThreadPoolExecutor(max_workers=len(os.sched_getaffinity(0))) as ex:
-        #         futures = [ex.submit(homf, i) for i in range(0,len(temprange))]
-        #         HOMI = np.array([f.result() for f in futures])
-        #
-        #     #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-        #     # determine visibility
-        #     HOMI = HOMI/np.max(HOMI)
-        #     vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-        #
-            # #HOMI = 0.5 - 0.5 * np.abs(HOMI/norm)
-            # # determine visibility
-            # HOMI = HOMI/np.max(HOMI)
-            # vis = np.abs((np.max(HOMI)-np.min(HOMI))/(np.max(HOMI)))
-        # else:
-
-
-        if 1:
-            delay = 1.7523 * 10 ** (-12)
+        if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
+            delay=(1.47+0.28)*10**(-12) #404.87 source
+            print("warning: custom delay applied")
+        elif (pwl>770*10**(-9)) and (pwl<780*10**(-9)):
+            delay=(4.1+0.32)*10**(-12) #773 source
+            print("warning: custom delay applied")
         else:
-            if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
-                delay=(1.47+0.28)*10**(-12) #404.87 source
-                print("warning: custom delay applied")
-            elif (pwl>770*10**(-9)) and (pwl<780*10**(-9)):
-                delay=(4.1+0.32)*10**(-12) #773 source
-                print("warning: custom delay applied")
-            else:
-                print("warning: custom delay NOT applied")
+            print("warning: custom delay NOT applied")
 
         def homf(i):
             clt = self.thermexpfactor(temprange[i])*cl
             jsa1 = jsafunc(pwl, X, Y, tau, temprange[i], polingp, clt)
-            jsa2 = jsafunc(pwl, Y, X, tau, temprange[i], polingp, clt)
-            jsa2c = np.conjugate(jsa2)
-            # integrand_norm = pea_abssqu * (  np.abs(jsa1)**2)
-            # norm = scipy.integrate.simpson(
-            #         scipy.integrate.simpson(
-            #             integrand_norm,
-            #             x=idlerrange, axis=-1  ),
-            #         x=signalrange, axis=0  )
-            #
-            # integrand = pea_abssqu * (
-            #                     np.abs(jsa1)**2 \
-            #                         - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delay)   )
-            # return  scipy.integrate.simpson(
-            #         scipy.integrate.simpson(
-            #             integrand,
-            #             x=signalrange, axis=-1  ),
-            #         x=idlerrange, axis=0  ) /norm
-            norm = np.sum(scipy.integrate.simpson(  np.abs(jsa1)**2  )  )
+            jsa2c = np.conjugate(jsafunc(pwl, Y, X, tau, temprange[i], polingp, clt))
+            norm = scipy.integrate.simpson(scipy.integrate.simpson(  np.abs(jsa1)**2  )  )
 
-            return  np.sum(scipy.integrate.simpson( np.abs(jsa1)**2 \
+            return  scipy.integrate.simpson(scipy.integrate.simpson( np.abs(jsa1)**2 \
                                     - jsa1 * jsa2c * np.exp(-1j*2*np.pi*Constants().c*(1/X-1/Y)*delay)   )) / norm
         max_workers = len(os.sched_getaffinity(0))
         if self.focusing_enable or self.fibre_coupling_enable:
-            # Spatial mode is memory-heavy; cap workers to limit peak RAM.
             max_workers = max_workers//2
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:

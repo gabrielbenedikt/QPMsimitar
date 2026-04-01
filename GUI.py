@@ -2,7 +2,7 @@
 
 import cProfile
 import pstats
-PROFILE=False
+PROFILE=True
 
 try:
     from PyQt6.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
@@ -1931,6 +1931,12 @@ class GUI(QMainWindow):
         signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
         idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
 
+        if PROFILE:
+            profile = cProfile.Profile()
+            profile.runcall(JSI().getHOMinterferenceT, pwl, PP, m, tau, cl, signalrange, idlerrange,
+                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
+            ps = pstats.Stats(profile)
+            ps.strip_dirs().sort_stats('tottime').print_stats(10)
         [CoincProb,vis,fwhm] = JSI().getHOMinterferenceT(pwl, PP, m, tau, cl, signalrange, idlerrange,
                                              JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
 

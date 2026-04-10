@@ -63,6 +63,24 @@ class JSI:
         # Use an odd value for Simpson integration.
         self.spatial_z_points = 129
 
+        # Spatial-overlap backend:
+        # - 'legacy': current z-domain Gaussian overlap model
+        # - 'smirr': transverse k-space model inspired by Smirr et al.
+        self.spatial_overlap_model = 'smirr'
+
+        # Smirr-model controls (ad-hoc defaults, to be tuned/validated).
+        self.smirr_phi_points = 400
+        self.smirr_rho_points = 100
+        self.smirr_theta_points = 100
+        self.smirr_zeta = 0.0
+        self.smirr_ns_prime = 1.0
+        self.smirr_ni_prime = 1.0
+        self.smirr_normalize = True
+
+        # Cache interpolation tables to avoid rebuilding the expensive
+        # transverse integral for repeated calls with identical settings.
+        self._smirr_interp_cache = {}
+
     def calculate_focused_waists(self, lp, ls, li):
         """
         Calculate the focused beam waists at the crystal.
@@ -198,6 +216,12 @@ class JSI:
         return integral_real + 1j * integral_imag
 
     def _spatial_overlap_grid(self, dk, cl, lp, ls, li, temp=None):
+        model = str(getattr(self, 'spatial_overlap_model', 'legacy')).casefold()
+        if model == 'smirr':
+            return self._spatial_overlap_grid_smirr(dk, cl, lp, ls, li, temp=temp)
+        return self._spatial_overlap_grid_legacy(dk, cl, lp, ls, li, temp=temp)
+
+    def _spatial_overlap_grid_legacy(self, dk, cl, lp, ls, li, temp=None):
         dk_arr, lp_arr, ls_arr, li_arr = np.broadcast_arrays(
             np.asarray(dk),
             np.asarray(lp),
@@ -254,6 +278,114 @@ class JSI:
             integral += weights[k] * amplitude
 
         return integral * (dz / 3.0)
+
+    def _smirr_cache_key(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
+        # Quantize floating-point inputs so numerically equivalent calls hit cache.
+        return (
+            int(self.smirr_phi_points),
+            int(self.smirr_rho_points),
+            int(self.smirr_theta_points),
+            round(float(phi0_min), 6),
+            round(float(phi0_max), 6),
+            round(float(xi), 8),
+            round(float(alpha), 8),
+            round(float(n_p0), 8),
+            round(float(n_s0), 8),
+            round(float(n_i0), 8),
+            round(float(self.smirr_zeta), 8),
+            round(float(self.smirr_ns_prime), 8),
+            round(float(self.smirr_ni_prime), 8),
+            bool(self.smirr_normalize),
+        )
+
+    def _build_smirr_interp(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
+        phi_points = max(50, int(self.smirr_phi_points))
+        rho_points = max(8, int(self.smirr_rho_points))
+        theta_points = max(8, int(self.smirr_theta_points))
+
+        phi0_vec = np.linspace(phi0_min - 5.0, phi0_max + 5.0, phi_points)
+
+        # Same heuristic cutoff strategy as the standalone script.
+        rho_max = np.sqrt(25.0 / (1.0 + alpha**2))
+        rho = np.linspace(0, rho_max, rho_points)
+        theta = np.linspace(0.0, 2.0 * np.pi, theta_points)
+
+        RS, RI, TH = np.meshgrid(rho, rho, theta, indexing='ij')
+        dr = rho[1] - rho[0]
+        dtheta = theta[1] - theta[0]
+        vol_element = RS * RI * (dr ** 2) * dtheta
+
+        gauss_exp = np.exp(-(1.0 + alpha**2) * (RS**2 + RI**2) - 2.0 * RS * RI * np.cos(TH))
+        phase_exp = np.exp(
+            -1j
+            * 4.0
+            * xi
+            * self.smirr_zeta
+            * ((n_p0 / self.smirr_ns_prime) * RS**2 + (n_p0 / self.smirr_ni_prime) * RI**2)
+        )
+        x_term = xi * (
+            (1.0 - 2.0 * n_p0 / n_s0) * RS**2
+            + (1.0 - 2.0 * n_p0 / n_i0) * RI**2
+            + 2.0 * RS * RI * np.cos(TH)
+        )
+
+        a_spatial = np.zeros_like(phi0_vec, dtype=np.complex128)
+        for idx, p0 in enumerate(phi0_vec):
+            # np.sinc(x) computes sin(pi*x)/(pi*x), hence '/ np.pi'.
+            sinc_arg = (p0 / 2.0 + x_term) / np.pi
+            integrand = gauss_exp * phase_exp * np.sinc(sinc_arg)
+            a_spatial[idx] = np.sum(integrand * vol_element)
+
+        if self.smirr_normalize:
+            # Note: this normalization enforces a convenient amplitude scale
+            # near phi0=0 for comparability with legacy PMA plots. It does
+            # not represent an absolute brightness calibration.
+            zero_idx = int(np.argmin(np.abs(phi0_vec)))
+            scale = np.abs(a_spatial[zero_idx])
+            if scale > 0.0:
+                a_spatial = a_spatial / scale
+
+        return scipy.interpolate.interp1d(phi0_vec, a_spatial, bounds_error=False, fill_value=0.0)
+
+    def _spatial_overlap_grid_smirr(self, dk, cl, lp, ls, li, temp=None):
+        dk_arr, lp_arr, ls_arr, li_arr = np.broadcast_arrays(
+            np.asarray(dk),
+            np.asarray(lp),
+            np.asarray(ls),
+            np.asarray(li),
+        )
+        cl_val = float(np.asarray(cl).reshape(-1)[0])
+        t_eval = self.T if temp is None else temp
+
+        phi0 = dk_arr * cl_val
+        phi0_min = float(np.min(phi0))
+        phi0_max = float(np.max(phi0))
+
+        # Approximation note:
+        # alpha, xi, and reference refractive indices are evaluated at center
+        # wavelengths of the current grid. This mirrors common practice and is
+        # usually accurate for moderate bandwidths, but is still an approximation.
+        lp0 = float(np.mean(lp_arr))
+        ls0 = float(np.mean(ls_arr))
+        li0 = float(np.mean(li_arr))
+
+        w0_p0, w0_s0, w0_i0 = self.calculate_focused_waists(lp0, ls0, li0)
+        w_collection = 0.5 * (w0_s0 + w0_i0)
+        alpha = float(w_collection / w0_p0)
+
+        n_p0 = float(self.ny(lp0, t_eval))
+        n_s0 = float(self.ny(ls0, t_eval))
+        n_i0 = float(self.nz(li0, t_eval))
+        k_p0 = 2.0 * np.pi * n_p0 / lp0
+        xi = float(cl_val / (k_p0 * w0_p0**2))
+
+        cache_key = self._smirr_cache_key(phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0)
+        interp_func = self._smirr_interp_cache.get(cache_key)
+        if interp_func is None:
+            interp_func = self._build_smirr_interp(phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0)
+            self._smirr_interp_cache[cache_key] = interp_func
+
+        return interp_func(phi0)
 
     def _spatial_integrand(self, z, dk, w0_p, w0_s, w0_i, zr_p, zr_s, zr_i, rho_i=0.0):
         """
@@ -1062,7 +1194,6 @@ class JSI:
             self.calcSinc = True
             peafunc = self.PEAsinc
             pmafunc = self.PMAsinc
-            
         elif pumpshape.casefold() == 'cw':
             self.calcCW = True
             peafunc = self.PEAcwgauss
@@ -1070,17 +1201,18 @@ class JSI:
             pump_param = pumpcwbw
         else:
             raise ValueError('Unknown pump shape')
-
-        if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
-            delay=(1.47+0.28)*10**(-12) #404.87 source
-            print("warning: custom delay applied")
-        elif (pwl>770*10**(-9)) and (pwl<780*10**(-9)):
-            delay=(4.1+0.32)*10**(-12) #773 source
-            print("warning: custom delay applied")
-        else:
-            print("warning: custom delay NOT applied")
-
-
+        
+        if not self.fibre_coupling_enable:
+            if (pwl>400*10**(-9)) and (pwl<410*10**(-9)):
+                delay=(1.47+0.28)*10**(-12) #404.87 source
+                print("warning: custom delay applied")
+            elif (pwl>770*10**(-9)) and (pwl<780*10**(-9)):
+                delay=(4.1+0.32)*10**(-12) #773 source
+                print("warning: custom delay applied")
+            else:
+                print("warning: custom delay NOT applied")
+        else: 
+            delay = 0
 
         const = Constants()
         two_pi = 2 * np.pi
@@ -1089,7 +1221,6 @@ class JSI:
         lp_xy = self.lambdap(X, Y)
         pea = peafunc(pwl, X, Y, pump_param)
         exponential = np.exp(-1j * two_pi * const.c * (invX - invY) * delay)
-
 
         def homf(i):
             clt = self.thermexpfactor(temprange[i])*cl

@@ -1,0 +1,16 @@
+[Unit]
+Description=QPMsimitar Secure Remote Compute Server
+After=network.target
+
+[Service]
+Type=simple
+User=$USER$
+WorkingDirectory=/home/$USER$/QPMsimitar
+ExecStart=/home/$USER$/QPMsimitar/venv/bin/python run_server.py --host 0.0.0.0 --port 8443 --token-file token
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -7,21 +7,21 @@ PROFILE=True
 try:
     from PyQt6.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                                 QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
-                                QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
+                                QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox, QProgressDialog)
     from PyQt6.QtGui import (QFont, QMouseEvent)
+    from PyQt6.QtCore import QCoreApplication, Qt
     from matplotlib.backends.backend_qtagg import (FigureCanvasQTAgg as FigureCanvas,
                                                     NavigationToolbar2QT as NavigationToolbar)
 except ModuleNotFoundError:
     from PyQt5.QtWidgets import (QApplication, QWidget, QToolTip, QPushButton, QSpinBox, QLabel,
                                  QDoubleSpinBox, QGroupBox, QComboBox, QCheckBox, QMainWindow,
-                                 QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox)
+                                 QRadioButton, QGridLayout, QVBoxLayout, QScrollArea, QMessageBox, QProgressDialog)
     from PyQt5.QtGui import (QFont, QMouseEvent)
+    from PyQt5.QtCore import QCoreApplication, Qt
     from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas,
                                                     NavigationToolbar2QT as NavigationToolbar)
 
 from RefractiveIndex import RefractiveIndex
-from PMC import PMC
-from JSI import JSI
 from Filters import Filters
 from Constants import Constants
 from QTreimps import QHoverPushButton
@@ -36,8 +36,10 @@ from colorsys import hls_to_rgb
 matplotlib.use('Qt5Agg')
 # noinspection PyAttributeOutsideInit
 class GUI(QMainWindow):
-    def __init__(self, config, parent=None):
+    def __init__(self, config, backend=None, parent=None):
         super(GUI, self).__init__(parent)
+
+        self.backend = backend
 
         self.plotwindowcount = 0
         self.pltwindowlist = []
@@ -103,6 +105,12 @@ class GUI(QMainWindow):
         #Group: Plot FWHM of marginal spectral
         self.ui_layout.addLayout(self.ui_layoutPlotFWHM, 3, 4)
 
+        # Settings Button
+        self.ui_SettingsBtn = QPushButton("Connection Settings...")
+        self.ui_SettingsBtn.setToolTip("Configure local/remote compute backend and security tokens")
+        self.ui_SettingsBtn.clicked.connect(self.openSettings)
+        self.ui_layout.addWidget(self.ui_SettingsBtn, 4, 4)
+
         self.centralWidget().setLayout(self.ui_layout)
 
         self.setProperties()
@@ -110,8 +118,13 @@ class GUI(QMainWindow):
         self.initConnections()
 
         self.resize(self.sizeHint())
-
         self.show()
+
+    def openSettings(self):
+        from SettingsDialog import SettingsDialog
+        dlg = SettingsDialog(self.config, self)
+        dlg.exec()
+
 
     def initLayoutPump(self):
         self.ui_layoutPump = QGridLayout()
@@ -879,6 +892,60 @@ class GUI(QMainWindow):
         self.ui_PlotFWHMresolution_SB.setValue(self.fwhmres)
         self.ui_PlotFWHMprecision_SB.setValue(self.fwhmprecision)
 
+    def _build_base_params(self):
+        """Build the base parameter dict shared by most compute methods."""
+        return {
+            'material': self.CrystalMaterial,
+            'nx_paper': self.CrystalNX,
+            'ny_paper': self.CrystalNY,
+            'nz_paper': self.CrystalNZ,
+            'pump_wl': self.PumpWlSingle,
+            'poling_period': self.CrystalPolingPeriodSingle,
+            'temperature': self.CrystalTempSingle,
+            'crystal_length': self.CrystalLengthSingle,
+            'qpm_order': self.QPMOrder,
+            'pulsewidth': self.PulsewidthSingle,
+            'pump_cw_bw': self.PumpCWbwSingle,
+            'pump_shape': self.PumpShape,
+        }
+
+    def _build_filter_params(self):
+        """Build filter parameter entries."""
+        return {
+            'signal_filter_type': self.SIfilterSignalType,
+            'signal_filter_center_wl': self.SIfilterSignalCenterWL,
+            'signal_filter_fwhm': self.SIfilterSignalFWHM,
+            'idler_filter_type': self.SIfilterIdlerType,
+            'idler_filter_center_wl': self.SIfilterIdlerCenterWL,
+            'idler_filter_fwhm': self.SIfilterIdlerFWHM,
+        }
+
+    def _build_focusing_params(self):
+        """Build focusing parameter entries."""
+        return {
+            'focusing_enable': self.Focusing_enable,
+            'fibre_coupling_enable': self.Fibrecoupling_enable,
+            'focallength_pump': self.Focallength_pump,
+            'focallength_signal': self.Focallength_signal,
+            'focallength_idler': self.Focallength_idler,
+            'beamdiameter_pump': self.Beamdiameter_pump,
+            'beamdiameter_signal': self.Beamdiameter_signal,
+            'beamdiameter_idler': self.Beamdiameter_idler,
+        }
+
+    def _build_filter_annotation(self):
+        """Build filter annotation string for plots."""
+        s = ''
+        if self.SIfilterSignalType.casefold() != 'none':
+            s += 'Spectral filters:\nSignal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm\n'.format(
+                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 1e9,
+                self.SIfilterSignalFWHM * 1e9)
+        if self.SIfilterIdlerType.casefold() != 'none':
+            s += 'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm\n'.format(
+                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 1e9,
+                self.SIfilterIdlerFWHM * 1e9)
+        return s
+
     def initConnections(self):
         self.ui_PlotRefractiveIndex_Btn_Plot_T.pressed.connect(self.plot_RefIdx_vs_T)
         self.ui_PlotRefractiveIndex_Btn_Plot_wl.pressed.connect(self.plot_RefIdx_vs_wl)
@@ -983,33 +1050,59 @@ class GUI(QMainWindow):
         self.ui_PlotFWHMvstau_Btn.mouseleavesignal.connect(self.MouseHoverLeave)
         self.ui_PlotJSI_filterlossBtn.mouseleavesignal.connect(self.MouseHoverLeave)
 
+    def _run_compute(self, method_name: str, params: dict) -> dict:
+        from compute.backend import ProgressCallback
+        
+        progress = ProgressCallback()
+        progress_dialog = QProgressDialog(f"Computing {method_name}...", "Cancel", 0, 100, self)
+        progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dialog.setMinimumDuration(500)
+        
+        def on_progress(p, msg):
+            val = int(p * 100)
+            progress_dialog.setValue(val)
+            if msg:
+                progress_dialog.setLabelText(f"Computing {method_name}... {msg}")
+            if progress_dialog.wasCanceled():
+                progress.cancel()
+            QCoreApplication.processEvents()
+            
+        progress.set_callback(on_progress)
+        
+        try:
+            return self.backend.call(method_name, params, progress)
+        finally:
+            progress_dialog.setValue(100)
+
     def plot_RefIdx_vs_T(self):
         Tmin = self.ui_CrystalTfromSB.value()
         Tmax = self.ui_CrystalTtoSB.value()
         wl = self.ui_pumpwlsingleSB.value() * 10 ** (-9)
-        RefIdxList = []
-        materialList = []
-        polList = []
-        paperList = []
+        selected_indices = []
         for cb in self.ui_layoutPlotRefractiveIndexScrollAreaWidget.children():
             if isinstance(cb, QCheckBox):
                 if cb.isChecked():
                     [material, pol, paper] = cb.text().replace('&', '').split(':')
-                    materialList.append(material)
-                    polList.append(pol)
-                    paperList.append(paper)
-                    RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
+                    selected_indices.append((material, pol, paper))
 
-        # NOTE: Let num (1000 here) be set in GUI
-        plotrange = np.linspace(Tmin, Tmax, 1000)
+        params = {
+            'T_min': Tmin,
+            'T_max': Tmax,
+            'wavelength': wl,
+            'selected_indices': selected_indices
+        }
+        
+        result = self._run_compute('compute_refractive_index_vs_T', params)
+        plotrange = result['T_range']
+        n_values = result['n_values']
 
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
 
-        for i in range(0, len(RefIdxList)):
-            pltwnd.ax.plot(plotrange, RefIdxList[i](wl, plotrange),
-                           label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
+        for key, vals in n_values.items():
+            material, pol, paper = key.split(':')
+            pltwnd.ax.plot(plotrange, vals, label='{0}, {1}, {2}'.format(material, pol, paper))
 
         pltwnd.ax.set_xlabel('Temperature [°C]')
         pltwnd.ax.set_ylabel('Refractive index')
@@ -1022,29 +1115,31 @@ class GUI(QMainWindow):
         wlmin = self.ui_pumpwlfromSB.value() * 10 ** (-9)
         wlmax = self.ui_pumpwltoSB.value() * 10 ** (-9)
         T = self.ui_CrystalTsingleSB.value()
-        RefIdxList = []
-        materialList = []
-        polList = []
-        paperList = []
+        selected_indices = []
         for cb in self.ui_layoutPlotRefractiveIndexScrollAreaWidget.children():
             if isinstance(cb, QCheckBox):
                 if cb.isChecked():
                     [material, pol, paper] = cb.text().replace('&', '').split(':')
-                    materialList.append(material)
-                    polList.append(pol)
-                    paperList.append(paper)
-                    RefIdxList.append(RefractiveIndex().getSingleIDX(material, pol, paper))
+                    selected_indices.append((material, pol, paper))
 
-        # NOTE: Let num (1000 here) be set in GUI
-        plotrange = np.linspace(wlmin, wlmax, 1000)
+        params = {
+            'wl_min': wlmin,
+            'wl_max': wlmax,
+            'temperature': T,
+            'selected_indices': selected_indices
+        }
+
+        result = self._run_compute('compute_refractive_index_vs_wl', params)
+        plotrange = result['wl_range']
+        n_values = result['n_values']
 
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
 
-        for i in range(0, len(RefIdxList)):
-            pltwnd.ax.plot(plotrange * 10 ** 9, RefIdxList[i](plotrange, T),
-                           label='{0}, {1}, {2}'.format(materialList[i], polList[i], paperList[i]))
+        for key, vals in n_values.items():
+            material, pol, paper = key.split(':')
+            pltwnd.ax.plot(plotrange * 10 ** 9, vals, label='{0}, {1}, {2}'.format(material, pol, paper))
 
         pltwnd.ax.set_xlabel('Wavelength [nm]')
         pltwnd.ax.set_ylabel('Refractive index')
@@ -1054,29 +1149,17 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_T(self):
-        # get variables from GUI
-        lp = self.PumpWlSingle
-        PP = self.CrystalPolingPeriodSingle
-        Tmin = self.CrystalTempFrom
-        Tmax = self.CrystalTempTo
-        m = self.QPMOrder
+        params = self._build_base_params()
+        params['T_min'] = self.CrystalTempFrom
+        params['T_max'] = self.CrystalTempTo
 
-        # get Ref indices
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
+        result = self._run_compute('compute_pmc_vs_T', params)
+        plotrange = result['T_range']
+        siwl = result['signal_wl']
+        idwl = result['idler_wl']
+        Tcp = result['Tcp']
 
-        # prepare plotting
-        plotrange = np.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
-        if PROFILE:
-            profile = cProfile.Profile()
-            profile.runcall(PMC().getSI_wl_varT, lp, PP, plotrange, refidxfunc, m)
-            ps = pstats.Stats(profile)
-            ps.strip_dirs().sort_stats('tottime').print_stats(10)
-        [siwl, idwl, Tcp] = PMC().getSI_wl_varT(lp, PP, plotrange, refidxfunc, m)
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
@@ -1091,26 +1174,17 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_pmc_wl_vs_PP(self):
-        # get variables from GUI
-        lp = self.PumpWlSingle
-        PPmin = self.CrystalPolingPeriodFrom
-        PPmax = self.CrystalPolingPeriodTo
-        m = self.QPMOrder
-        T = self.CrystalTempSingle
+        params = self._build_base_params()
+        params['PP_min'] = self.CrystalPolingPeriodFrom
+        params['PP_max'] = self.CrystalPolingPeriodTo
 
-        # get Ref indices
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        # prepare plotting
-        plotrange = np.arange(PPmin, PPmax, (PPmax - PPmin) / 250)
-
-        [siwl, idwl, PPcp] = PMC().getSI_wl_varPP(lp, plotrange, T, refidxfunc, m)
+        result = self._run_compute('compute_pmc_vs_PP', params)
+        plotrange = result['PP_range']
+        siwl = result['signal_wl']
+        idwl = result['idler_wl']
+        PPcp = result['PPcp']
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
@@ -1124,81 +1198,40 @@ class GUI(QMainWindow):
                                                                                              PPcp * 10 ** 6),
             xy=(0.01, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
-        pltwnd.canvas.draw()
-
     def plot_purity_vs_tau(self):
-        wlpts = self.PurityWLresolution
-        taupts = self.PurityTauresolution
-        pwl = self.PumpWlSingle
-        PP = self.CrystalPolingPeriodSingle
-        L = self.CrystalLengthSingle
-        T = self.CrystalTempSingle
-        m = self.QPMOrder
-        taumin = self.PulsewidthFrom
-        taumax = self.PulsewidthTo
-        wlrange = self.PurityWLrange
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType,self.SIfilterIdlerCenterWL,self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType,self.SIfilterSignalCenterWL,self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-        FilterString = 'none'
-        pumpshape = self.PumpShape
-        calcGaussian = False
-        calcSech = False
-        if pumpshape == 'Gaussian':
-            calcGaussian = True
-        elif pumpshape == 'Sech^2':
-            calcSech = True
-        else:
-            print('Error: pump shape unknown to JSA/JSI plot routine')
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params['tau_min'] = self.PulsewidthFrom
+        params['tau_max'] = self.PulsewidthTo
+        params['wl_range'] = self.PurityWLrange
+        params['wl_resolution'] = self.PurityWLresolution
+        params['tau_resolution'] = self.PurityTauresolution
 
-        # get Ref indices
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
+        result = self._run_compute('compute_purity_vs_tau', params)
+        taurange = result['tau_range']
+        purity = result['purity']
+        max_pur = result['max_purity']
+        maxtau = result['max_tau']
 
-        taurange = np.arange(taumin, taumax, (taumax-taumin) / taupts)
-
-        Tvec = np.arange(T, T + 1, 2)
-
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-
-        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
-
-        [purity, max, maxtau] = JSI().getpurity_vsTau(pwl, signalrange, idlerrange, taurange, T,
-                                                      PP, L, refidxfunc, m, spectralfilters, pumpshape)
-
-        AnnotateString = ''
-        AnnotateString = AnnotateString + \
-                         r'Maximum purity: {0:.3} at $\tau={1:.3}$ps'.format(max, maxtau * 10 ** 12)+'\n' \
-                                                                                                     'Pump wavelength: {0:.2f}nm'.format(pwl*10**9)+'\n' \
-                                                                                                                                                    'Poling period: {0:.4f}µm'.format(PP*10**6)+'\n' \
-                                                                                                                                                                                                'Temperature: {0:.1f}°C'.format(T)+'\n' \
-                                                                                                                                                                                                                                   'Crystal length: {0:.1f}mm'.format(L*10**3)+'\n'
-        FilterString = ''
-        print(self.SIfilterSignalType)
-        if self.SIfilterSignalType.casefold() != 'none':
-            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9,
-                                         self.SIfilterSignalFWHM * 10 ** 9) + '\n'
-        if self.SIfilterIdlerType.casefold() != 'none':
-            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
-        AnnotateString = AnnotateString + FilterString
+        AnnotateString = (
+            r'Maximum purity: {0:.3f} at $\tau={1:.3f}$ps'.format(max_pur, maxtau * 1e12) + '\n'
+            'Pump wavelength: {0:.2f}nm'.format(params['pump_wl'] * 1e9) + '\n'
+            'Poling period: {0:.4f}µm'.format(params['poling_period'] * 1e6) + '\n'
+            'Temperature: {0:.1f}°C'.format(params['temperature']) + '\n'
+            'Crystal length: {0:.1f}mm'.format(params['crystal_length'] * 1e3) + '\n'
+        )
+        AnnotateString += self._build_filter_annotation()
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
 
-        pltwnd.ax.plot(taurange * 10 ** 12, purity, lw=2, label='purity')
+        pltwnd.ax.plot(taurange * 1e12, purity, lw=2, label='purity')
         pltwnd.ax.set_xlabel('Pulsewidth [ps]')
         pltwnd.ax.set_ylabel('Purity')
         pltwnd.ax.set_title('Purity')
-        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1),
-                           xycoords='axes fraction')
+        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
@@ -1206,159 +1239,81 @@ class GUI(QMainWindow):
         pass
 
     def plot_purity_vs_L(self):
-        wlpts = self.PurityWLresolution
-        pts = self.PurityTauresolution
-        pwl = self.PumpWlSingle
-        PP = self.CrystalPolingPeriodSingle
-        Lmin = self.CrystalLengthFrom
-        Lmax = self.CrystalLengthTo
-        T = self.CrystalTempSingle
-        m = self.QPMOrder
-        tau = self.PulsewidthSingle
-        pumpcwbw = self.PumpCWbwSingle
-        wlrange = self.PurityWLrange
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-        FilterString = 'none'
-        pumpshape = self.PumpShape
-        calcGaussian = False
-        calcSech = False
-        if pumpshape == 'Gaussian':
-            calcGaussian = True
-        elif pumpshape == 'Sech^2':
-            calcSech = True
-        else:
-            print('Error: pump shape unknown to JSA/JSI plot routine')
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params['L_min'] = self.CrystalLengthFrom
+        params['L_max'] = self.CrystalLengthTo
+        params['wl_range'] = self.PurityWLrange
+        params['wl_resolution'] = self.PurityWLresolution
+        params['L_resolution'] = self.PurityTauresolution
 
-        # get Ref indices
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
+        result = self._run_compute('compute_purity_vs_L', params)
+        Lrange = result['L_range']
+        purity = result['purity']
+        max_pur = result['max_purity']
+        maxL = result['max_L']
 
-        Lrange = np.arange(Lmin, Lmax, (Lmax- Lmin) / pts)
-
-        Tvec = np.arange(T, T + 1, 2)
-
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-
-        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
-
-        [purity, max, maxL] = JSI().getpurity_vsL(pwl, signalrange, idlerrange, tau, T,
-                                                  PP, Lrange, refidxfunc, m, spectralfilters, pumpshape,pumpcwbw)
-
-        AnnotateString = ''
-        AnnotateString = AnnotateString + \
-                         r'Maximum purity: {0:.3f} at L={1:.2f}mm'.format(max, maxL*10**3) + '\n' \
-                                                                                             'Pump wavelength: {0:.2f}nm'.format(
-            pwl * 10 ** 9) + '\n' \
-                             'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n' \
-                                                                               'Temperature: {0:.1f}°C'.format(T) + '\n' \
-                                                                                                                    'Pulsewidth: {0:.2f}ps'.format(
-            tau * 10 ** 12) + '\n'
-        FilterString = ''
-        if self.SIfilterSignalType.casefold() != 'none':
-            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9,
-                                         self.SIfilterSignalFWHM * 10 ** 9) + '\n'
-        if self.SIfilterIdlerType.casefold() != 'none':
-            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
-        AnnotateString = AnnotateString + FilterString
+        AnnotateString = (
+            r'Maximum purity: {0:.3f} at L={1:.2f}mm'.format(max_pur, maxL * 1e3) + '\n'
+            'Pump wavelength: {0:.2f}nm'.format(params['pump_wl'] * 1e9) + '\n'
+            'Poling period: {0:.4f}µm'.format(params['poling_period'] * 1e6) + '\n'
+            'Temperature: {0:.1f}°C'.format(params['temperature']) + '\n'
+            'Pulsewidth: {0:.2f}ps'.format(params['pulsewidth'] * 1e12) + '\n'
+        )
+        AnnotateString += self._build_filter_annotation()
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        pltwnd.ax.plot(Lrange * 10 ** 3, purity, lw=2, label='purity')
+        pltwnd.ax.plot(Lrange * 1e3, purity, lw=2, label='purity')
         pltwnd.ax.set_xlabel('Crystal length [mm]')
         pltwnd.ax.set_ylabel('Purity')
         pltwnd.ax.set_title('Purity')
-        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1),
-                           xycoords='axes fraction')
+        pltwnd.ax.annotate(AnnotateString, xy=(0.2, 0.1), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
     def plot_purity_vs_Tau_and_L(self):
-        wlpts = self.PurityWLresolution
-        pts = self.PurityTauresolution
-        pwl = self.PumpWlSingle
-        PP = self.CrystalPolingPeriodSingle
-        Lmin = self.CrystalLengthFrom
-        Lmax = self.CrystalLengthTo
-        T = self.CrystalTempSingle
-        m = self.QPMOrder
-        taumin = self.PulsewidthFrom
-        taumax = self.PulsewidthTo
-        wlrange = self.PurityWLrange
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-        FilterString = 'none'
-        pumpshape = self.PumpShape
-        calcGaussian = False
-        calcSech = False
-        if pumpshape == 'Gaussian':
-            calcGaussian = True
-        elif pumpshape == 'Sech^2':
-            calcSech = True
-        else:
-            print('Error: pump shape unknown to JSA/JSI plot routine')
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params['L_min'] = self.CrystalLengthFrom
+        params['L_max'] = self.CrystalLengthTo
+        params['tau_min'] = self.PulsewidthFrom
+        params['tau_max'] = self.PulsewidthTo
+        params['wl_range'] = self.PurityWLrange
+        params['wl_resolution'] = self.PurityWLresolution
+        params['resolution'] = self.PurityTauresolution
 
-        # get Ref indices
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
+        result = self._run_compute('compute_purity_vs_L_and_tau', params)
+        Lrange = result['L_range']
+        Taurange = result['tau_range']
+        purity = result['purity']
 
-        Lrange = np.arange(Lmin, Lmax, (Lmax - Lmin) / pts)
-        Taurange = np.arange(taumin, taumax, (taumax - taumin) / pts)
-
-        Tvec = np.arange(T, T + 1, 2)
-
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-
-        signalrange = np.linspace(ls - wlrange / 2, ls + wlrange / 2, wlpts)
-        idlerrange = np.linspace(li - wlrange / 2, li + wlrange / 2, wlpts)
-
-        purity = JSI().getpurity_vsLandTau(pwl, signalrange, idlerrange, Taurange, T,
-                                           PP, Lrange, refidxfunc, m, spectralfilters, pumpshape)
-
-        AnnotateString = ''
-        AnnotateString = AnnotateString + 'Pump wavelength: {0:.2f}nm'.format(pwl * 10 ** 9) + '\n'+ \
-                         'Poling period: {0:.4f}µm'.format(PP * 10 ** 6) + '\n'
-        FilterString = ''
-        if self.SIfilterSignalType.casefold() != 'none':
-            FilterString = 'Spectral filters:\n' r'Signal: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterSignalType, self.SIfilterSignalCenterWL * 10 ** 9, self.SIfilterSignalFWHM * 10 ** 9) + '\n'
-        if self.SIfilterIdlerType.casefold() != 'none':
-            FilterString = FilterString + r'Idler: {0}, central wl {1:.2f}nm, FWHM {2:.2f}nm'.format(
-                self.SIfilterIdlerType, self.SIfilterIdlerCenterWL * 10 ** 9, self.SIfilterIdlerFWHM * 10 ** 9) + '\n'
-        AnnotateString = AnnotateString + FilterString
+        AnnotateString = (
+            'Pump wavelength: {0:.2f}nm'.format(params['pump_wl'] * 1e9) + '\n'
+            'Poling period: {0:.4f}µm'.format(params['poling_period'] * 1e6) + '\n'
+        )
+        AnnotateString += self._build_filter_annotation()
 
         # plot
         colormap = matplotlib.cm.jet
-        xmin = np.min(Taurange) * 10 ** 12  # *taucfsech
-        xmax = np.max(Taurange) * 10 ** 12  # *taucfsech
-        ymin = np.min(Lrange) * 10 ** 3
-        ymax = np.max(Lrange) * 10 ** 3
+        xmin = np.min(Taurange) * 1e12
+        xmax = np.max(Taurange) * 1e12
+        ymin = np.min(Lrange) * 1e3
+        ymax = np.max(Lrange) * 1e3
 
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        pltwnd.ax.grid('off')
-        plot=pltwnd.ax.imshow(purity, cmap=colormap, vmin=abs(purity).min(), vmax=abs(purity).max(),aspect='auto',
-                              origin='lower',interpolation='none', extent=[xmin,xmax,ymin,ymax])
-        #(Lrange * 10 ** 3, purity, lw=2, label='purity')
+        pltwnd.ax.grid(False)
+        plot = pltwnd.ax.imshow(purity, cmap=colormap, vmin=abs(purity).min(), vmax=abs(purity).max(),
+                                aspect='auto', origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+
         pltwnd.ax.set_xlabel('Pulse width [ps]')
         pltwnd.ax.set_ylabel('Crystal length [mm]')
         pltwnd.ax.set_title('Purity')
-        pltwnd.ax.annotate(AnnotateString, xy=(0, 1),
-                           xycoords='axes fraction')
+        pltwnd.ax.annotate(AnnotateString, xy=(0, 1), xycoords='axes fraction')
 
         pltwnd.fig.subplots_adjust(bottom=0.2)
         pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
@@ -1369,76 +1324,26 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
 
     def plot_jsi(self):
-        numpts=self.JSIresolution
-        pwl=self.PumpWlSingle
-        PP=self.CrystalPolingPeriodSingle
-        L=self.CrystalLengthSingle
-        T=self.CrystalTempSingle
-        m=self.QPMOrder
-        tau=self.PulsewidthSingle
-        pumpcwbw=self.PumpCWbwSingle
-        wlrange=self.JSIwlRange
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-        focusing_enable=self.Focusing_enable
-        fibre_coupling_enable=self.Fibrecoupling_enable
-        focallength_pump=self.Focallength_pump
-        focallength_signal=self.Focallength_signal
-        focallength_idler=self.Focallength_idler
-        beamdiameter_pump=self.Beamdiameter_pump
-        beamdiameter_signal=self.Beamdiameter_signal
-        beamdiameter_idler=self.Beamdiameter_idler
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params.update(self._build_focusing_params())
+        params['wl_range'] = self.JSIwlRange
+        params['resolution'] = self.JSIresolution
+        
+        plotJSI = self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        params['plot_jsi'] = plotJSI
 
-        plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
-        if plotJSI==True:
-            calcJSA=False
-            calcJSI=True
-        else:
-            calcJSA=True
-            calcJSI=False
-
-        pumpshape = self.PumpShape
-        calcGaussian=False
-        calcSech=False
-        calcCW=False
-        calcSinc=False
-        if pumpshape.casefold() == 'gaussian':
-            calcGaussian=True
-        elif pumpshape.casefold() == 'sech^2':
-            calcSech=True
-        elif pumpshape.casefold() == 'sinc':
-            calcSinc=True
-        elif pumpshape.casefold() == 'cw':
-            calcCW=True
-        else:
-            print('Error: pump shape unknown to JSA/JSI plot routine')
-
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        Tvec=np.arange(T,T+1,2)
-
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-
-        signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
-        idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
-
-        if PROFILE:
-            profile = cProfile.Profile()
-            profile.runcall(JSI().getplots, pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
-            ps = pstats.Stats(profile)
-            ps.strip_dirs().sort_stats('tottime').print_stats(10)
-        [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape, pumpcwbw, focusing_enable,fibre_coupling_enable,focallength_pump,focallength_signal,focallength_idler,beamdiameter_pump,beamdiameter_signal,beamdiameter_idler)
+        result = self._run_compute('compute_jsi', params)
+        signalrange = result['signal_range']
+        idlerrange = result['idler_range']
+        PE = result['PE']
+        PM = result['PM']
+        JS = result['JS']
+        pumpshape = result['pump_shape']
 
         #
         # plotting
         #
-
         print("plotting..")
 
         # init plot window
@@ -1459,17 +1364,15 @@ class GUI(QMainWindow):
         pltwnd.canvas = FigureCanvas(pltwnd.fig)
         pltwnd.canvas.setParent(pltwnd)
         pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
-        # self.addToolBar(self.toolbar)
         pltwnd.layout.addWidget(pltwnd.canvas)
         pltwnd.layout.addWidget(pltwnd.toolbar)
 
         colormap = matplotlib.cm.jet
         # axes range
-        xmin = np.min(signalrange) * 10 ** 9
-        xmax = np.max(signalrange) * 10 ** 9
-        ymin = np.min(idlerrange) * 10 ** 9
-        ymax = np.max(idlerrange) * 10 ** 9
-        # prepare subplots
+        xmin = np.min(signalrange) * 1e9
+        xmax = np.max(signalrange) * 1e9
+        ymin = np.min(idlerrange) * 1e9
+        ymax = np.max(idlerrange) * 1e9
         
         PM_abs = np.abs(PM)
         JS_abs = np.abs(JS)
@@ -1482,37 +1385,41 @@ class GUI(QMainWindow):
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')
-        # size of axes label
+        
         for plot in [pltwnd.peplt, pltwnd.pmplt, pltwnd.jsplt]:
             plot.tick_params(axis='both', which='major', labelsize='medium')
             plot.tick_params(axis='both', which='minor', labelsize='medium')
+        
         # label plot
-        if calcJSA:
+        if not plotJSI:
             pltwnd.peplt.set_title('PEA', fontsize=20)
             pltwnd.pmplt.set_title('PMA', fontsize=20)
             pltwnd.jsplt.set_title('JSA', fontsize=20)
             pltwnd.fig.suptitle('PEA, PMA and JSA', fontsize=24)
-        elif calcJSI:
+        else:
             pltwnd.peplt.set_title('PEI', fontsize=20)
             pltwnd.pmplt.set_title('PMI', fontsize=20)
             pltwnd.jsplt.set_title('JSI', fontsize=20)
             pltwnd.fig.suptitle('PEI, PMI and JSI', fontsize=24)
-        # create legend
+            
         pltwnd.fig.subplots_adjust(bottom=0.2)
         pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
         pltwnd.cbar = pltwnd.fig.colorbar(ppe, cax=pltwnd.cbar_ax, orientation='horizontal')
         pltwnd.cbar.set_label('a.u.', fontsize='medium', labelpad=-1)
-        pad = 20
-        parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
-            L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
-            T) + 'Pulse duration: {0:.2f}ps'.format(tau * 10 ** 12)
-        if calcGaussian:
-            parameterstring = parameterstring + '\nGaussian beam shape'
-        elif calcSech:
-            parameterstring = parameterstring + '\nsech^2 beam shape'
-        elif calcCW:
-            parameterstring = parameterstring + '\nCW pump'
-        # state additional paramters on plot
+        
+        parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(params['pump_wl'] * 1e9) + \
+                          'Crystal Length: {0:.2f}mm\n'.format(params['crystal_length'] * 1e3) + \
+                          'Poling period: {0:.2f}µm\n'.format(params['poling_period'] * 1e6) + \
+                          'Temperature: {0:.2f}°C\n'.format(params['temperature']) + \
+                          'Pulse duration: {0:.2f}ps'.format(params['pulsewidth'] * 1e12)
+        
+        if pumpshape.casefold() == 'gaussian':
+            parameterstring += '\nGaussian beam shape'
+        elif pumpshape.casefold() == 'sech^2':
+            parameterstring += '\nsech^2 beam shape'
+        elif pumpshape.casefold() == 'cw':
+            parameterstring += '\nCW pump'
+            
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
 
         pltwnd.peplt.set_aspect('equal')
@@ -1523,150 +1430,27 @@ class GUI(QMainWindow):
         pltwnd.resize(1200,600)
     
     def estimate_filter_losses(self):
-        #
-        # TODO: eps should be chosable in GUI
-        #
-        eps=10**(-5) #used to find zeros in JSA, to cut sidelobes
-        numpts=self.JSIresolution
-        pwl=self.PumpWlSingle
-        PP=self.CrystalPolingPeriodSingle
-        L=self.CrystalLengthSingle
-        T=self.CrystalTempSingle
-        m=self.QPMOrder
-        tau=self.PulsewidthSingle
-        pumpcwbw = self.PumpCWbwSingle
-        wlrange=self.JSIwlRange
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-        print(spectralfilters)
-        #as reference: no filters:
-        ffiref = Filters().getFilterFunction('None', 1, 1) #arguments: filtertype, central wl, bandwidth. only first argument does matter if type is 'None'
-        ffsref = Filters().getFilterFunction('None', 1, 1)
-        spectralfiltersref = [ffsref, ffiref]
-        
-        #plotJSI=self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params['wl_range'] = self.JSIwlRange
+        params['resolution'] = self.JSIresolution
+
+        # Always plot JSI for filter losses
         plotJSI = True
-        if plotJSI==True:
-            calcJSA=False
-            calcJSI=True
-        else:
-            calcJSA=True
-            calcJSI=False
+        params['plot_jsi'] = plotJSI
 
-        pumpshape = self.PumpShape
-        calcGaussian=False
-        calcSech=False
-        if pumpshape == 'Gaussian':
-            calcGaussian=True
-        elif pumpshape == 'Sech^2':
-            calcSech=True
-        else:
-            print('Error: pump shape unknown to JSA/JSI plot routine')
+        result = self._run_compute('estimate_filter_losses', params)
+        signalrange = result['signal_range']
+        idlerrange = result['idler_range']
+        JS = result['JS']
+        JSref = result['JSref']
+        JSwoSL = result['JSwoSL']
+        JSwoSLref = result['JSwoSLref']
+        filterlosses = result['filter_losses']
+        nonsidelobefilterlosses = result['nonsidelobe_filter_losses']
+        sidelobelosses = result['sidelobe_losses']
+        filteredsidelobelosses = result['filtered_sidelobe_losses']
 
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        Tvec=np.arange(T,T+1,2)
-
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        print('***debug***: ls: ', ls)
-        print('***debug***: li: ', li)
-
-        signalrange = np.linspace(ls - wlrange/2, ls + wlrange/2, numpts)
-        idlerrange = np.linspace(li - wlrange/2, li + wlrange/2, numpts)
-        print('***debug***: min(signalrange): ', np.min(signalrange))
-        print('***debug***: max(signalrange): ', np.max(signalrange))
-        print('***debug***: min(idlerrange):  ', np.min(idlerrange))
-        print('***debug***: max(idlerrange):  ', np.max(idlerrange))
-
-        [PE, PM, JS] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape,pumpcwbw)
-        [PEwoSL, PMwoSL, JSwoSL] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfilters, plotJSI, pumpshape,pumpcwbw)
-        [PEref,PMref,JSref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfiltersref, plotJSI, pumpshape,pumpcwbw)
-        [PEwoSLref,PMwoSLref,JSwoSLref] = JSI().getplots(pwl, signalrange, idlerrange, tau, T, PP, L, refidxfunc,
-                                      m, spectralfiltersref, plotJSI, pumpshape,pumpcwbw)
-        
-        #Sidelobeless JSI
-        #what is done here:
-        #y) Find first minima in JSA along -45° axis
-        #y) cut JSA along +45° axis going through these points
-        #y) calculate overlap
-        #Note: only valid vor GVD matched JSA
-        
-        #find -45° axis
-        JSdiagonal=[]
-        wlrangelen=len(signalrange)
-        for i in range(1,wlrangelen):
-            JSdiagonal.append(JSwoSLref[i,wlrangelen-i])
-        # print(np.linspace(signalrange[1],signalrange[-1],numpts-1))
-        JSdiagonalinterpol=scipy.interpolate.interp1d(np.linspace(signalrange[1],signalrange[-1],numpts-1).flatten(), JSdiagonal, kind='cubic', bounds_error=False)
-        
-        #find lowest values along -45° axis
-        wlrangehalf=int(len(signalrange)/2)
-        luvalold=JSdiagonalinterpol(signalrange[wlrangehalf-1])
-        rlvalold=JSdiagonalinterpol(signalrange[wlrangehalf+1])
-        #bools to stop at first minima from central peak
-        foundlumin=False
-        foundrlmin=False
-        for i in range(2,wlrangehalf):
-            #calculate next values along axis
-            luval=JSdiagonalinterpol(signalrange[wlrangehalf-i])
-            rlval=JSdiagonalinterpol(signalrange[wlrangehalf+i])
-            #check if they are smaller than the last values
-            if foundlumin==False:
-                if luval<luvalold:
-                    luvalold=luval
-                    luminidx=wlrangehalf-i
-                else:
-                    foundlumin=True
-            if foundrlmin==False:
-                if rlval<rlvalold:
-                    rlvalold=rlval
-                    rlminidx=wlrangehalf+i
-                else:
-                    foundrlmin=True
-        
-        wlrangelength=len(signalrange)
-        #set JSA to 0 everywhere but between two +45° axes going through the points just calculated
-        for i in range(0,len(signalrange)):
-            for j in range(0,len(signalrange)):
-                if i < (2*luminidx-wlrangelength+j):
-                    JSwoSLref[i,j]=0
-                    JSwoSL[i,j]=0
-                elif i > (2*rlminidx-wlrangelength+j):
-                    JSwoSLref[i,j]=0
-                    JSwoSL[i,j]=0
-        
-        #
-        # calculating losses
-        #
-        
-        magnitude_withfilter = 0
-        magnitude_wofilter = 0
-        magnitude_wofilter_wosidelobes = 0
-        magnitude_wfilter_wosidelobes = 0
-        
-        for i in range(0,len(JS)):
-            for j in range(0,len(JS[i])):
-                magnitude_withfilter = magnitude_withfilter + JS[i,j]
-                magnitude_wofilter = magnitude_wofilter + JSref[i,j]
-                magnitude_wfilter_wosidelobes = magnitude_wfilter_wosidelobes + JSwoSL[i,j]
-                magnitude_wofilter_wosidelobes = magnitude_wofilter_wosidelobes + JSwoSLref[i,j]
-        
-        filterlosses = (1- magnitude_withfilter/magnitude_wofilter)
-        nonsidelobefilterlosses = (1- magnitude_wfilter_wosidelobes/magnitude_wofilter_wosidelobes)
-        sidelobelosses = (1-magnitude_wofilter_wosidelobes/magnitude_wofilter)
-        filteredsidelobelosses = (1-magnitude_wfilter_wosidelobes/magnitude_withfilter)
-        
-        print('magnitude wo filter: ', magnitude_wofilter)
-        print('magnitude w filter: ', magnitude_withfilter)
-        print('magnitude wo sidelobes: ', magnitude_wfilter_wosidelobes)
-        print('magnitude w filters wo sidelobes: ', magnitude_wfilter_wosidelobes)
         print('filterlosses: ', filterlosses)
         print('non-sidelobe filterlosses: ', nonsidelobefilterlosses)
         print('sidelobelosses: ', sidelobelosses)
@@ -1675,7 +1459,6 @@ class GUI(QMainWindow):
         #
         # plotting
         #
-
         print("plotting..")
 
         # init plot window
@@ -1683,7 +1466,7 @@ class GUI(QMainWindow):
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
 
-        # need customization for 3 plots in 1 window
+        # need customization for 4 plots in 1 window
         pltwnd.layout.removeWidget(pltwnd.canvas)
         pltwnd.layout.removeWidget(pltwnd.toolbar)
         pltwnd.fig = plt.figure(facecolor="white")
@@ -1698,16 +1481,16 @@ class GUI(QMainWindow):
         pltwnd.canvas = FigureCanvas(pltwnd.fig)
         pltwnd.canvas.setParent(pltwnd)
         pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
-        # self.addToolBar(self.toolbar)
         pltwnd.layout.addWidget(pltwnd.canvas)
         pltwnd.layout.addWidget(pltwnd.toolbar)
 
         colormap = matplotlib.cm.jet
         # axes range
-        xmin = np.min(signalrange) * 10 ** 9
-        xmax = np.max(signalrange) * 10 ** 9
-        ymin = np.min(idlerrange) * 10 ** 9
-        ymax = np.max(idlerrange) * 10 ** 9
+        xmin = np.min(signalrange) * 1e9
+        xmax = np.max(signalrange) * 1e9
+        ymin = np.min(idlerrange) * 1e9
+        ymax = np.max(idlerrange) * 1e9
+        
         # prepare subplots
         ppe = pltwnd.peplt.imshow(JS, cmap=colormap, vmin=JS.min(), vmax=JS.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
@@ -1717,43 +1500,45 @@ class GUI(QMainWindow):
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
         pjs2 = pltwnd.jsplt2.imshow(JSwoSL, cmap=colormap, vmin=JSwoSL.min(), vmax=JSwoSL.max(), aspect='auto',
                                   origin='lower', interpolation='none', extent=[xmin, xmax, ymin, ymax])
+                                  
         pltwnd.peplt.set_xlabel(r'$\lambda_s$ [nm]')
         pltwnd.peplt.set_ylabel(r'$\lambda_i$ [nm]')
-        #pltwnd.pjs.set_ylabel(r'$\lambda_i$ [nm]')
-        # size of axes label
+        
         for plot in [pltwnd.peplt, pltwnd.pmplt, pltwnd.jsplt, pltwnd.jsplt2]:
             plot.tick_params(axis='both', which='major', labelsize='medium')
             plot.tick_params(axis='both', which='minor', labelsize='medium')
+            
         # label plot
-        if calcJSA:
-            pltwnd.peplt.set_title('w filters', fontsize=20)
-            pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            pltwnd.jsplt.set_title('wo filters wo SL', fontsize=20)
-            pltwnd.jsplt2.set_title('w filters wo SL', fontsize=20)
-            pltwnd.fig.suptitle('Estimating losses', fontsize=24)
-        elif calcJSI:
-            pltwnd.peplt.set_title('w filters', fontsize=20)
-            pltwnd.pmplt.set_title('wo filters', fontsize=20)
-            pltwnd.jsplt.set_title('wo filters wo SL', fontsize=20)
-            pltwnd.jsplt2.set_title('w filters wo SL', fontsize=20)
-            pltwnd.fig.suptitle('Estimating losses', fontsize=24)
+        pltwnd.peplt.set_title('w filters', fontsize=20)
+        pltwnd.pmplt.set_title('wo filters', fontsize=20)
+        pltwnd.jsplt.set_title('wo filters wo SL', fontsize=20)
+        pltwnd.jsplt2.set_title('w filters wo SL', fontsize=20)
+        pltwnd.fig.suptitle('Estimating losses', fontsize=24)
+        
         # create legend
         pltwnd.fig.subplots_adjust(bottom=0.2)
         pltwnd.cbar_ax = pltwnd.fig.add_axes([0.05, 0.1, 0.9, 0.025])
         pltwnd.cbar = pltwnd.fig.colorbar(ppe, cax=pltwnd.cbar_ax, orientation='horizontal')
         pltwnd.cbar.set_label('a.u.', fontsize='medium', labelpad=-1)
-        pad = 20
-        parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(pwl * 10 ** 9) + 'Crystal Length: {0:.2f}mm\n'.format(
-            L * 10 ** 3) + 'Poling period: {0:.2f}µm\n'.format(PP * 10 ** 6) + 'Temperature: {0:.2f}°C\n'.format(
-            T) + 'Pulse duration: {0:.2f}ps'.format(tau * 10 ** 12)
-        lossesstring = 'Filter losses: {0:.2f}%\n'.format(filterlosses*100) + 'non-sidelobe filter losses: {0:.2f}%\n'.format(nonsidelobefilterlosses*100) + 'Sidelobe losses: {0:.2f}%\n'.format(sidelobelosses*100) + 'Sidelobe losses after filtering: {0:.2f}%\n'.format(filteredsidelobelosses*100)
-        if calcGaussian:
-            parameterstring = parameterstring + '\nGaussian beam shape'
-        elif calcSech:
-            parameterstring = parameterstring + '\nsech^2 beam shape'
-        elif calcCW:
-            parameterstring = parameterstring + '\nCW pump'
-        # state additional paramters on plot
+        
+        parameterstring = 'Pump wavelength: {0:.2f}nm\n'.format(params['pump_wl'] * 1e9) + \
+                          'Crystal Length: {0:.2f}mm\n'.format(params['crystal_length'] * 1e3) + \
+                          'Poling period: {0:.2f}µm\n'.format(params['poling_period'] * 1e6) + \
+                          'Temperature: {0:.2f}°C\n'.format(params['temperature']) + \
+                          'Pulse duration: {0:.2f}ps'.format(params['pulsewidth'] * 1e12)
+                          
+        lossesstring = 'Filter losses: {0:.2f}%\n'.format(filterlosses*100) + \
+                       'non-sidelobe filter losses: {0:.2f}%\n'.format(nonsidelobefilterlosses*100) + \
+                       'Sidelobe losses: {0:.2f}%\n'.format(sidelobelosses*100) + \
+                       'Sidelobe losses after filtering: {0:.2f}%\n'.format(filteredsidelobelosses*100)
+                       
+        if params['pump_shape'].casefold() == 'gaussian':
+            parameterstring += '\nGaussian beam shape'
+        elif params['pump_shape'].casefold() == 'sech^2':
+            parameterstring += '\nsech^2 beam shape'
+        elif params['pump_shape'].casefold() == 'cw':
+            parameterstring += '\nCW pump'
+            
         pltwnd.peplt.annotate(parameterstring, xy=(0.005, 0.83), xycoords='figure fraction', fontsize=9, color='r')
         pltwnd.peplt.annotate(lossesstring, xy=(0.2, 0.86), xycoords='figure fraction', fontsize=9, color='r')
 
@@ -1766,187 +1551,101 @@ class GUI(QMainWindow):
         pltwnd.resize(1200,600)
 
     def plot_Tcp_vs_PP(self):
-        numpts = 100
-        PPrange = np.linspace(self.CrystalPolingPeriodFrom, self.CrystalPolingPeriodTo, numpts)
-        temp = self.CrystalTempSingle
-        pwl = self.PumpWlSingle
-        qpmorder = self.QPMOrder
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-        Tcp = JSI().getTcpVsPP(PPrange, temp, pwl, refidxfunc, qpmorder)
+        params = self._build_base_params()
+        params['PP_min'] = self.CrystalPolingPeriodFrom
+        params['PP_max'] = self.CrystalPolingPeriodTo
+
+        result = self._run_compute('compute_tcp_vs_PP', params)
+        PPrange = result['PP_range']
+        Tcp = result['Tcp']
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        pltwnd.ax.plot(PPrange * 10 ** 6, Tcp, lw=2, label='Crossing point temperature')
+        pltwnd.ax.plot(PPrange * 1e6, Tcp, lw=2, label='Crossing point temperature')
         pltwnd.ax.set_xlabel('Poling period [µm]')
         pltwnd.ax.set_ylabel('Crossing point temperature [°C]')
         pltwnd.ax.set_title('Crossing point temperature vs crystal poling period')
-        # pltwnd.ax.annotate(
-        #    'Degenerate wavelengths (for {0:.1f}°C) at a poling period of {1:.2f} µm'.format(self.CrystalTempSingle,
-        #                                                                                     PPcp * 10 ** 6),
-        #    xy=(0.01, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
     def plot_Tcp_vs_lp(self):
-        numpts=100
-        pwlrange=np.linspace(self.PumpWlFrom,self.PumpWlTo,numpts)
-        temp = self.CrystalTempSingle
-        polingp = self.CrystalPolingPeriodSingle
-        qpmorder=self.QPMOrder
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-        Tcp = JSI().getTcpVslp(pwlrange, temp, polingp, refidxfunc, qpmorder)
+        params = self._build_base_params()
+        params['pwl_min'] = self.PumpWlFrom
+        params['pwl_max'] = self.PumpWlTo
+
+        result = self._run_compute('compute_tcp_vs_lp', params)
+        pwlrange = result['pwl_range']
+        Tcp = result['Tcp']
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        pltwnd.ax.plot(pwlrange * 10 ** 9, Tcp, lw=2, label='Crossing point temperature')
+        pltwnd.ax.plot(pwlrange * 1e9, Tcp, lw=2, label='Crossing point temperature')
         pltwnd.ax.set_xlabel('Pump wavelength [nm]')
         pltwnd.ax.set_ylabel('Crossing point temperature [°C]')
         pltwnd.ax.set_title('Crossing point temperature vs pump wavelength')
-        # pltwnd.ax.annotate(
-        #    'Degenerate wavelengths (for {0:.1f}°C) at a poling period of {1:.2f} µm'.format(self.CrystalTempSingle,
-        #                                                                                     PPcp * 10 ** 6),
-        #    xy=(0.01, 0.01), xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
     def plot_HOM_vis(self):
-        pwl = self.PumpWlSingle
-        T = self.CrystalTempSingle
-        PP = self.CrystalPolingPeriodSingle
-        m = self.QPMOrder
-        tau = self.PulsewidthSingle
-        pumpcwbw = self.PumpCWbwSingle
-        cl = self.CrystalLengthSingle
-        pumpshape = self.PumpShape
-        delayrange = np.linspace(-self.HOMdelayrange/2, self.HOMdelayrange/2,self.HOMresolution)
-        homphase = self.HOMphase
-        JSIresolution = self.JSIresolution
-        JSIwlrange = self.JSIwlRange
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params.update(self._build_focusing_params())
+        params['delay_range'] = self.HOMdelayrange
+        params['hom_resolution'] = self.HOMresolution
+        params['hom_phase'] = self.HOMphase
+        params['jsi_resolution'] = self.JSIresolution
+        params['jsi_wl_range'] = self.JSIwlRange
 
-        focusing_enable=self.Focusing_enable
-        fibre_coupling_enable=self.Fibrecoupling_enable
-        focallength_pump=self.Focallength_pump
-        focallength_signal=self.Focallength_signal
-        focallength_idler=self.Focallength_idler
-        beamdiameter_pump=self.Beamdiameter_pump
-        beamdiameter_signal=self.Beamdiameter_signal
-        beamdiameter_idler=self.Beamdiameter_idler
+        result = self._run_compute('compute_hom_interference', params)
+        delayrange = result['delay_range']
+        CoincProb = result['coinc_prob']
+        vis = result['visibility']
+        fwhm = result['fwhm']
 
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        Tvec = np.arange(T, T + 1, 2)
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
-        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
-
-        if PROFILE:
-            profile = cProfile.Profile()
-            profile.runcall(JSI().getHOMinterference, pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
-            ps = pstats.Stats(profile)
-            ps.strip_dirs().sort_stats('tottime').print_stats(10)
-        [CoincProb,vis,fwhm] = JSI().getHOMinterference(pwl, T, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, delayrange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler )
-
-        datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
+        datestr = datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
         np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
         np.save('HOMdelay_{0:s}.npy'.format(datestr), delayrange)
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        pltwnd.ax.plot(delayrange * 10 ** 12, CoincProb, lw=2)
+        pltwnd.ax.plot(delayrange * 1e12, CoincProb, lw=2)
         pltwnd.ax.set_xlabel('Delay [ps]')
         pltwnd.ax.set_ylabel('Coincidence probability')
         pltwnd.ax.set_title('Hong-Ou-Mandel interference')
-        pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
+        pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis, fwhm * 1e12), xy=(0.01, 0.01),
                            xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
     def plot_HOM_vis_temp(self):
-        pwl = self.PumpWlSingle
-        T = self.CrystalTempSingle
-        PP = self.CrystalPolingPeriodSingle
-        m = self.QPMOrder
-        tau = self.PulsewidthSingle
-        pumpcwbw = self.PumpCWbwSingle
-        cl = self.CrystalLengthSingle
-        pumpshape = self.PumpShape
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params.update(self._build_focusing_params())
+        params['hom_resolution'] = self.HOMresolution
+        params['hom_phase'] = self.HOMphase
+        params['jsi_resolution'] = self.JSIresolution
+        params['jsi_wl_range'] = self.JSIwlRange
+        params['hom_temp_range'] = self.HOMtemprange
+        params['T_min'] = self.CrystalTempFrom
+        params['T_max'] = self.CrystalTempTo
 
-        focusing_enable = self.Focusing_enable
-        fibre_coupling_enable = self.Fibrecoupling_enable
-        focallength_pump = self.Focallength_pump
-        focallength_signal = self.Focallength_signal
-        focallength_idler = self.Focallength_idler
-        beamdiameter_pump = self.Beamdiameter_pump
-        beamdiameter_signal = self.Beamdiameter_signal
-        beamdiameter_idler = self.Beamdiameter_idler
+        result = self._run_compute('compute_hom_interference_T', params)
+        temprange = result['temp_range']
+        CoincProb = result['coinc_prob']
+        vis = result['visibility']
+        fwhm = result['fwhm']
 
-
-        ##calculate crossing point temperature
-        Tmin = self.CrystalTempFrom
-        Tmax = self.CrystalTempTo
-
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        plotrange = np.arange(Tmin, Tmax, (Tmax - Tmin) / 250)
-        [siwl, idwl, Tcp] = PMC().getSI_wl_varT(pwl, PP, plotrange, refidxfunc, m)
-        # /calculate crossing point temperature
-
-        temprange = np.linspace(Tcp-self.HOMtemprange/2, Tcp+self.HOMtemprange/2, self.HOMresolution)
-        homphase = self.HOMphase
-        JSIresolution = self.JSIresolution
-        JSIwlrange = self.JSIwlRange
-
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
-
-        Tvec = np.arange(T, T + 1, 2)
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
-        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
-
-        if PROFILE:
-            profile = cProfile.Profile()
-            profile.runcall(JSI().getHOMinterferenceT, pwl, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
-            ps = pstats.Stats(profile)
-            ps.strip_dirs().sort_stats('tottime').print_stats(10)
-        [CoincProb,vis,fwhm] = JSI().getHOMinterferenceT(pwl, PP, m, tau, cl, signalrange, idlerrange,
-                                             JSIresolution, pumpshape, temprange, homphase, refidxfunc, spectralfilters, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler)
-
-        datestr=datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
+        datestr = datetime.datetime.strftime(datetime.datetime.now(), format='%Y%m%d_%H%M%S')
         np.save('HOM_{0:s}.npy'.format(datestr), CoincProb)
         np.save('HOMdelay_{0:s}.npy'.format(datestr), temprange)
 
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
@@ -1954,90 +1653,59 @@ class GUI(QMainWindow):
         pltwnd.ax.set_xlabel('Temperature [°C]')
         pltwnd.ax.set_ylabel('Coincidence probability')
         pltwnd.ax.set_title('Hong-Ou-Mandel interference')
-        pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
+        pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis, fwhm * 1e12), xy=(0.01, 0.01),
                            xycoords='axes fraction')
         pltwnd.ax.legend()
         pltwnd.canvas.draw()
 
     def plot_FWHM_vs_tau(self):
-        pwl = self.PumpWlSingle
-        T = self.CrystalTempSingle
-        PP = self.CrystalPolingPeriodSingle
-        m = self.QPMOrder
-        cl = self.CrystalLengthSingle
-        pumpshape = self.PumpShape
-        JSIresolution = self.JSIresolution
-        JSIwlrange = self.JSIwlRange
-        taumin = self.PulsewidthFrom
-        taumax = self.PulsewidthTo
-        fwhmres = self.fwhmres
-        decprec = self.fwhmprecision
-        usetaucf = self.PumpShapeApplyDeconvolutionFactor
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params['jsi_resolution'] = self.JSIresolution
+        params['jsi_wl_range'] = self.JSIwlRange
+        params['tau_min'] = self.PulsewidthFrom
+        params['tau_max'] = self.PulsewidthTo
+        params['fwhm_resolution'] = self.fwhmres
+        params['fwhm_precision'] = self.fwhmprecision
+        params['use_taucf'] = self.PumpShapeApplyDeconvolutionFactor
 
-        ffi = Filters().getFilterFunction(self.SIfilterIdlerType, self.SIfilterIdlerCenterWL, self.SIfilterIdlerFWHM)
-        ffs = Filters().getFilterFunction(self.SIfilterSignalType, self.SIfilterSignalCenterWL, self.SIfilterSignalFWHM)
-        spectralfilters = [ffs, ffi]
+        result = self._run_compute('compute_fwhm_vs_tau', params)
+        taurange = result['tau_range']
+        sigfwhm = result['signal_fwhm']
+        idfwhm = result['idler_fwhm']
 
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-
-        Tvec = np.arange(T, T + 1, 2)
-        ls=0
-        li=0
-        unused=0
-        [ls, li, unused] = PMC().getSI_wl_varT(pwl, PP, Tvec, refidxfunc, m)
-        signalrange = np.linspace(ls - JSIwlrange / 2, ls + JSIwlrange / 2, JSIresolution)
-        idlerrange = np.linspace(li - JSIwlrange / 2, li + JSIwlrange / 2, JSIresolution)
-        
-        taurange = np.linspace(taumin, taumax, fwhmres)
-
-        sigfwhm=[]
-        idfwhm=[]
-        [sigfwhm, idfwhm] = JSI().getFWHMvstau(pwl, signalrange, idlerrange, T, PP, m, cl, taurange, refidxfunc, spectralfilters, JSIresolution, pumpshape, decprec, usetaucf)
-        
-        
         # plot
-        # init plot window
         pltwndidx = self.plotwindowcount
         self.open_new_plot_window()
         pltwnd = self.pltwindowlist[pltwndidx]
-        ploterror=False
+        ploterror = False
         if len(sigfwhm) == len(taurange):
-            pltwnd.ax.plot(taurange * 10 ** 12, sigfwhm, lw=2, label='Signal FWHM')
+            pltwnd.ax.plot(taurange * 1e12, sigfwhm, lw=2, label='Signal FWHM')
         else:
-            ploterror=True
+            ploterror = True
         if len(idfwhm) == len(taurange):
-            pltwnd.ax.plot(taurange * 10 ** 12, idfwhm, lw=2, label='Idler FWHM')
+            pltwnd.ax.plot(taurange * 1e12, idfwhm, lw=2, label='Idler FWHM')
         else:
-            ploterror=True
+            ploterror = True
         
         if ploterror:
             pltwnd.close()
             msgbox=QMessageBox()
-            #msgbox.setText('Error: could not find enough values for FWHM. Try increasing JSI resolution or JSI range.')
             msgbox.exec()
         else:
             pltwnd.ax.set_xlabel('Pump pulse width [ps]')
             pltwnd.ax.set_ylabel('FWHM [nm]')
             pltwnd.ax.set_title('FWHM of marginal sectra')
-            #pltwnd.ax.annotate('Visibility: {0:.3f} \n FWHM: {1:.3f}ps'.format(vis,fwhm*10**12), xy=(0.01, 0.01),
-                            #xycoords='axes fraction')
             pltwnd.ax.legend()
             pltwnd.canvas.draw()
 
     def GetEffectivePolingPeriod(self):
-        nxfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "X", self.CrystalNX)
-        nyfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Y", self.CrystalNY)
-        nzfunc = RefractiveIndex().getSingleIDX(self.CrystalMaterial, "Z", self.CrystalNZ)
-        refidxfunc = [nxfunc, nyfunc, nzfunc]
-        m=self.QPMOrder
-        Tcp=self.CrystalTempSingle
-        PPguess=self.CrystalPolingPeriodSingle
-        lp=self.PumpWlSingle
-        PP=JSI().GetEffectivePP(m, Tcp,PPguess,lp,refidxfunc)
-        self.ui_CrystalPolingPeriodsingleSB.setValue(PP*10**6)
+        params = self._build_base_params()
+        params['PP_guess'] = self.CrystalPolingPeriodSingle
+
+        result = self._run_compute('compute_effective_PP', params)
+        PP = result['effective_PP']
+        self.ui_CrystalPolingPeriodsingleSB.setValue(PP * 1e6)
 
     def getVarsFromGUI(self):
         self.CrystalPolingPeriodSingle = self.ui_CrystalPolingPeriodsingleSB.value() * 10 ** (-6)

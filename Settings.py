@@ -92,6 +92,15 @@ class Settings:
         self.config.append(["Focallength Signal", 10.0])
         self.config.append(["Focallength Idler", 10.0])
 
+        # Compute backend settings
+        self.config.append(["Compute Backend", "local"])
+        self.config.append(["Remote Server URL", "https://localhost:8443"])
+        self.config.append(["Remote API Token", ""])
+        self.config.append(["Remote Client Cert", ""])
+        self.config.append(["Remote Client Key", ""])
+        self.config.append(["Remote CA Cert", ""])
+        self.config.append(["Remote Verify SSL", True])
+
     def loadSettings(self):
         if Path('config.yaml').is_file():
             with open('config.yaml') as stream:
@@ -112,8 +121,11 @@ class Settings:
                     print(exc)
 
     def set(self, key, val):
-        idx,unused=self.find(self.config,key)
-        self.config[idx][1]=val
+        try:
+            idx,unused=self.find(self.config,key)
+            self.config[idx][1]=val
+        except ValueNotFoundError:
+            self.config.append([key, val])
         #print('set config value: ', self.config[idx])
 
     def get(self, key, default=None):

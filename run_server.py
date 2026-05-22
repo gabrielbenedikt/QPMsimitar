@@ -10,6 +10,7 @@ if __name__ == "__main__":
     parser.add_argument("--host", default="127.0.0.1", help="Host IP to bind the server to (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8443, help="Port to listen on (default: 8443)")
     parser.add_argument("--san", action="append", help="Additional Subject Alternative Names (DNS or IP) for the server certificate. Can be specified multiple times.")
+    parser.add_argument("--token-file", help="Path to a text file containing the persistent API token to use.")
     args = parser.parse_args()
 
     import socket
@@ -45,8 +46,19 @@ if __name__ == "__main__":
     print("Use these in your QPMsimitar Settings for Remote execution.")
     print("-----------------------------------\n")
 
-    # Set default random API token if not set in environment
-    if "QPMSIMITAR_API_TOKEN" not in os.environ:
+    # Load API token from file if provided
+    token = None
+    if args.token_file:
+        try:
+            with open(args.token_file, "r") as f:
+                token = f.read().strip()
+            print(f"Loaded persistent API token from file: '{args.token_file}'")
+        except Exception as e:
+            print(f"Error reading token file '{args.token_file}': {e}. Falling back to default settings.")
+
+    if token:
+        os.environ["QPMSIMITAR_API_TOKEN"] = token
+    elif "QPMSIMITAR_API_TOKEN" not in os.environ:
         random_token = secrets.token_hex(16)
         os.environ["QPMSIMITAR_API_TOKEN"] = random_token
         print(f"Generated secure, random API token for this session:\n>>> {random_token} <<<\n")

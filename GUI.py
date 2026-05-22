@@ -252,6 +252,7 @@ class GUI(QMainWindow):
         self.ui_CrystalTLabel.setText('Temperature [°C]')
 
         self.ui_CrystalTsingleSB.setRange(-273.15, 1000)
+        self.ui_CrystalTsingleSB.setDecimals(3)
         self.ui_CrystalTfromSB.setRange(-273.15, 1000)
         self.ui_CrystalTtoSB.setRange(-273.15, 1000)
 

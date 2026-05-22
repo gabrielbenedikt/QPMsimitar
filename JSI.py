@@ -228,8 +228,6 @@ class JSI:
             np.asarray(ls),
             np.asarray(li),
         )
-        cl_val = float(np.asarray(cl).reshape(-1)[0])
-
         w0_p, w0_s, w0_i = self.calculate_focused_waists(lp_arr, ls_arr, li_arr)
 
         t_eval = self.T if temp is None else temp
@@ -245,7 +243,7 @@ class JSI:
         if npts % 2 == 0:
             npts += 1
 
-        z = np.linspace(-cl_val / 2, cl_val / 2, npts)
+        z = np.linspace(-cl / 2, cl / 2, npts)
         dz = z[1] - z[0]
 
         weights = np.ones(npts)
@@ -279,7 +277,7 @@ class JSI:
 
         return integral * (dz / 3.0)
 
-    def _smirr_cache_key(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
+    def x(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
         # Quantize floating-point inputs so numerically equivalent calls hit cache.
         return (
             int(self.smirr_phi_points),
@@ -337,9 +335,6 @@ class JSI:
             a_spatial[idx] = np.sum(integrand * vol_element)
 
         if self.smirr_normalize:
-            # Note: this normalization enforces a convenient amplitude scale
-            # near phi0=0 for comparability with legacy PMA plots. It does
-            # not represent an absolute brightness calibration.
             zero_idx = int(np.argmin(np.abs(phi0_vec)))
             scale = np.abs(a_spatial[zero_idx])
             if scale > 0.0:
@@ -354,10 +349,9 @@ class JSI:
             np.asarray(ls),
             np.asarray(li),
         )
-        cl_val = float(np.asarray(cl).reshape(-1)[0])
         t_eval = self.T if temp is None else temp
 
-        phi0 = dk_arr * cl_val
+        phi0 = dk_arr * cl
         phi0_min = float(np.min(phi0))
         phi0_max = float(np.max(phi0))
 
@@ -377,7 +371,7 @@ class JSI:
         n_s0 = float(self.ny(ls0, t_eval))
         n_i0 = float(self.nz(li0, t_eval))
         k_p0 = 2.0 * np.pi * n_p0 / lp0
-        xi = float(cl_val / (k_p0 * w0_p0**2))
+        xi = float(cl / (k_p0 * w0_p0**2))
 
         cache_key = self._smirr_cache_key(phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0)
         interp_func = self._smirr_interp_cache.get(cache_key)

@@ -1352,21 +1352,14 @@ class GUI(QMainWindow):
         pltwnd = self.pltwindowlist[pltwndidx]
 
         # need customization for 3 plots in 1 window
-        pltwnd.layout.removeWidget(pltwnd.canvas)
-        pltwnd.layout.removeWidget(pltwnd.toolbar)
-        pltwnd.fig = plt.figure(facecolor="white")
-        pltwnd.peplt = pltwnd.fig.add_subplot(131)
-        pltwnd.pmplt = pltwnd.fig.add_subplot(132)
-        pltwnd.jsplt = pltwnd.fig.add_subplot(133)
+        pltwnd.clear()
+        pltwnd.peplt = pltwnd.add_subplot(131)
+        pltwnd.pmplt = pltwnd.add_subplot(132)
+        pltwnd.jsplt = pltwnd.add_subplot(133)
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
         pltwnd.jsplt.set_aspect('equal')
-        pltwnd.canvas = FigureCanvas(pltwnd.fig)
-        pltwnd.canvas.setParent(pltwnd)
-        pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
-        pltwnd.layout.addWidget(pltwnd.canvas)
-        pltwnd.layout.addWidget(pltwnd.toolbar)
-
+        
         colormap = matplotlib.cm.jet
         # axes range
         xmin = np.min(signalrange) * 1e9
@@ -1467,23 +1460,16 @@ class GUI(QMainWindow):
         pltwnd = self.pltwindowlist[pltwndidx]
 
         # need customization for 4 plots in 1 window
-        pltwnd.layout.removeWidget(pltwnd.canvas)
-        pltwnd.layout.removeWidget(pltwnd.toolbar)
-        pltwnd.fig = plt.figure(facecolor="white")
-        pltwnd.peplt = pltwnd.fig.add_subplot(141)
-        pltwnd.pmplt = pltwnd.fig.add_subplot(142)
-        pltwnd.jsplt = pltwnd.fig.add_subplot(143)
-        pltwnd.jsplt2 = pltwnd.fig.add_subplot(144)
+        pltwnd.clear()
+        pltwnd.peplt = pltwnd.add_subplot(141)
+        pltwnd.pmplt = pltwnd.add_subplot(142)
+        pltwnd.jsplt = pltwnd.add_subplot(143)
+        pltwnd.jsplt2 = pltwnd.add_subplot(144)
         pltwnd.peplt.set_aspect('equal')
         pltwnd.pmplt.set_aspect('equal')
         pltwnd.jsplt.set_aspect('equal')
         pltwnd.jsplt2.set_aspect('equal')
-        pltwnd.canvas = FigureCanvas(pltwnd.fig)
-        pltwnd.canvas.setParent(pltwnd)
-        pltwnd.toolbar = NavigationToolbar(pltwnd.canvas, pltwnd)
-        pltwnd.layout.addWidget(pltwnd.canvas)
-        pltwnd.layout.addWidget(pltwnd.toolbar)
-
+        
         colormap = matplotlib.cm.jet
         # axes range
         xmin = np.min(signalrange) * 1e9
@@ -2127,21 +2113,27 @@ class GUI(QMainWindow):
 class PlotWindow(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        # self.layout = QGridLayout()
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
         self.fig = plt.figure(facecolor="white", figsize=(8.75 * 1.2, 5 * 1.2))
-        self.ax = self.fig.add_subplot(111)
-        self.ax.grid()
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
-        # self.addToolBar(self.toolbar)
         self.layout.addWidget(self.canvas)
         self.layout.addWidget(self.toolbar)
 
+    def clear(self):
+        self.fig.clear()
+
+    def add_subplot(self, *args, **kwargs):
+        return self.fig.add_subplot(*args, **kwargs)
+
+    def draw(self):
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
+
     def open(self):
-        self.show(self)
+        self.show()
 
 
 if __name__ == '__main__':

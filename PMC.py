@@ -46,15 +46,15 @@ class PMC:
                 return epconv
 
         #returns signal and idler wavelengths that satisfy phasematching conditions for a given pumpwavelength, temperature and poling period
-        def SIwls(self,x):
+        def SIwls(self, x, guess=None):
                 #x[0]: lambda_pump
                 #x[1]: Temperature
                 #x[2]: Poling period
-                #return scipy.optimize.newton_krylov(self.epconvonlywl(x[1],x[2]),[2*x[0],2*x[0]],f_tol=1e-6) #slower!
                 if isinstance(x[1],list):
-                        print("hi")
                         x[1]=x[1][0]
-                return scipy.optimize.fsolve(self.epconvonlywl(x[1], x[2]), [2 * x[0], 2 * x[0]], xtol=1e-6)
+                if guess is None:
+                        guess = [2 * x[0], 2 * x[0]]
+                return scipy.optimize.fsolve(self.epconvonlywl(x[1], x[2]), guess, xtol=1e-6)
 
         #returns a function that only depends on the poling period
         def wlgaponlyT(self,PP,lp):
@@ -84,8 +84,12 @@ class PMC:
                 sigwl=np.zeros(len(Trange))
                 idwl=np.zeros(len(Trange))
                 txf = self.thermexpfactor(Trange)
+                guess = None
                 for i in range(0,len(Trange)):
-                        [sigwl[i],idwl[i]]=self.SIwls([pumpwl,Trange[i],polingp*txf[i]])
+                        ans = self.SIwls([pumpwl,Trange[i],polingp*txf[i]], guess)
+                        sigwl[i] = ans[0]
+                        idwl[i] = ans[1]
+                        guess = ans
 
                 #calculate the crossing point temperature
                 Tcp=0
@@ -110,8 +114,12 @@ class PMC:
                 sigwl = np.zeros(len(PPrange))
                 idwl = np.zeros(len(PPrange))
                 txf = self.thermexpfactor(PPrange)
+                guess = None
                 for i in range(0, len(PPrange)):
-                        [sigwl[i], idwl[i]] = self.SIwls([pumpwl, T, PPrange[i] * txf[i]])
+                        ans = self.SIwls([pumpwl, T, PPrange[i] * txf[i]], guess)
+                        sigwl[i] = ans[0]
+                        idwl[i] = ans[1]
+                        guess = ans
 
                 # calculate the crossing point temperature
                 PPcp = 0

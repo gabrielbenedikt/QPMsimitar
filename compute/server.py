@@ -7,9 +7,13 @@ from fastapi.responses import StreamingResponse
 from compute.engine import ComputeEngine
 from compute.serialization import serialize, deserialize
 from compute.security import verify_token
+import concurrent.futures
 
 app = FastAPI(title="QPMsimitar Compute Server", dependencies=[Depends(verify_token)])
 engine = ComputeEngine()
+
+# Bounded executor to prevent server CPU/thread exhaustion under heavy concurrent load
+compute_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 @app.get("/materials")
 def get_materials():
@@ -56,8 +60,8 @@ async def compute_endpoint(method_name: str, request: Request):
         except Exception as e:
             loop.call_soon_threadsafe(q.put_nowait, {'type': 'error', 'value': str(e)})
 
-    # Start the computation in a background thread
-    task = loop.run_in_executor(None, worker)
+    # Start the computation in a background thread using the bounded executor
+    task = loop.run_in_executor(compute_executor, worker)
 
     async def event_stream():
         while True:

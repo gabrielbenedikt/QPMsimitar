@@ -53,7 +53,7 @@
 - [Focallength Idler, 1.0]
 - [Compute Backend, remote]
 - [Remote Server URL, https://10.42.1.15:8443]
-- [Remote API Token, 19b22af0fb64f338fc481e34557d7b2e]
+- [Remote API Token, 92fd2ee2ac33ebca8efe22d051445d74]
 - [Remote Client Cert, /home/peter/development/QPMsimitar/certs/client.crt]
 - [Remote Client Key, /home/peter/development/QPMsimitar/certs/client.key]
 - [Remote CA Cert, /home/peter/development/QPMsimitar/certs/ca.crt]

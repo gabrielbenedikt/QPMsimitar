@@ -9,10 +9,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start secure QPMsimitar remote compute server.")
     parser.add_argument("--host", default="127.0.0.1", help="Host IP to bind the server to (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8443, help="Port to listen on (default: 8443)")
+    parser.add_argument("--san", action="append", help="Additional Subject Alternative Names (DNS or IP) for the server certificate. Can be specified multiple times.")
     args = parser.parse_args()
 
+    import socket
+    san_list = []
+    
+    # Auto-detect host type and add to SAN list
+    host = args.host
+    if host not in ("127.0.0.1", "localhost", "0.0.0.0"):
+        try:
+            socket.inet_aton(host)
+            san_list.append(f"IP:{host}")
+        except socket.error:
+            san_list.append(f"DNS:{host}")
+            
+    # Add any user specified SANs
+    if args.san:
+        for s in args.san:
+            if not (s.startswith("IP:") or s.startswith("DNS:")):
+                try:
+                    socket.inet_aton(s)
+                    san_list.append(f"IP:{s}")
+                except socket.error:
+                    san_list.append(f"DNS:{s}")
+            else:
+                san_list.append(s)
+
     certs_dir = os.path.join(os.path.dirname(__file__), "certs")
-    ca_crt, server_crt, server_key, client_crt, client_key = generate_mtls_certs(certs_dir)
+    ca_crt, server_crt, server_key, client_crt, client_key = generate_mtls_certs(certs_dir, san_list=san_list)
     
     print("\n--- mTLS Certificates Generated ---")
     print(f"Server Cert: {server_crt}")

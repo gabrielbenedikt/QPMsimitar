@@ -16,3 +16,4 @@ nohup.out
 *.png
 !doc/*.png
 *.ipynb
+venv

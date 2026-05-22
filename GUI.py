@@ -2116,6 +2116,8 @@ class PlotWindow(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
         self.fig = plt.figure(facecolor="white", figsize=(8.75 * 1.2, 5 * 1.2))
+        self.ax = self.fig.add_subplot(111)
+        self.ax.grid()
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)
         self.toolbar = NavigationToolbar(self.canvas, self)

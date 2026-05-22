@@ -130,6 +130,9 @@ class RemoteBackend(ComputeBackend):
         
         # Read streaming response
         with self.client.stream("POST", url, content=payload, headers={"Content-Type": "application/x-msgpack"}) as response:
+            if response.status_code == 400:
+                error_text = response.read().decode('utf-8', errors='ignore')
+                raise RuntimeError(f"Server Validation Error: {error_text}")
             response.raise_for_status()
             
             buf = bytearray()

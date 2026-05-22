@@ -24,7 +24,7 @@ class BaseComputeParams(BaseModel):
     # Limit max points for any resolution array to reasonable sizes
     # ----------------------------------------------------------------
     resolution: Optional[int] = Field(default=None, ge=2, le=2000)
-    jsi_resolution: Optional[int] = Field(default=None, ge=2, le=1000)
+    jsi_resolution: Optional[int] = Field(default=None, ge=2, le=2000)
     hom_resolution: Optional[int] = Field(default=None, ge=2, le=5000)
     fwhm_resolution: Optional[int] = Field(default=None, ge=2, le=5000)
     wl_resolution: Optional[int] = Field(default=None, ge=2, le=5000)

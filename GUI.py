@@ -1499,7 +1499,7 @@ class GUI(QMainWindow):
         maxint = max(signal_projection.max(), idler_projection.max())
         signal_projection /= maxint
         idler_projection /= maxint
-        
+
         pltwnd.ax.plot(signalrange * 1e9, signal_projection, label='signal')
         pltwnd.ax.plot(idlerrange * 1e9, idler_projection, label='idler')
         pltwnd.ax.set_xlabel(r'Wavelength [nm]')
@@ -1773,7 +1773,6 @@ class GUI(QMainWindow):
     def GetEffectivePolingPeriod(self):
         params = self._build_base_params()
         params['PP_guess'] = self.CrystalPolingPeriodSingle
-
         result = self._run_compute('compute_effective_PP', params)
         PP = result['effective_PP']
         self.ui_CrystalPolingPeriodsingleSB.setValue(PP * 1e6)

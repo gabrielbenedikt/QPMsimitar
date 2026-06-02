@@ -470,6 +470,8 @@ class JSI:
     # returns a function that only depends on the poling period
     def wlgaponlyT(self, lp, PP):
         def wlgap2(T):
+            if isinstance(T, (list, tuple, np.ndarray)):
+                T = T[0]
             swl, iwl = self.SIwls([lp, T, PP])
             return swl - iwl
 
@@ -742,6 +744,7 @@ class JSI:
         self.nx = refidxfunc[0]
         self.ny = refidxfunc[1]
         self.nz = refidxfunc[2]
+        self.m=m
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
     def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):

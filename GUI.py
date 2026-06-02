@@ -76,40 +76,46 @@ class GUI(QMainWindow):
         self.ui_layoutPurity = self.initLayoutPurity()
         self.ui_layoutFocusing = self.initLayoutFocusing()
         self.ui_layoutGetEffPP = self.initLayoutGetEffPP()
+        self.ui_layoutMarginalSpectra = self.initLayoutMarginalSpectra()
         self.ui_layoutTcp = self.initLayoutTcp()
         self.ui_layoutHOM = self.initLayoutHOM()
         self.ui_layoutPlotFWHM = self.initLayoutPlotFWHM()
-
+        
         # Group: set crystal properties
-        self.ui_layout.addLayout(self.ui_layoutCrystal, 1, 1)
+        self.ui_layout.addLayout(self.ui_layoutCrystal, 1, 1, 1, 1)
         # Group: set pump properties
-        self.ui_layout.addLayout(self.ui_layoutPump, 2, 1)
+        self.ui_layout.addLayout(self.ui_layoutPump, 2, 1, 1, 1)
         # Group: S/I spectral filtering
-        self.ui_layout.addLayout(self.ui_layoutSIfilter, 3, 1)
+        self.ui_layout.addLayout(self.ui_layoutSIfilter, 3, 1, 2, 1)
+        
         # Group: plot refractive indices
-        self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2)
+        self.ui_layout.addLayout(self.ui_layoutPlotRefractiveIndex, 1, 2, 1, 1)
         # Group: plot phase matching curve
-        self.ui_layout.addLayout(self.ui_layoutPlotPMC, 2, 2)
+        self.ui_layout.addLayout(self.ui_layoutPlotPMC, 2, 2, 1, 1)
         # Group: Get effective poling period
-        self.ui_layout.addLayout(self.ui_layoutGetEffPP, 3, 2)
+        self.ui_layout.addLayout(self.ui_layoutGetEffPP, 3, 2, 1, 1)
+        # Group: Plot marginal spectra
+        self.ui_layout.addLayout(self.ui_layoutMarginalSpectra, 4, 2, 1, 1)
+
         # Group: Purity
-        self.ui_layout.addLayout(self.ui_layoutPurity, 1, 3)
+        self.ui_layout.addLayout(self.ui_layoutPurity, 1, 3, 1, 1)
         # Group: plot JSI
-        self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3)
+        self.ui_layout.addLayout(self.ui_layoutPlotJSI, 2, 3, 1, 1)
         # Group: Crossing point temperature vs different variables
-        self.ui_layout.addLayout(self.ui_layoutTcp, 3, 3)
+        self.ui_layout.addLayout(self.ui_layoutTcp, 3, 3, 2, 1)
+
         # Group: Focusing
-        self.ui_layout.addLayout(self.ui_layoutFocusing, 1, 4)
+        self.ui_layout.addLayout(self.ui_layoutFocusing, 1, 4, 1, 1)
         # Group: HOM
-        self.ui_layout.addLayout(self.ui_layoutHOM, 2, 4)
+        self.ui_layout.addLayout(self.ui_layoutHOM, 2, 4, 1, 1)
         #Group: Plot FWHM of marginal spectral
-        self.ui_layout.addLayout(self.ui_layoutPlotFWHM, 3, 4)
+        self.ui_layout.addLayout(self.ui_layoutPlotFWHM, 3, 4, 2, 1)
 
         # Settings Button
         self.ui_SettingsBtn = QPushButton("Connection Settings...")
         self.ui_SettingsBtn.setToolTip("Configure local/remote compute backend and security tokens")
         self.ui_SettingsBtn.clicked.connect(self.openSettings)
-        self.ui_layout.addWidget(self.ui_SettingsBtn, 4, 4)
+        self.ui_layout.addWidget(self.ui_SettingsBtn, 5, 4)
 
         self.centralWidget().setLayout(self.ui_layout)
 
@@ -696,6 +702,35 @@ class GUI(QMainWindow):
         self.ui_layoutGetEffPP.addWidget(self.ui_GetEffPPGroupBox)
 
         return self.ui_layoutGetEffPP
+    
+    def initLayoutMarginalSpectra(self):
+        self.ui_layoutMarginalSpectra = QGridLayout()
+        self.ui_MarginalSpectraGroupBox = QGroupBox()
+        self.ui_layoutMarginalSpectraGroupBox = QGridLayout()
+
+        self.ui_MarginalSpectraGroupBox.setTitle('Plot marginal spectra')
+
+        self.ui_MarginalSpectra_Btn = QHoverPushButton()
+        self.ui_MarginalSpectra_Btn.setText('Plot marginal spectra')
+        self.ui_MarginalSpectra_Btn.setObjectName('Plot marginal spectra')
+
+        self.ui_layoutMarginalSpectraGroupBox.addWidget(self.ui_MarginalSpectra_Btn, 1, 1)
+
+        self.ui_MarginalSpectraGroupBox.setLayout(self.ui_layoutMarginalSpectraGroupBox)
+        self.ui_layoutMarginalSpectra.addWidget(self.ui_MarginalSpectraGroupBox)
+
+        return self.ui_layoutMarginalSpectra
+
+        self.ui_GetEffPP_Btn = QHoverPushButton()
+        self.ui_GetEffPP_Btn.setText('Get effective PP')
+        self.ui_GetEffPP_Btn.setObjectName('Get effective PP')
+
+        self.ui_layoutGetEffPPGroupBox.addWidget(self.ui_GetEffPP_Btn, 1, 1)
+
+        self.ui_GetEffPPGroupBox.setLayout(self.ui_layoutGetEffPPGroupBox)
+        self.ui_layoutGetEffPP.addWidget(self.ui_GetEffPPGroupBox)
+
+        return self.ui_layoutGetEffPP
 
     def initLayoutPlotFWHM(self):
         self.ui_layoutPlotFWHM = QGridLayout()
@@ -958,6 +993,7 @@ class GUI(QMainWindow):
         self.ui_Purity_plotvsTauandL_Btn.pressed.connect(self.plot_purity_vs_Tau_and_L)
         self.ui_Purity_plotvsL_Btn.pressed.connect(self.plot_purity_vs_L)
         self.ui_GetEffPP_Btn.pressed.connect(self.GetEffectivePolingPeriod)
+        self.ui_MarginalSpectra_Btn.pressed.connect(self.plot_marginal_spectra)
         self.ui_Tcp_vslp_Btn.pressed.connect(self.plot_Tcp_vs_lp)
         self.ui_Tcp_vsPP_Btn.pressed.connect(self.plot_Tcp_vs_PP)
         self.ui_HOM_PlotVis_Btn.pressed.connect(self.plot_HOM_vis)
@@ -1422,6 +1458,53 @@ class GUI(QMainWindow):
         pltwnd.canvas.draw()
         pltwnd.resize(1200,600)
     
+
+    def plot_marginal_spectra(self):
+        #calculate JSI
+        params = self._build_base_params()
+        params.update(self._build_filter_params())
+        params.update(self._build_focusing_params())
+        params['wl_range'] = self.JSIwlRange
+        params['resolution'] = self.JSIresolution
+        
+        plotJSI = self.ui_PlotJSI_plotJSIRadioButton.isChecked()
+        params['plot_jsi'] = plotJSI
+
+        result = self._run_compute('compute_jsi', params)
+        signalrange = result['signal_range']
+        idlerrange = result['idler_range']
+        JS = result['JS']
+        
+        #project on axes
+        signal_projection = np.sum(JS, axis=0)
+        idler_projection = np.sum(JS, axis=1)
+
+        #
+        # plotting
+        #
+        print("plotting..")
+
+        # init plot window
+        pltwndidx = self.plotwindowcount
+        self.open_new_plot_window()
+        pltwnd = self.pltwindowlist[pltwndidx]
+        
+        colormap = matplotlib.cm.jet
+        # axes range
+        print(f'{np.min(signalrange)=}')
+        print(f'{np.min(idlerrange)=}')
+        xmin = min(np.min(signalrange), np.min(idlerrange)) * 1e9
+        xmax = max(np.max(signalrange), np.max(idlerrange)) * 1e9
+
+        pltwnd.ax.plot(signalrange * 1e9, signal_projection, label='signal')
+        pltwnd.ax.plot(idlerrange * 1e9, idler_projection, label='idler')
+        pltwnd.ax.set_xlabel(r'Wavelength [nm]')
+        pltwnd.ax.set_title('Marginal spectra')
+        pltwnd.ax.legend()
+
+        #pltwnd.fig.subplots_adjust(bottom=0.2)
+        #pltwnd.canvas.draw()
+
     def estimate_filter_losses(self):
         params = self._build_base_params()
         params.update(self._build_filter_params())

@@ -72,7 +72,7 @@ class JSI:
         self.smirr_phi_points = 400
         self.smirr_rho_points = 100
         self.smirr_theta_points = 100
-        self.smirr_zeta = 10.0e-3
+        self.smirr_zeta = 0.0
         self.smirr_ns_prime = 1.0
         self.smirr_ni_prime = 1.0
         self.smirr_normalize = True
@@ -747,7 +747,7 @@ class JSI:
         self.m=m
         return scipy.optimize.newton_krylov(self.wlgaponlyPP(lp, Tcp), PPguess, f_tol=1e-14)
 
-    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
+    def getplots(self,pumpwl,signalrange,idlerrange,tau,temp,polingp,crystallength, refidxfunc,qpmorder,filterfuncs,plotJSI,pumpshape,pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler, smirr_zeta):
         print('start calculating JSA or JSI')
         #
         # pumpwl: Pump wavelength
@@ -786,6 +786,7 @@ class JSI:
         self.Beamdiameter_pump = beamdiameter_pump
         self.Beamdiameter_signal = beamdiameter_signal
         self.Beamdiameter_idler = beamdiameter_idler
+        self.smirr_zeta = smirr_zeta
 
         self.calcJSI = plotJSI
         self.calcJSA = not plotJSI
@@ -1070,7 +1071,7 @@ class JSI:
         return Tcp
 
     #by numerical integration
-    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
+    def getHOMinterference(self, pwl, temp, polingp, qpmorder, tau, cl, signalrange, idlerrange,JSIresolution, pumpshape, delayrange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler, smirr_zeta):
         t0=datetime.now()
         self.m = qpmorder
         [self.nx, self.ny, self.nz] = refidxfunc
@@ -1087,6 +1088,7 @@ class JSI:
         self.Beamdiameter_pump = beamdiameter_pump
         self.Beamdiameter_signal = beamdiameter_signal
         self.Beamdiameter_idler = beamdiameter_idler
+        self.smirr_zeta = smirr_zeta
 
         X, Y = np.meshgrid(signalrange, idlerrange)
 
@@ -1158,7 +1160,7 @@ class JSI:
         print('calculating HOM took', (t1-t0).total_seconds(), 's')
         return [HOMI,vis,homfwhm]
 
-    def getHOMinterferenceT(self, pwl, polingp, qpmorder, tau, cl, signalrange, idlerrange, JSIresolution, pumpshape, temprange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler):
+    def getHOMinterferenceT(self, pwl, polingp, qpmorder, tau, cl, signalrange, idlerrange, JSIresolution, pumpshape, temprange, homphase, refidxfunc, filterfuncs, pumpcwbw, focusing_enable, fibre_coupling_enable, focallength_pump, focallength_signal, focallength_idler, beamdiameter_pump, beamdiameter_signal, beamdiameter_idler, smirr_zeta):
         t0=datetime.now()
         self.focusing_enable = focusing_enable
         self.fibre_coupling_enable = fibre_coupling_enable
@@ -1168,6 +1170,7 @@ class JSI:
         self.Beamdiameter_pump = beamdiameter_pump
         self.Beamdiameter_signal = beamdiameter_signal
         self.Beamdiameter_idler = beamdiameter_idler
+        self.smirr_zeta = smirr_zeta
         
         self.m = qpmorder
         [self.nx, self.ny, self.nz] = refidxfunc

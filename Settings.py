@@ -91,6 +91,7 @@ class Settings:
         self.config.append(["Focallength Pump", 10.0])
         self.config.append(["Focallength Signal", 10.0])
         self.config.append(["Focallength Idler", 10.0])
+        self.config.append(["Smirr zeta", 0.0])
 
         # Compute backend settings
         self.config.append(["Compute Backend", "local"])

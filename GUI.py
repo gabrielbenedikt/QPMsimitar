@@ -669,6 +669,12 @@ class GUI(QMainWindow):
         self.ui_Focusing_Beamdiameter_Idler_SB.setMaximum(100)
         self.ui_Focusing_Beamdiameter_Idler_SB.setDecimals(3)
 
+        self.ui_Focusing_zeta_Label = QLabel('Zeta [idk]')
+        self.ui_Focusing_zeta_SB = QDoubleSpinBox()
+        self.ui_Focusing_zeta_SB.setMinimum(0)
+        self.ui_Focusing_zeta_SB.setMaximum(100)
+        self.ui_Focusing_zeta_SB.setDecimals(3)
+
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FibreCoupling_CB, 1, 1, 1, 2)
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_FocusingEnable_CB, 2, 1, 1, 2)
 
@@ -685,6 +691,8 @@ class GUI(QMainWindow):
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Signal_SB, 7, 2)
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Idler_Label, 8, 1)
         self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_Beamdiameter_Idler_SB, 8, 2)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_zeta_Label, 9, 1)
+        self.ui_layoutFocusingGroupBox.addWidget(self.ui_Focusing_zeta_SB, 9, 2)
 
         self.ui_FocusingGroupBox.setLayout(self.ui_layoutFocusingGroupBox)
         self.ui_layoutFocusing.addWidget(self.ui_FocusingGroupBox)
@@ -857,6 +865,7 @@ class GUI(QMainWindow):
         self.Beamdiameter_pump  = self.config.get("Beamdiameter Pump")
         self.Beamdiameter_signal  = self.config.get("Beamdiameter Signal")
         self.Beamdiameter_idler  = self.config.get("Beamdiameter Idler")
+        self.smirr_zeta = self.config.get("Smirr zeta")
 
         self.SIfilterIdlerType = self.config.get("SI filter Idler Type")
         self.SIfilterSignalType = self.config.get("SI filter Signal Type")
@@ -914,6 +923,7 @@ class GUI(QMainWindow):
         self.ui_Focusing_Beamdiameter_Pump_SB.setValue(self.Beamdiameter_pump*10**3)
         self.ui_Focusing_Beamdiameter_Signal_SB.setValue(self.Beamdiameter_signal*10**3)
         self.ui_Focusing_Beamdiameter_Idler_SB.setValue(self.Beamdiameter_idler*10**3)
+        self.ui_Focusing_zeta_SB.setValue(self.smirr_zeta)
         idx = 0
         idx = self.ui_SIfilterIdlerType_CB.findText(self.SIfilterIdlerType)
         self.ui_SIfilterIdlerType_CB.setCurrentIndex(idx)
@@ -972,6 +982,7 @@ class GUI(QMainWindow):
             'beamdiameter_pump': self.Beamdiameter_pump,
             'beamdiameter_signal': self.Beamdiameter_signal,
             'beamdiameter_idler': self.Beamdiameter_idler,
+            'smirr_zeta': self.smirr_zeta,
         }
 
     def _build_filter_annotation(self):
@@ -1047,6 +1058,7 @@ class GUI(QMainWindow):
         self.ui_Focusing_Beamdiameter_Pump_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_Beamdiameter_Signal_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_Focusing_Beamdiameter_Idler_SB.valueChanged.connect(self.getVarsFromGUI)
+        self.ui_Focusing_zeta_SB.valueChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterSignalType_CB.currentIndexChanged.connect(self.getVarsFromGUI)
         self.ui_SIfilterIdlerCenterWL_SB.valueChanged.connect(self.getVarsFromGUI)
@@ -1829,6 +1841,7 @@ class GUI(QMainWindow):
         self.Beamdiameter_idler = self.ui_Focusing_Beamdiameter_Idler_SB.value() * 10 ** (-3)
         self.Beamdiameter_signal = self.ui_Focusing_Beamdiameter_Signal_SB.value() * 10 ** (-3)
         self.Beamdiameter_pump = self.ui_Focusing_Beamdiameter_Pump_SB.value() * 10 ** (-3)
+        self.smirr_zeta = self.ui_Focusing_zeta_SB.value()
         self.Focusing_enable = self.ui_Focusing_FocusingEnable_CB.isChecked()
         self.Fibrecoupling_enable = self.ui_Focusing_FibreCoupling_CB.isChecked()
 
@@ -1901,7 +1914,7 @@ class GUI(QMainWindow):
         self.config.set("Beamdiameter Pump", self.Beamdiameter_pump)
         self.config.set("Enable Focusing", self.Focusing_enable)
         self.config.set("Enable Fibre Coupling", self.Fibrecoupling_enable)
-
+        self.config.set("Smirr zeta", self.smirr_zeta)
 
         self.config.set("SI filter Idler Type", self.SIfilterIdlerType)
         self.config.set("SI filter Signal Type", self.SIfilterSignalType)

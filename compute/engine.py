@@ -64,6 +64,7 @@ class ComputeEngine:
         jsi.Beamdiameter_pump = params.get('beamdiameter_pump', 1e-3)
         jsi.Beamdiameter_signal = params.get('beamdiameter_signal', 1e-3)
         jsi.Beamdiameter_idler = params.get('beamdiameter_idler', 1e-3)
+        jsi.smirr_zeta = params.get('smirr_zeta', 0.0)
 
     # ------------------------------------------------------------------ #
     #  Metadata                                                            #
@@ -177,7 +178,8 @@ class ComputeEngine:
             params.get('focallength_idler', 10e-3),
             params.get('beamdiameter_pump', 1e-3),
             params.get('beamdiameter_signal', 1e-3),
-            params.get('beamdiameter_idler', 1e-3))
+            params.get('beamdiameter_idler', 1e-3),
+            params.get('smirr_zeta', 0.0))
 
         return {
             'PE': PE, 'PM': PM, 'JS': JS,

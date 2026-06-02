@@ -72,7 +72,7 @@ class JSI:
         self.smirr_phi_points = 400
         self.smirr_rho_points = 100
         self.smirr_theta_points = 100
-        self.smirr_zeta = 0.0
+        self.smirr_zeta = 10.0e-3
         self.smirr_ns_prime = 1.0
         self.smirr_ni_prime = 1.0
         self.smirr_normalize = True
@@ -277,7 +277,7 @@ class JSI:
 
         return integral * (dz / 3.0)
 
-    def x(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
+    def _smirr_cache_key(self, phi0_min, phi0_max, xi, alpha, n_p0, n_s0, n_i0):
         # Quantize floating-point inputs so numerically equivalent calls hit cache.
         return (
             int(self.smirr_phi_points),

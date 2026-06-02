@@ -1496,14 +1496,16 @@ class GUI(QMainWindow):
         xmin = min(np.min(signalrange), np.min(idlerrange)) * 1e9
         xmax = max(np.max(signalrange), np.max(idlerrange)) * 1e9
 
+        maxint = max(signal_projection.max(), idler_projection.max())
+        signal_projection /= maxint
+        idler_projection /= maxint
+        
         pltwnd.ax.plot(signalrange * 1e9, signal_projection, label='signal')
         pltwnd.ax.plot(idlerrange * 1e9, idler_projection, label='idler')
         pltwnd.ax.set_xlabel(r'Wavelength [nm]')
+        pltwnd.ax.set_ylabel(r'Intensity [a.u.]')
         pltwnd.ax.set_title('Marginal spectra')
         pltwnd.ax.legend()
-
-        #pltwnd.fig.subplots_adjust(bottom=0.2)
-        #pltwnd.canvas.draw()
 
     def estimate_filter_losses(self):
         params = self._build_base_params()
